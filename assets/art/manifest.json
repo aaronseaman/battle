@@ -1,5 +1,5 @@
 {
-  "version": 12,
+  "version": 13,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
@@ -26,7 +26,7 @@
       "notes": "The whole painted diorama, seen from the tilted camera. Paint over docs/art/board-template.png at exactly this size: water, sandy floor, the winding path, all 14 coral socket cups, the spawn cave at top-left, decorative clay coral/pebbles in the free space, the wooden/clay rail at the bottom. Do NOT paint towers, enemies, the Coral Heart or the fish (they are separate sprites). Keep the path and sockets exactly where the template puts them."
     },
     "player.classic": {
-      "file": "player/player-classic.png",
+      "file": "player/player-classic.webp",
       "priority": "P0",
       "frame": [
         192,
@@ -274,7 +274,7 @@
       "scale": 1.15
     },
     "tower.fish.3": {
-      "file": "towers/tower-fish-3.png",
+      "file": "towers/tower-fish-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -400,7 +400,7 @@
       "scale": 1.15
     },
     "tower.octopus.3": {
-      "file": "towers/tower-octopus-3.png",
+      "file": "towers/tower-octopus-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -539,7 +539,7 @@
       "scale": 1.15
     },
     "tower.shark.3": {
-      "file": "towers/tower-shark-3.png",
+      "file": "towers/tower-shark-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -671,7 +671,7 @@
       "scale": 1.15
     },
     "tower.starfish.3": {
-      "file": "towers/tower-starfish-3.png",
+      "file": "towers/tower-starfish-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -809,7 +809,7 @@
       "scale": 1.15
     },
     "tower.puffer.3": {
-      "file": "towers/tower-puffer-3.png",
+      "file": "towers/tower-puffer-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -941,7 +941,7 @@
       "scale": 1.15
     },
     "tower.seahorse.3": {
-      "file": "towers/tower-seahorse-3.png",
+      "file": "towers/tower-seahorse-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -1067,7 +1067,7 @@
       "scale": 1.15
     },
     "tower.crab.3": {
-      "file": "towers/tower-crab-3.png",
+      "file": "towers/tower-crab-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -1150,7 +1150,7 @@
       "notes": "Jellybean Jellyfish: pink translucent jelly-bean bell, wiggly sausage tentacles, bouncy. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). sad = droopy, teary (3 Minus stacks)."
     },
     "enemy.jellyMini": {
-      "file": "enemies/enemy-jellymini.png",
+      "file": "enemies/enemy-jellymini.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1385,7 +1385,7 @@
       "notes": "Electric Eel: green/yellow eel with lightning-bolt pattern, slithering. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.octoMini": {
-      "file": "enemies/enemy-octomini.png",
+      "file": "enemies/enemy-octomini.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1426,7 +1426,7 @@
       "notes": "Mini Octopus (Chef Octopus minion): tiny octopus with a mini chef hat. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.starMinion": {
-      "file": "enemies/enemy-starminion.png",
+      "file": "enemies/enemy-starminion.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1796,7 +1796,7 @@
       "notes": "Yellow Plus bubble with a white \"+\". Anchor = center."
     },
     "proj.bubble": {
-      "file": "projectiles/proj-bubble.png",
+      "file": "projectiles/proj-bubble.webp",
       "priority": "P1",
       "frame": [
         32,
@@ -1818,7 +1818,7 @@
       "notes": "Small light-blue fish bubble. Anchor = center."
     },
     "proj.dart": {
-      "file": "projectiles/proj-dart.png",
+      "file": "projectiles/proj-dart.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1841,7 +1841,7 @@
       "notes": "Seahorse dart (points RIGHT; rotated to its flight direction). Anchor = center."
     },
     "proj.ink": {
-      "file": "projectiles/proj-ink.png",
+      "file": "projectiles/proj-ink.webp",
       "priority": "P1",
       "frame": [
         48,
@@ -1863,7 +1863,7 @@
       "notes": "Octopus ink blob. Anchor = center."
     },
     "proj.star": {
-      "file": "projectiles/proj-star.png",
+      "file": "projectiles/proj-star.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1886,7 +1886,7 @@
       "notes": "Starfish boomerang star (spun by the renderer). Anchor = center. Optional \"return\" anim for the way back."
     },
     "proj.ministar": {
-      "file": "projectiles/proj-ministar.png",
+      "file": "projectiles/proj-ministar.webp",
       "priority": "P1",
       "frame": [
         40,
@@ -1909,7 +1909,7 @@
       "notes": "Small split star (spun by the renderer). Anchor = center."
     },
     "strike.ink": {
-      "file": "projectiles/strike-ink.png",
+      "file": "projectiles/strike-ink.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1931,7 +1931,7 @@
       "notes": "Chef ink bomb in flight. Landing telegraph circles stay procedural (gameplay readability)."
     },
     "strike.spark": {
-      "file": "projectiles/strike-spark.png",
+      "file": "projectiles/strike-spark.webp",
       "priority": "P1",
       "frame": [
         48,
@@ -1953,7 +1953,7 @@
       "notes": "Eel spark falling toward the rail. Landing telegraph circles stay procedural (gameplay readability)."
     },
     "strike.star": {
-      "file": "projectiles/strike-star.png",
+      "file": "projectiles/strike-star.webp",
       "priority": "P1",
       "frame": [
         48,
@@ -1976,7 +1976,7 @@
       "notes": "Star thrown by a Star Minion. Landing telegraph circles stay procedural (gameplay readability)."
     },
     "pickup.shell": {
-      "file": "projectiles/pickup-shell.png",
+      "file": "projectiles/pickup-shell.webp",
       "priority": "P1",
       "frame": [
         48,
@@ -2004,7 +2004,7 @@
       "notes": "Sinking seashell pickup. fall = tumbling, land = resting + glint."
     },
     "fx.pop": {
-      "file": "fx/fx-pop.png",
+      "file": "fx/fx-pop.webp",
       "priority": "P1",
       "frame": [
         96,
@@ -2027,7 +2027,7 @@
       "scale": 1.3333
     },
     "fx.explode": {
-      "file": "fx/fx-explode.png",
+      "file": "fx/fx-explode.webp",
       "priority": "P1",
       "frame": [
         179,
@@ -2050,7 +2050,7 @@
       "scale": 1.4286
     },
     "fx.ink": {
-      "file": "fx/fx-ink.png",
+      "file": "fx/fx-ink.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -2073,7 +2073,7 @@
       "scale": 1.3333
     },
     "fx.heal": {
-      "file": "fx/fx-heal.png",
+      "file": "fx/fx-heal.webp",
       "priority": "P1",
       "frame": [
         96,
@@ -2096,7 +2096,7 @@
       "scale": 1.3333
     },
     "fx.shield_pop": {
-      "file": "fx/fx-shield_pop.png",
+      "file": "fx/fx-shield_pop.webp",
       "priority": "P1",
       "frame": [
         96,
@@ -2119,7 +2119,7 @@
       "scale": 1.3333
     },
     "fx.chomp": {
-      "file": "fx/fx-chomp.png",
+      "file": "fx/fx-chomp.webp",
       "priority": "P1",
       "frame": [
         96,
@@ -2142,7 +2142,7 @@
       "scale": 1.3333
     },
     "fx.crack": {
-      "file": "fx/fx-crack.png",
+      "file": "fx/fx-crack.webp",
       "priority": "P1",
       "frame": [
         96,
@@ -2165,7 +2165,7 @@
       "scale": 1.3333
     },
     "fx.poof": {
-      "file": "fx/fx-poof.png",
+      "file": "fx/fx-poof.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -2188,7 +2188,7 @@
       "scale": 1.3333
     },
     "fx.pulse": {
-      "file": "fx/fx-pulse.png",
+      "file": "fx/fx-pulse.webp",
       "priority": "P1",
       "frame": [
         224,
@@ -2211,7 +2211,7 @@
       "scale": 1.4286
     },
     "fx.wave": {
-      "file": "fx/fx-wave.png",
+      "file": "fx/fx-wave.webp",
       "priority": "P1",
       "frame": [
         358,
@@ -2234,7 +2234,7 @@
       "scale": 1.4286
     },
     "fx.hat_hit": {
-      "file": "fx/fx-hat_hit.png",
+      "file": "fx/fx-hat_hit.webp",
       "priority": "P1",
       "frame": [
         72,
@@ -2257,7 +2257,7 @@
       "scale": 1.3333
     },
     "fx.minus_pop": {
-      "file": "fx/fx-minus_pop.png",
+      "file": "fx/fx-minus_pop.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -2279,7 +2279,7 @@
       "notes": "Minus bubble popping on impact. One-shot at 12 fps unless it says loop."
     },
     "fx.heart_hit": {
-      "file": "fx/fx-heart_hit.png",
+      "file": "fx/fx-heart_hit.webp",
       "priority": "P1",
       "frame": [
         144,
@@ -2302,7 +2302,7 @@
       "scale": 1.3333
     },
     "fx.player_hit": {
-      "file": "fx/fx-player_hit.png",
+      "file": "fx/fx-player_hit.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -2325,7 +2325,7 @@
       "scale": 1.3333
     },
     "fx.sparkle": {
-      "file": "fx/fx-sparkle.png",
+      "file": "fx/fx-sparkle.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -2347,7 +2347,7 @@
       "notes": "Shell picked up: glint. One-shot at 12 fps unless it says loop."
     },
     "fx.sad": {
-      "file": "fx/fx-sad.png",
+      "file": "fx/fx-sad.webp",
       "priority": "P1",
       "frame": [
         48,
@@ -2369,7 +2369,7 @@
       "notes": "Little rain cloud / tear over a Sad enemy (loop). One-shot at 12 fps unless it says loop."
     },
     "fx.zap": {
-      "file": "fx/fx-zap.png",
+      "file": "fx/fx-zap.webp",
       "priority": "P1",
       "frame": [
         96,
@@ -2392,7 +2392,7 @@
       "scale": 1.3333
     },
     "fx.confetti": {
-      "file": "fx/fx-confetti.png",
+      "file": "fx/fx-confetti.webp",
       "priority": "P1",
       "frame": [
         269,
@@ -2415,7 +2415,7 @@
       "scale": 1.4286
     },
     "fx.spark": {
-      "file": "fx/fx-spark.png",
+      "file": "fx/fx-spark.webp",
       "priority": "P1",
       "frame": [
         72,
@@ -2438,7 +2438,7 @@
       "scale": 1.3333
     },
     "fx.minus_muzzle": {
-      "file": "fx/fx-minus_muzzle.png",
+      "file": "fx/fx-minus_muzzle.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -2460,7 +2460,7 @@
       "notes": "Minus shot muzzle puff. One-shot at 12 fps unless it says loop."
     },
     "fx.plus_muzzle": {
-      "file": "fx/fx-plus_muzzle.png",
+      "file": "fx/fx-plus_muzzle.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -2482,7 +2482,7 @@
       "notes": "Plus shot muzzle puff. One-shot at 12 fps unless it says loop."
     },
     "fx.grab": {
-      "file": "fx/fx-grab.png",
+      "file": "fx/fx-grab.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -2505,7 +2505,7 @@
       "scale": 1.5333
     },
     "fx.blind": {
-      "file": "fx/fx-blind.png",
+      "file": "fx/fx-blind.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -2528,7 +2528,7 @@
       "scale": 1.5333
     },
     "fx.plus_power": {
-      "file": "fx/fx-plus_power.png",
+      "file": "fx/fx-plus_power.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -2551,7 +2551,7 @@
       "scale": 1.5333
     },
     "fx.purr": {
-      "file": "fx/fx-purr.png",
+      "file": "fx/fx-purr.webp",
       "priority": "P1",
       "frame": [
         246,
@@ -2596,7 +2596,7 @@
       "notes": "Bubble the knocked-out fish waits in before respawning (loop)."
     },
     "fx.zapped": {
-      "file": "fx/fx-zapped.png",
+      "file": "fx/fx-zapped.webp",
       "priority": "P1",
       "frame": [
         120,
