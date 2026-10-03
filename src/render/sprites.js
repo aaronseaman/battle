@@ -149,6 +149,16 @@ export class SpriteBank {
     return !!(d && d[name]);
   }
 
+  // Offset in world units from the anchor to a named attach point (e.g. where the
+  // Chef's hat sits on his head). Null when the sprite doesn't define it.
+  attach(key, name) {
+    const d = this.defs[key];
+    const p = d && d.attach && d.attach[name];
+    if (!p) return null;
+    const k = d.scale / this.pxPerUnit;
+    return { dx: (p[0] - d.anchor[0]) * d.frame[0] * k, dy: (p[1] - d.anchor[1]) * d.frame[1] * k };
+  }
+
   // World-unit height of a sprite above its anchor (for placing HP bars etc.).
   height(key) {
     const d = this.defs[key];
@@ -177,6 +187,7 @@ function normalize(d) {
     facing: d.facing || 'right',
     scale: d.scale || 1,
     wobble: !!d.wobble,
+    attach: d.attach || null, // named points in frame fractions, e.g. { "hat": [0.44, 0.24] }
     spin: !!d.spin, // projectiles: rotate continuously
     orient: !!d.orient, // projectiles: rotate to the direction of travel
     anims,

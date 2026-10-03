@@ -1008,7 +1008,9 @@ export class Renderer {
     // gameplay-critical tells are always drawn on top of the art
     if (e.bossId === 'chef') {
       // the hat is the weak point and sways in the simulation: draw it where the hitbox is
-      const hx = x + (chefHatX(e) - e.x) * s, hy = y - h * 0.9;
+      // x follows the simulation's hitbox; y comes from the art's "hat" attach point
+      const ap = sp.attach(key, 'hat');
+      const hx = x + (chefHatX(e) - e.x) * s, hy = ap ? y + ap.dy * s : y - h * 0.9;
       if (!sp.draw(ctx, 'boss.chef.hat', sp.pick('boss.chef.hat', 'idle'), g.clock, hx, hy, s, this.opt(false, 1, 1, 0, 1, e.hitT > 0 ? 0.5 : 0))) {
         blob(ctx, hx, hy, r * 0.42, r * 0.16, '#f2f2f2', 0);
         blob(ctx, hx, hy - r * 0.35, r * 0.38, r * 0.32, '#ffffff', 0.4);
