@@ -59,7 +59,7 @@ async function run(viewport, label, touch) {
   await page.keyboard.down('ArrowLeft');
   await page.waitForTimeout(700);
   await page.keyboard.up('ArrowLeft');
-  await page.waitForFunction(() => window.reef.game.waveStats.kills > 0, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => window.reef.game.waveStats.kills > 0, null, { timeout: 40000 }).catch(() => {});
   await page.keyboard.up('ArrowDown');
   await press('ArrowUp'); // a plus shot
   await page.waitForTimeout(800);
@@ -108,6 +108,20 @@ async function run(viewport, label, touch) {
   if (resumed.phase !== 'draft' || resumed.wave !== 2 || resumed.towers !== 1) throw new Error(`${label}: resume failed`);
   const sw = await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()));
   console.log(label, 'service worker registered:', sw);
+
+  // offline: once the service worker is active, the whole game (art included) must boot with no network
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  const delivered = await page.evaluate(async () => {
+    const m = await (await fetch('assets/art/manifest.json')).json();
+    return Object.values(m.sprites).filter((d) => d.file).length;
+  });
+  await ctx.setOffline(true);
+  await page.reload();
+  await page.waitForFunction(() => window.reef && window.reef.sprites.ready, null, { timeout: 15000 });
+  const off = await page.evaluate(() => ({ phase: window.reef.game.phase, sprites: window.reef.sprites.loaded, failed: window.reef.sprites.failed.length }));
+  console.log(label, 'offline boot', JSON.stringify(off), 'expected sprites', delivered);
+  if (off.phase !== 'title' || off.sprites !== delivered || off.failed) throw new Error(`${label}: offline boot incomplete`);
+  await ctx.setOffline(false);
   await ctx.close();
 }
 

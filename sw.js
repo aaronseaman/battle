@@ -1,10 +1,28 @@
 // Service worker: precaches the whole app shell so the game runs fully offline.
 // Bump CACHE whenever any shipped code file changes.
-// Art (assets/art/**) is cached at runtime the first time it loads; the art
-// manifest is network-first, and its "version" busts sprite URLs (?v=N), so new
+// Art: every sheet listed in assets/art/manifest.json is precached at install
+// (so the game is fully offline even right after a first visit); the manifest
+// itself is network-first, and its "version" busts sprite URLs (?v=N), so new
 // artwork shows up on the next launch without bumping CACHE.
 
-const CACHE = 'reef-rumble-v1.1.0';
+const CACHE = 'reef-rumble-v1.2.0';
+
+// Same URLs SpriteBank requests: assets/art/<file>?v=<version>
+async function artUrls() {
+  try {
+    const res = await fetch('./assets/art/manifest.json', { cache: 'no-cache' });
+    const m = await res.json();
+    const files = new Set();
+    for (const d of Object.values(m.sprites || {})) {
+      if (d && d.file) files.add(d.file);
+      for (const a of Object.values((d && d.anims) || {})) if (a.file) files.add(a.file);
+    }
+    const q = m.version ? `?v=${m.version}` : '';
+    return [...files].map((f) => `./assets/art/${f}${q}`);
+  } catch {
+    return [];
+  }
+}
 
 const ASSETS = [
   './',
@@ -39,7 +57,16 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(async (c) => {
+        await c.addAll(ASSETS);
+        // art is best-effort: a missing sheet must not block the app shell from installing
+        const art = await artUrls();
+        await Promise.all(art.map((u) => c.add(u).catch(() => {})));
+      })
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (e) => {

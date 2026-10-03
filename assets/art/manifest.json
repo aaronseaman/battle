@@ -1,10 +1,10 @@
 {
-  "version": 9,
+  "version": 10,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
     "board": {
-      "file": "board/reef-board.png",
+      "file": "board/reef-board.webp",
       "priority": "P0",
       "frame": [
         1600,
@@ -26,7 +26,7 @@
       "notes": "The whole painted diorama, seen from the tilted camera. Paint over docs/art/board-template.png at exactly this size: water, sandy floor, the winding path, all 14 coral socket cups, the spawn cave at top-left, decorative clay coral/pebbles in the free space, the wooden/clay rail at the bottom. Do NOT paint towers, enemies, the Coral Heart or the fish (they are separate sprites). Keep the path and sockets exactly where the template puts them."
     },
     "player.classic": {
-      "file": "player/player-classic.png",
+      "file": "player/player-classic.webp",
       "priority": "P0",
       "frame": [
         192,
@@ -190,7 +190,7 @@
       "notes": "Unlockable skin: galaxy betta (deep purple, star speckles). Same layout as player.classic."
     },
     "tower.fish.1": {
-      "file": "towers/tower-fish-1.png",
+      "file": "towers/tower-fish-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -314,7 +314,7 @@
       "notes": "Level 3: Fish School: a little school of 3 fish around a coral stub. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy."
     },
     "tower.octopus.1": {
-      "file": "towers/tower-octopus-1.png",
+      "file": "towers/tower-octopus-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -438,7 +438,7 @@
       "notes": "Level 3: DJ Octopus: headphones + tiny turntable, bobbing to the beat. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy."
     },
     "tower.shark.1": {
-      "file": "towers/tower-shark-1.png",
+      "file": "towers/tower-shark-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -581,7 +581,7 @@
       "notes": "Level 3: Hammerhead: hammer-shaped head. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. charge = swimming dash pose (the body moves along the path during charges)."
     },
     "tower.starfish.1": {
-      "file": "towers/tower-starfish-1.png",
+      "file": "towers/tower-starfish-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -705,7 +705,7 @@
       "notes": "Level 3: Five-Point Star: glowing golden star with sparkles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy."
     },
     "tower.puffer.1": {
-      "file": "towers/tower-puffer-1.png",
+      "file": "towers/tower-puffer-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -847,7 +847,7 @@
       "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0\u2192full puff over the fuse (plays once per explosion)."
     },
     "tower.seahorse.1": {
-      "file": "towers/tower-seahorse-1.png",
+      "file": "towers/tower-seahorse-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -971,7 +971,7 @@
       "notes": "Level 3: Sea Dragon: leafy sea dragon, regal. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy."
     },
     "tower.crab.1": {
-      "file": "towers/tower-crab-1.png",
+      "file": "towers/tower-crab-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -1095,7 +1095,7 @@
       "notes": "Level 3: King Crab: crown and royal cape. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy."
     },
     "enemy.jelly": {
-      "file": "enemies/enemy-jelly.png",
+      "file": "enemies/enemy-jelly.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1171,7 +1171,7 @@
       "notes": "Mini jelly bean from a split jelly: same look, smaller, rounder. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.crab": {
-      "file": "enemies/enemy-crab.png",
+      "file": "enemies/enemy-crab.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1212,7 +1212,7 @@
       "notes": "Clown Crab: red/white crab with a clown nose and big googly eyes, scuttling sideways. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.kraken": {
-      "file": "enemies/enemy-kraken.png",
+      "file": "enemies/enemy-kraken.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1253,7 +1253,7 @@
       "notes": "Baby Kraken: purple baby squid/kraken with tiny tentacles. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.puffer": {
-      "file": "enemies/enemy-puffer.png",
+      "file": "enemies/enemy-puffer.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1294,7 +1294,7 @@
       "notes": "Puffer Pal: yellow pufferfish, friendly. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.urchin": {
-      "file": "enemies/enemy-urchin.png",
+      "file": "enemies/enemy-urchin.webp",
       "priority": "P0",
       "frame": [
         112,
@@ -1335,7 +1335,7 @@
       "notes": "Sea Urchin: dark purple spiky ball with clay spikes. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.eel": {
-      "file": "enemies/enemy-eel.png",
+      "file": "enemies/enemy-eel.webp",
       "priority": "P0",
       "frame": [
         112,
@@ -1446,7 +1446,7 @@
       "notes": "Star Minion (Starfish Queen minion): small yellow starfish cartwheeling. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "boss.chef": {
-      "file": "bosses/boss-chef.png",
+      "file": "bosses/boss-chef.webp",
       "priority": "P0",
       "frame": [
         192,
@@ -1500,7 +1500,7 @@
       }
     },
     "boss.chef.hat": {
-      "file": "bosses/boss-chef-hat.png",
+      "file": "bosses/boss-chef-hat.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1522,7 +1522,7 @@
       "notes": "The tall puffy white chef hat. Anchor = bottom-center of the hat; it is placed on the chef's head at 90% of the chef sprite height and sways with the hitbox. Make it read as a target (slightly glowing/wobbly)."
     },
     "boss.sharky": {
-      "file": "bosses/boss-sharky.png",
+      "file": "bosses/boss-sharky.webp",
       "priority": "P0",
       "frame": [
         216,
@@ -1576,7 +1576,7 @@
       "scale": 1.3333333333333333
     },
     "boss.queen": {
-      "file": "bosses/boss-queen.png",
+      "file": "bosses/boss-queen.webp",
       "priority": "P0",
       "frame": [
         240,
@@ -1618,7 +1618,7 @@
       "scale": 1.3333333333333333
     },
     "boss.kitty": {
-      "file": "bosses/boss-kitty.png",
+      "file": "bosses/boss-kitty.webp",
       "priority": "P0",
       "frame": [
         264,
@@ -1672,7 +1672,7 @@
       "scale": 1.3333333333333333
     },
     "boss.kitty.tentacle": {
-      "file": "bosses/boss-kitty-tentacle.png",
+      "file": "bosses/boss-kitty-tentacle.webp",
       "priority": "P0",
       "frame": [
         128,
@@ -1701,7 +1701,7 @@
       "notes": "A Kraken Kitty tentacle wrapped around a tower socket (drawn over the tower). grip = squeezing loop. break = snaps and retracts (plays once)."
     },
     "heart": {
-      "file": "board/heart.png",
+      "file": "board/heart.webp",
       "priority": "P0",
       "frame": [
         224,
@@ -1737,7 +1737,7 @@
       "scale": 1.3
     },
     "proj.minus": {
-      "file": "projectiles/proj-minus.png",
+      "file": "projectiles/proj-minus.webp",
       "priority": "P0",
       "frame": [
         48,
@@ -1759,7 +1759,7 @@
       "notes": "Purple Minus bubble with a white \"\u2212\". Anchor = center."
     },
     "proj.plus": {
-      "file": "projectiles/proj-plus.png",
+      "file": "projectiles/proj-plus.webp",
       "priority": "P0",
       "frame": [
         48,

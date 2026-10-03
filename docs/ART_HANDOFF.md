@@ -1,5 +1,8 @@
 # Reef Rumble — Art & Animation Hand-off (for ChatGPT)
 
+> **Status:** P0 is delivered and integrated (24/24 sprites; see `docs/art/P0-DELIVERY.md`).
+> **Next round:** the P1 list in section 4, then P2. Run `node tools/check-art.mjs` to see what's still missing.
+
 **You are making the graphics and animations** for *Reef Rumble: Clay Coral Defense*, an
 iPhone-first PWA tower-defense shooter. The game is finished and fully playable with
 placeholder shapes. The renderer already loads sprite sheets from `assets/art/` and swaps
@@ -132,7 +135,9 @@ The art-preview page draws the anchor as a red crosshair. Make sure it sits wher
 creature touches the ground.
 
 **Files.**
-- Transparent **PNG** (lossless) or **WebP**. Lossless, or quality ≥ 90 with alpha.
+- Deliver transparent **PNG masters** (lossless). At integration they're converted to
+  **WebP q90** for shipping (about 75% smaller download on iPhone, visually identical), and
+  the PNG masters stay in git history. A sheet already in WebP is also accepted.
 - sRGB, straight (un-premultiplied) alpha.
 - Leave **≥ 2 px of transparent padding inside each frame**, so neighbouring frames don't
   bleed when scaled.
@@ -152,7 +157,10 @@ creature touches the ground.
 - `wobble`: procedural clay squash on top of your frames.
 - `spin`: the game rotates the sprite continuously. Used for stars.
 - `orient`: rotates the sprite to its flight direction. Used for darts.
-- `scale`: size tweak without re-exporting.
+- `scale`: size tweak without re-exporting. P0 tuning: level-1 towers `1.15`, heart `1.3`,
+  and the bosses `4/3` (their cells are 75% size).
+- `attach`: named points in frame fractions. `boss.chef` uses `"attach": { "hat": [0.44, 0.24] }`,
+  the top of his head where the hat's anchor goes. Set it for any new chef art.
 
 **After any change to images, bump `"version"` in the manifest.** It cache-busts the
 offline service worker, so installed iPhones pick up the new art on next launch.
