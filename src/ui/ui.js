@@ -6,6 +6,7 @@
 // restyle everything (clay buttons, cardboard signs) without touching logic.
 
 import { PHASE } from '../core/game.js';
+import { haptic } from '../input.js';
 import { towerMaxHp } from '../core/towers.js';
 import { isBossWave, bossForWave } from '../core/waves.js';
 import {
@@ -50,6 +51,7 @@ export class UI {
       const b = e.target.closest('[data-i]');
       if (!b) return;
       this.audio.unlock();
+      if (this.settings.haptics && this.input.lastDevice === 'touch') haptic();
       const i = +b.dataset.i;
       this.focus = i;
       this.activate(i);
@@ -448,6 +450,7 @@ export class UI {
     return {
       id: 'title', cls: 'title', title: '',
       html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Clay Coral Defense</div></div>
+        ${needsInstallHint() ? '<p class="install">📲 For full-screen play: tap <b>Share</b> → <b>Add to Home Screen</b></p>' : ''}
         <p class="meta">Best wave ${g.meta.bestWave || 0} · Wins ${g.meta.wins || 0} · v${VERSION}</p>`,
       items,
     };
@@ -815,6 +818,7 @@ export class UI {
           s.touch = touchModes[(touchModes.indexOf(s.touch) + 1) % touchModes.length];
           this.onSettings();
         } },
+        { label: 'Haptics', sub: 'Touch buttons tick (iPhone iOS 18+, Android)', right: s.haptics ? 'On' : 'Off', action: flip('haptics') },
         { label: 'Show FPS', right: s.showFps ? 'On' : 'Off', action: flip('showFps') },
         { label: 'Back', cls: 'small', action: () => this.pop() },
       ],
@@ -848,6 +852,13 @@ export class UI {
 }
 
 // ------------------------------------------------------------ helpers
+
+// iPhone/iPad Safari has no install prompt: show a hint until launched from the Home Screen.
+function needsInstallHint() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  return ios && !standalone;
+}
 
 function table(rows) {
   return `<table class="stats">${rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table>`;

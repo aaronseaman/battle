@@ -23,16 +23,16 @@ function chunk(type, data) {
   crc.writeUInt32BE(crc32(td));
   return Buffer.concat([len, td, crc]);
 }
-function png(size, rgba) {
+function png(w, h, rgba) {
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
   ihdr[8] = 8; // bit depth
   ihdr[9] = 6; // RGBA
-  const raw = Buffer.alloc((size * 4 + 1) * size);
-  for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0;
-    rgba.copy(raw, y * (size * 4 + 1) + 1, y * size * 4, (y + 1) * size * 4);
+  const raw = Buffer.alloc((w * 4 + 1) * h);
+  for (let y = 0; y < h; y++) {
+    raw[y * (w * 4 + 1)] = 0;
+    rgba.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4);
   }
   return Buffer.concat([
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
@@ -44,8 +44,8 @@ function png(size, rgba) {
 
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
-// Paints in unit coordinates (0..1), 3x3 supersampled.
-function draw(size, pad) {
+// Paints in unit coordinates (0..1), 3x3 supersampled. Returns raw RGBA.
+function raster(size, pad) {
   const buf = Buffer.alloc(size * size * 4);
   const bgTop = hex('#46dbd3'), bgBot = hex('#1aa9c4');
   const body = hex('#ff8a1f'), fin = hex('#e0620a'), white = [255, 255, 255], pupil = hex('#1b1030');
@@ -89,12 +89,58 @@ function draw(size, pad) {
       buf[i + 3] = 255;
     }
   }
-  return png(size, buf);
+  return buf;
 }
+
+const draw = (size, pad) => png(size, size, raster(size, pad));
+
+// iOS launch screen: deep-sea gradient with the rounded icon in the middle.
+function splash(w, h) {
+  const buf = Buffer.alloc(w * h * 4);
+  const top = hex('#0d5d73'), bot = hex('#083847');
+  for (let y = 0; y < h; y++) {
+    const t = y / (h - 1);
+    const r = top[0] + (bot[0] - top[0]) * t, g = top[1] + (bot[1] - top[1]) * t, b = top[2] + (bot[2] - top[2]) * t;
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      buf[i] = r;
+      buf[i + 1] = g;
+      buf[i + 2] = b;
+      buf[i + 3] = 255;
+    }
+  }
+  const size = Math.round(w * 0.42);
+  const icon = raster(size, 0.04);
+  const ox = Math.round((w - size) / 2), oy = Math.round(h * 0.42 - size / 2);
+  const rad = size * 0.22;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      // rounded-square mask with a 1px soft edge
+      const dx = Math.max(0, Math.abs(x + 0.5 - size / 2) - (size / 2 - rad));
+      const dy = Math.max(0, Math.abs(y + 0.5 - size / 2) - (size / 2 - rad));
+      const a = Math.min(1, Math.max(0, rad - Math.hypot(dx, dy) + 0.5));
+      if (a <= 0) continue;
+      const si = (y * size + x) * 4, di = ((oy + y) * w + ox + x) * 4;
+      for (let c = 0; c < 3; c++) buf[di + c] = buf[di + c] * (1 - a) + icon[si + c] * a;
+    }
+  }
+  return png(w, h, buf);
+}
+
+// [CSS width, CSS height, DPR] — iPhone 17 family first.
+export const SPLASH = [
+  [402, 874, 3], // iPhone 17, iPhone 17 Pro
+  [440, 956, 3], // iPhone 17 Pro Max
+  [420, 912, 3], // iPhone Air
+  [393, 852, 3], // iPhone 16/15/15 Pro
+  [430, 932, 3], // iPhone 16 Plus/15 Plus/15 Pro Max
+  [390, 844, 3], // iPhone 16e/14/13
+];
 
 mkdirSync('icons', { recursive: true });
 writeFileSync('icons/icon-192.png', draw(192, 0.04));
 writeFileSync('icons/icon-512.png', draw(512, 0.04));
 writeFileSync('icons/icon-maskable-512.png', draw(512, 0.14));
 writeFileSync('icons/apple-touch-icon.png', draw(180, 0.06));
-console.log('icons written');
+for (const [w, h, d] of SPLASH) writeFileSync(`icons/splash-${w * d}x${h * d}.png`, splash(w * d, h * d));
+console.log('icons + splash screens written');

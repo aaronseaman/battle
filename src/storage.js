@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS = {
   tiltShift: false,
   touch: 'auto',
   showFps: false,
+  haptics: true,
 };
 
 export const storage = {

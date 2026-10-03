@@ -17,6 +17,8 @@ export class Enemy {
     this.x = 0;
     this.y = 0;
     this.z = 0; // bounce height
+    this.px = 0; // position at the previous sim tick (render interpolation)
+    this.py = 0;
     this.angle = 0; // heading along the path (radians)
     this.dist = 0; // arc length travelled along the path
     this.seg = 0;
@@ -93,6 +95,8 @@ export class Tower {
     this.state = 0; // shark: 0 home, 1 dash, 2 sweep, 3 return | puffer: 0 ready, 1 inflating
     this.sx = 0; // body position (moves for shark charges)
     this.sy = 0;
+    this.psx = 0; // body position at the previous tick
+    this.psy = 0;
     this.sweepD = 0;
     this.sweepEnd = 0;
     this.seg = 0;
@@ -115,6 +119,9 @@ export class Projectile {
     this.x = 0;
     this.y = 0;
     this.z = 0;
+    this.px = 0;
+    this.py = 0;
+    this.pz = 0;
     this.vx = 0;
     this.vy = 0;
     this.speed = 0;
@@ -155,6 +162,9 @@ export class Strike {
     this.x = 0;
     this.y = 0;
     this.z = 0;
+    this.px = 0;
+    this.py = 0;
+    this.pz = 0;
     this.arc = 0;
     this.t = 0;
     this.dur = 0;
@@ -175,6 +185,8 @@ export class Pickup {
     this.alive = false;
     this.x = 0;
     this.y = 0;
+    this.px = 0;
+    this.py = 0;
     this.vx = 0;
     this.vy = 0;
     this.value = 0;

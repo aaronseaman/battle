@@ -6,9 +6,10 @@ You're a tiny clay fish on a left/right rail, firing **Plus** (heal/buff) and **
 **pick a fork → pick a capsule → place it → shop → next wave**. A boss crashes the party
 every 5th wave; beat Kraken Kitty on wave 20 to unlock Endless Reef.
 
-This build focuses on **mechanics and performance**. Visuals are a deliberately simple
-placeholder renderer (`src/render/renderer.js`) behind a documented contract, so the art
-pass can replace it wholesale without touching game logic.
+This build focuses on **mechanics and performance**, and it's tuned as an **iPhone 17
+PWA**. Art arrives as sprite sheets listed in `assets/art/manifest.json`; the renderer
+swaps each delivered sprite in and keeps placeholder clay shapes for the rest.
+**Artists: start with [`docs/ART_HANDOFF.md`](docs/ART_HANDOFF.md).**
 
 - Vanilla ES modules, **no build step, no dependencies**.
 - Deterministic fixed-step simulation (60 Hz) that also runs headless in Node.
@@ -20,8 +21,12 @@ pass can replace it wholesale without touching game logic.
 npm start            # serves on http://localhost:8080 (any static server works)
 npm test             # 26 headless simulation tests
 npm run sim          # autopilot balance runs: node tools/sim.mjs [runs] [idle|sloppy|basic|good] [maxWave]
-npm run icons        # regenerate placeholder PWA icons
+npm run icons        # regenerate PWA icons + iPhone launch screens
+node tools/check-art.mjs            # validate delivered sprite sheets against the art manifest
+node tools/make-board-template.mjs  # regenerate docs/art/board-template.{svg,png}
 ```
+
+`/art-preview.html` plays every delivered sprite animation with anchor crosshairs.
 
 Browser smoke test (needs Playwright + Chromium): `node tools/smoke.mjs http://localhost:8080/ <screenshot-dir>`.
 
@@ -121,7 +126,11 @@ src/
   audio.js            procedural WebAudio SFX + tiny music loop (event driven)
   storage.js          localStorage (meta progress, run save, settings)
   ui/ui.js            HUD + every menu (data-driven, keyboard/gamepad/touch navigable)
-  render/renderer.js  PLACEHOLDER Canvas2D renderer — replace for the art pass
+  render/renderer.js  Canvas2D renderer: sprite art when delivered, placeholder shapes otherwise
+  render/sprites.js   SpriteBank: loads assets/art/manifest.json, draws animated sheet frames
+assets/art/           sprite sheets + manifest.json (the art contract / checklist)
+docs/                 ART_HANDOFF.md, board template, reference screenshots
+art-preview.html      sprite animation gallery for artists
   core/               pure simulation (no DOM): game.js is the entry point
     game.js           phases, commands, save/load, wave flow
     combat.js         damage, armor, shields, Minus stacks, rewards
@@ -135,6 +144,18 @@ src/
 tools/                sim + bot (balance), tests, smoke test, icon generator
 ```
 
+**iPhone 17 / iOS.**
+- Launch screens for the iPhone 17 family (and older sizes); safe areas around the Dynamic
+  Island and home indicator; a portrait lock screen.
+- Audio unlocks on iOS gestures and uses the `ambient` audio session (respects the silent
+  switch and mixes with your music). It recovers after calls or app switches.
+- Haptic ticks on touch buttons (iOS 18+ switch technique, Vibration API on Android).
+- Pinch and double-tap zoom are blocked. An Add-to-Home-Screen hint shows in Safari, and
+  persistent storage is requested.
+- The canvas stops redrawing while paused (battery).
+- Rendering interpolates between 60 Hz sim ticks, so motion stays smooth at 120 Hz
+  ProMotion, 30 Hz Low Power Mode, or with uneven frame pacing.
+
 **Performance design.** Entities are pooled, and every field is initialized in `reset()`,
 so each type keeps one hidden class and the hot loops allocate nothing. A uniform spatial
 grid (rebuilt each tick) handles every range and collision query. Path sampling is
@@ -146,13 +167,16 @@ if frames run slow. Combat pauses automatically when the tab is hidden.
 
 ## Hand-off: adding the claymation graphics
 
-Everything visual lives in **`src/render/renderer.js`**, `css/style.css` and
-`src/audio.js`. The simulation never reads from them, so they can be rewritten freely
-(Three.js, PixiJS, sprites, etc.).
+**The supported path is sprite sheets plus the manifest; see `docs/ART_HANDOFF.md`.** No
+code is needed.
+
+Everything visual lives in `src/render/`, `css/style.css` and `src/audio.js`. The simulation
+never reads from them, so a completely different renderer (Three.js, PixiJS, …) can also
+replace `renderer.js` if it honours the contract below.
 
 ### Renderer contract
 
-`main.js` creates `new Renderer(canvas, game, view, settings)` and calls:
+`main.js` creates `new Renderer(canvas, game, view, settings, spriteBank)` and calls:
 
 | Method | When |
 |---|---|
@@ -160,7 +184,8 @@ Everything visual lives in **`src/render/renderer.js`**, `css/style.css` and
 | `setInsets({ top, bottom })` | CSS px to keep clear for HUD / touch buttons |
 | `setQuality(q)` | 1 or 0.5 (auto-lowered when frames are slow) |
 | `consume(eventQueue)` | once per frame, **before** the queue is cleared, to spawn VFX |
-| `render(frameDt)` | once per frame |
+| `render(frameDt, alpha)` | once per frame (skipped while paused); `alpha` = 0..1 progress between sim ticks |
+| `onArtLoaded()` | sprites finished loading |
 | `screenToWorld(px, py)` → `{x, y}` | CSS px → world (used to tap sockets / drag the fish) |
 
 It may also expose `particles` (array, only its `.length` is read by the debug overlay)
@@ -175,6 +200,12 @@ and `quality`.
 - Coral Heart: `game.heart = { x, y, r, hp, maxHp, hitT }`.
 - Player rail: `y = WORLD.RAIL_Y`, `x ∈ [RAIL_MIN, RAIL_MAX]`.
 - The placeholder fakes the tilted camera by squashing y (`TILT = 0.82`) and lifting by z.
+
+### Interpolation
+
+Moving entities carry their previous-tick position: `px, py` (projectiles and strikes also
+`pz`; tower bodies `psx, psy`; the player `px`). Draw `prev + (cur − prev) × alpha` for
+smooth motion on any refresh rate.
 
 ### Stop-motion clock
 

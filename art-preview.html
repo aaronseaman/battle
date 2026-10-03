@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reef Rumble — Art Preview</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: #0d5d73; color: #fff; }
+    header { position: sticky; top: 0; background: #083847; padding: 10px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; z-index: 1; }
+    h1 { font-size: 18px; margin: 0; }
+    main { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 16px; }
+    .card { background: #1aa9c4; border-radius: 12px; padding: 8px; }
+    .card h3 { margin: 0 0 4px; font-size: 13px; word-break: break-all; }
+    .card.wide { grid-column: 1 / -1; }
+    .card canvas { display: block; max-width: 100%; height: auto; background: repeating-conic-gradient(#46dbd3 0 25%, #3ccbc4 0 50%) 0 0 / 16px 16px; border-radius: 8px; }
+    .card small { opacity: 0.85; }
+    .missing { padding: 16px; opacity: 0.8; }
+    label { user-select: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Art preview</h1>
+    <label>Scale <select id="scale"><option value="1">iPhone 17 game size</option><option value="2" selected>2×</option><option value="0">sheet pixels (1:1)</option></select></label>
+    <label><input type="checkbox" id="anchor" checked> anchor + frame box</label>
+    <label><input type="checkbox" id="flip"> mirror (facing left)</label>
+    <span id="status">loading…</span>
+  </header>
+  <main id="grid"></main>
+  <p class="missing" id="missing"></p>
+  <script type="module">
+    import { SpriteBank } from './src/render/sprites.js';
+
+    const bank = await new SpriteBank('assets/art/').load();
+    const manifest = await (await fetch('assets/art/manifest.json', { cache: 'no-cache' })).json();
+    const grid = document.getElementById('grid');
+    const cells = [];
+    for (const [key, def] of Object.entries(bank.defs)) {
+      for (const anim of Object.keys(def.anims)) {
+        const card = document.createElement('div');
+        card.className = def.frame[0] > 400 ? 'card wide' : 'card';
+        const a = def.anims[anim];
+        card.innerHTML = `<h3>${key} · ${anim}</h3><canvas></canvas><small>${a.frames} frames @ ${a.fps} fps ${a.loop ? 'loop' : 'once'} · ${def.frame[0]}×${def.frame[1]}px</small>`;
+        grid.appendChild(card);
+        cells.push({ key, anim, def, canvas: card.querySelector('canvas') });
+      }
+    }
+    const missing = Object.keys(manifest.sprites).filter((k) => !bank.defs[k]);
+    document.getElementById('status').textContent = `${Object.keys(bank.defs).length} sprites loaded · ${missing.length} not delivered` + (bank.failed.length ? ` · ${bank.failed.length} files failed: ${bank.failed.join(', ')}` : '');
+    document.getElementById('missing').textContent = missing.length ? 'Not delivered yet (placeholder art in game): ' + missing.join(', ') : 'Every sprite in the manifest is delivered.';
+
+    const ui = { scale: document.getElementById('scale'), anchor: document.getElementById('anchor'), flip: document.getElementById('flip') };
+    const t0 = performance.now();
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const t = (now - t0) / 1000;
+      const mode = +ui.scale.value;
+      for (const c of cells) {
+        const { def, canvas } = c;
+        // world units -> CSS px: on iPhone 17 the reef renders at ~0.5 CSS px per world unit
+        const s = mode === 0 ? bank.pxPerUnit : mode === 1 ? 0.5 : 1;
+        const w = def.frame[0] / bank.pxPerUnit * s * def.scale, h = def.frame[1] / bank.pxPerUnit * s * def.scale;
+        const cw = Math.max(80, Math.ceil(w + 24)), ch = Math.max(80, Math.ceil(h + 24));
+        const dpr = window.devicePixelRatio || 1;
+        if (canvas.width !== Math.round(cw * dpr)) {
+          canvas.width = cw * dpr;
+          canvas.height = ch * dpr;
+          canvas.style.width = cw + 'px'; // CSS max-width + height:auto keep the aspect when it shrinks
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cw, ch);
+        const ax = (cw - w) / 2 + def.anchor[0] * w, ay = (ch - h) / 2 + def.anchor[1] * h;
+        const a = def.anims[c.anim];
+        const tt = a.loop ? t : t % (a.frames / a.fps + 0.6);
+        bank.draw(ctx, c.key, c.anim, tt, ax, ay, s, { flip: ui.flip.checked });
+        if (ui.anchor.checked) {
+          ctx.strokeStyle = 'rgba(255,0,80,0.9)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect((cw - w) / 2 + 0.5, (ch - h) / 2 + 0.5, w, h);
+          ctx.beginPath();
+          ctx.moveTo(ax - 8, ay); ctx.lineTo(ax + 8, ay);
+          ctx.moveTo(ax, ay - 8); ctx.lineTo(ax, ay + 8);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

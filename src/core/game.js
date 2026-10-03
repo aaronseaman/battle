@@ -49,7 +49,7 @@ export class Game {
     }));
     this.heart = { x: MAP.heart.x, y: MAP.heart.y, r: MAP.heart.r, hp: HEART.hp, maxHp: HEART.hp, regen: 0, hitT: 0 };
     this.player = {
-      x: WORLD.W / 2, y: WORLD.RAIL_Y, r: PLAYER.r, vx: 0,
+      x: WORLD.W / 2, y: WORLD.RAIL_Y, px: WORLD.W / 2, r: PLAYER.r, vx: 0,
       alive: true, deadT: 0, invulnT: 0, hearts: PLAYER.hearts, maxHearts: PLAYER.hearts,
       meter: PLAYER.meterMax, cdMinus: 0, cdPlus: 0, shootT: 9, plusShootT: 9, skin: 'classic',
     };
@@ -398,8 +398,8 @@ export class Game {
       t.covered = false;
       t.state = 0;
       t.inflate = 0;
-      t.sx = t.x;
-      t.sy = t.y;
+      t.sx = t.psx = t.x;
+      t.sy = t.psy = t.y;
       t.cd = this.rng.range(0.1, 0.6);
       t.cd2 = 1;
       t.cd3 = 2;
@@ -467,6 +467,7 @@ export class Game {
     if (this.phase !== PHASE.COMBAT) return;
 
     this.waveTime += dt;
+    this.snapshot();
     this.spawnTick();
     updatePlayer(this, dt);
     updateEnemies(this, dt);
@@ -495,6 +496,32 @@ export class Game {
       return;
     }
     if (this.spawnIdx >= this.spawns.length && this.enemies.length === 0) this.onWaveCleared();
+  }
+
+  // Remember where everything was so renderers can interpolate between ticks
+  // (smooth motion on 120 Hz / throttled 30 Hz displays and uneven frame pacing).
+  snapshot() {
+    const lists = [this.enemies, this.projectiles, this.strikes];
+    for (let l = 0; l < lists.length; l++) {
+      const arr = lists[l];
+      for (let i = 0; i < arr.length; i++) {
+        const o = arr[i];
+        o.px = o.x;
+        o.py = o.y;
+        if (o.pz !== undefined) o.pz = o.z;
+      }
+    }
+    for (let i = 0; i < this.pickups.length; i++) {
+      const o = this.pickups[i];
+      o.px = o.x;
+      o.py = o.y;
+    }
+    for (let i = 0; i < this.towers.length; i++) {
+      const t = this.towers[i];
+      t.psx = t.sx;
+      t.psy = t.sy;
+    }
+    this.player.px = this.player.x;
   }
 
   spawnTick() {
@@ -534,8 +561,8 @@ export class Game {
       t.covered = false;
       t.state = 0;
       t.inflate = 0;
-      t.sx = t.x;
-      t.sy = t.y;
+      t.sx = t.psx = t.x;
+      t.sy = t.psy = t.y;
     }
     resetPlayer(this);
     this.waveSummary = { wave: this.wave, ...ws };

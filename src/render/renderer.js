@@ -1,14 +1,15 @@
-// Placeholder Canvas2D renderer.
+// Canvas2D renderer: draws sprite-sheet art from assets/art/manifest.json
+// (see docs/ART_HANDOFF.md) and falls back, per sprite key, to built-in
+// placeholder clay shapes. Art can therefore land piece by piece.
 //
-// This file is deliberately self-contained so it can be replaced wholesale by a
-// final art pass (Three.js clay diorama, sprite sheets, etc.). The contract a
-// replacement must honour is documented in README.md ("Renderer contract"):
-//   new Renderer(canvas, game, view, settings)
+// Contract used by main.js (also documented in README.md):
+//   new Renderer(canvas, game, view, settings, spriteBank)
 //   resize()                 — canvas size / DPR changed
 //   consume(eventQueue)      — once per frame, before clear(): spawn VFX
-//   render(frameDt)          — draw the current game state
+//   render(frameDt, alpha)   — draw; alpha (0..1) interpolates between sim ticks
 //   screenToWorld(px, py)    — CSS-pixel -> world coords (for tapping sockets)
 //   setInsets({top,bottom})  — HUD / touch-control space to keep clear
+//   onArtLoaded()            — sprites finished loading (rebuild cached board)
 //   quality                  — 0.5..1, lowered automatically when frames are slow
 //
 // Nothing in here mutates game state.
@@ -16,9 +17,10 @@
 import { WORLD, MAP, SIM, TOWERS } from '../config.js';
 import { chefHatX } from '../core/bosses.js';
 import { towerRange } from '../core/towers.js';
+import { SpriteBank } from './sprites.js';
 
-const TILT = 0.82; // y squash for the tilted-tabletop look
-const TOP_MARGIN = 70; // world units above y=0 kept visible (spawn cave)
+export const TILT = 0.82; // y squash for the tilted-tabletop look
+export const TOP_MARGIN = 70; // world units above y=0 kept visible (spawn cave)
 const TAU = Math.PI * 2;
 
 const C = {
@@ -59,6 +61,31 @@ const ENEMY_COLORS = {
 
 const BOSS_COLORS = { chef: '#c070ff', sharky: '#9fb2c8', queen: '#ff9a3c', kitty: '#ff86c8' };
 
+// Event -> one-shot effect sprite (used only when that sprite exists in the manifest).
+const EVENT_FX = {
+  explode: 'fx.explode',
+  tower_explode: 'fx.explode',
+  ink_splash: 'fx.ink',
+  strike_land: 'fx.ink',
+  plus_tower: 'fx.heal',
+  plus_heart: 'fx.heal',
+  shield_pop: 'fx.shield_pop',
+  chomp: 'fx.chomp',
+  eaten: 'fx.chomp',
+  crack: 'fx.crack',
+  tower_place: 'fx.poof',
+  tower_upgrade: 'fx.poof',
+  tower_spat: 'fx.poof',
+  tower_sell: 'fx.poof',
+  pulse: 'fx.pulse',
+  reef_wash: 'fx.wave',
+  weak_hit: 'fx.hat_hit',
+  minus_hit: 'fx.minus_pop',
+  heart_hit: 'fx.heart_hit',
+  player_hit: 'fx.player_hit',
+  pickup: 'fx.sparkle',
+};
+
 export const SKIN_COLORS = {
   classic: { body: '#ff8a1f', stripe: '#ffffff', fin: '#e0620a' },
   golden: { body: '#ffd23f', stripe: '#fff6c2', fin: '#e0a800' },
@@ -67,8 +94,16 @@ export const SKIN_COLORS = {
 };
 
 export class Renderer {
-  constructor(canvas, game, view, settings) {
+  constructor(canvas, game, view, settings, sprites = new SpriteBank()) {
     this.canvas = canvas;
+    this.sp = sprites;
+    this.a = 1; // interpolation alpha between the previous and current sim tick
+    this.corpses = []; // one-shot sprite effects: { key, anim, t, dur, x, y, z, flip, scale }
+    this.bossFx = { throwT: 9, summonT: 9, swipeT: 9 };
+    this.o = { flip: false, rot: 0, sx: 1, sy: 1, alpha: 1, add: 0 };
+    this.playerFlip = false;
+    this.suppress = false;
+    this.dirty = true;
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.g = game;
     this.view = view;
@@ -118,6 +153,7 @@ export class Renderer {
     this.cssW = cssW;
     this.cssH = cssH;
     this.dpr = dpr;
+    this.dirty = true;
     c.width = Math.round(cssW * dpr);
     c.height = Math.round(cssH * dpr);
     const ins = this.insets;
@@ -141,6 +177,39 @@ export class Renderer {
     return { x: (sx - this.ox) / this.s, y: (sy - this.oy) / this.s / TILT };
   }
 
+  // interpolated world position of an entity with px/py (previous tick) and x/y
+  ix(o) {
+    return o.px + (o.x - o.px) * this.a;
+  }
+  iy(o) {
+    return o.py + (o.y - o.py) * this.a;
+  }
+
+  // reusable draw options (no per-sprite allocation)
+  opt(flip, sx, sy, rot, alpha, add) {
+    const o = this.o;
+    o.flip = flip;
+    o.sx = sx;
+    o.sy = sy;
+    o.rot = rot;
+    o.alpha = alpha;
+    o.add = add;
+    return o;
+  }
+
+  // clay squash/stretch, stepped with the 12 fps animation clock
+  wob(key, seed) {
+    return this.sp.flag(key, 'wobble') ? Math.sin(this.at * 9 + seed) * 0.045 : 0;
+  }
+
+  spr(key, anim, t, wx, wy, wz, o) {
+    return this.sp.draw(this.ctx, key, anim, t, this.px(wx), this.py(wy, wz), this.s, o);
+  }
+
+  onArtLoaded() {
+    this.buildBackground();
+  }
+
   // ------------------------------------------------------------ background
 
   buildBackground() {
@@ -152,6 +221,12 @@ export class Renderer {
     const s = this.s, W = WORLD.W;
     ctx.fillStyle = C.bgDeep;
     ctx.fillRect(0, 0, this.cssW, this.cssH);
+    // painted diorama board: anchored at the world's top-left (x 0, y -TOP_MARGIN)
+    if (this.sp.has('board')) {
+      this.sp.draw(ctx, 'board', this.sp.pick('board', 'idle'), 0, this.px(0), this.py(-TOP_MARGIN), s, null);
+      this.vignette(ctx);
+      return;
+    }
 
     // the diorama box
     const x0 = this.px(0), x1 = this.px(W);
@@ -235,7 +310,11 @@ export class Renderer {
     roundRect(ctx, this.px(WORLD.RAIL_MIN - 30), ry - 8 * s, this.px(WORLD.RAIL_MAX + 30) - this.px(WORLD.RAIL_MIN - 30), 14 * s, 7 * s);
     ctx.fill();
 
-    // soft vignette (cheap stand-in for tilt-shift falloff)
+    this.vignette(ctx);
+  }
+
+  // soft vignette (cheap stand-in for tilt-shift falloff)
+  vignette(ctx) {
     const vg = ctx.createRadialGradient(this.cssW / 2, this.cssH / 2, Math.min(this.cssW, this.cssH) * 0.35, this.cssW / 2, this.cssH / 2, Math.max(this.cssW, this.cssH) * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
     vg.addColorStop(1, 'rgba(0,20,40,0.35)');
@@ -250,6 +329,7 @@ export class Renderer {
     const lowFx = this.quality < 1;
     for (let i = 0; i < q.n; i++) {
       const e = q.items[i];
+      this.suppress = this.spriteFx(e);
       switch (e.type) {
         case 'hit':
           if (e.b === 1 && !lowFx) this.burst(e.x, e.y, 3, C.minus, 90, 3);
@@ -407,6 +487,51 @@ export class Renderer {
     }
   }
 
+  // Plays sprite effects for an event. Returns true when art handled it, which
+  // suppresses the placeholder particles (texts and shake still happen).
+  spriteFx(e) {
+    const bf = this.bossFx;
+    if (e.type === 'boss_throw') bf.throwT = 0;
+    else if (e.type === 'boss_summon') bf.summonT = 0;
+    else if (e.type === 'boss_swipe') bf.swipeT = 0;
+    if (!this.sp.loaded) return false;
+    switch (e.type) {
+      case 'kill': {
+        const key = 'enemy.' + e.s;
+        const ref = e.ref;
+        const flip = ref ? Math.cos(ref.angle) * ref.dir < -0.1 : false;
+        if (this.sp.has(key, 'die')) return this.corpse(key, 'die', e.x, e.y, ref ? ref.z : 0, flip, ref ? ref.r / ref.baseR : 1);
+        return this.corpse('fx.pop', '', e.x, e.y, 0, false, 1);
+      }
+      case 'boss_defeat': {
+        const key = 'boss.' + e.s;
+        if (this.sp.has(key, 'die')) this.corpse(key, 'die', e.x, e.y, 0, false, 1);
+        return this.corpse('fx.confetti', '', e.x, e.y, 0, false, 1);
+      }
+      case 'tentacle_break':
+        return this.corpse('boss.kitty.tentacle', 'break', e.x, e.y, 0, false, 1, true);
+      case 'zap': return this.corpse('fx.zap', '', e.a, e.b, 0, false, 1); // at the struck tower
+      case 'shoot_minus': return this.corpse('fx.minus_muzzle', '', e.x, e.y, 0, false, 1);
+      case 'shoot_plus': return this.corpse('fx.plus_muzzle', '', e.x, e.y, 0, false, 1);
+      default: {
+        const key = EVENT_FX[e.type];
+        if (!key) return false;
+        if (e.type === 'strike_land' && e.s !== 'ink') return this.corpse('fx.spark', '', e.x, e.y, 0, false, 1);
+        return this.corpse(key, '', e.x, e.y, 0, false, 1);
+      }
+    }
+  }
+
+  corpse(key, anim, x, y, z, flip, scale, needAnim = false) {
+    if (!this.sp.has(key, anim || undefined)) return false;
+    if (needAnim && !this.sp.has(key, anim)) return false;
+    const a = anim || this.sp.pick(key, 'play');
+    if (this.corpses.length > 60) this.corpses.shift();
+    const dur = this.sp.duration(key, a) || 0.5;
+    this.corpses.push({ key, anim: a, t: 0, dur, x, y, z, flip, scale });
+    return true;
+  }
+
   shake(m) {
     if (!this.settings.shake) return;
     this.shakeMag = Math.max(this.shakeMag, m);
@@ -414,6 +539,7 @@ export class Renderer {
   }
 
   burst(x, y, n, color, speed, size) {
+    if (this.suppress) return;
     const cap = this.quality < 1 ? 150 : 400;
     for (let i = 0; i < n && this.particles.length < cap; i++) {
       const p = this.freeParticles.pop() || {};
@@ -432,6 +558,7 @@ export class Renderer {
   }
 
   ring(x, y, r0, r1, life, color) {
+    if (this.suppress) return;
     if (this.rings.length > 40) return;
     this.rings.push({ x, y, r0, r1, life, max: life, color });
   }
@@ -442,6 +569,7 @@ export class Renderer {
   }
 
   decal(x, y, r, life) {
+    if (this.suppress) return;
     if (this.decals.length > 30) this.decals.shift();
     this.decals.push({ x, y, r, life, max: life });
   }
@@ -453,9 +581,16 @@ export class Renderer {
 
   // ------------------------------------------------------------ frame
 
-  render(dt) {
+  render(dt, alpha = 1) {
     const g = this.g, ctx = this.ctx;
     this.time += dt;
+    this.a = g.phase === 'combat' && !g.paused ? alpha : 1;
+    if (!g.paused) {
+      const bf = this.bossFx;
+      bf.throwT += dt;
+      bf.summonT += dt;
+      bf.swipeT += dt;
+    }
     // stop-motion: wobble animations step at 12 fps, positions stay smooth
     const at = this.settings.stopMotion ? Math.floor(g.clock * SIM.ANIM_FPS) / SIM.ANIM_FPS : g.clock;
     this.at = at;
@@ -492,7 +627,22 @@ export class Renderer {
     this.drawProjectiles();
     this.drawStrikes();
     this.drawPlayer();
+    this.drawCorpses(g.paused ? 0 : dt);
     this.drawFx(g.paused ? 0 : dt);
+    this.suppress = false;
+  }
+
+  drawCorpses(dt) {
+    const list = this.corpses;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const c = list[i];
+      c.t += dt;
+      if (c.t >= c.dur) {
+        list.splice(i, 1);
+        continue;
+      }
+      this.spr(c.key, c.anim, c.t, c.x, c.y, c.z, this.opt(c.flip, c.scale, c.scale, 0, 1, 0));
+    }
   }
 
   drawDecals(dt) {
@@ -584,8 +734,9 @@ export class Renderer {
       if (!p.alive) continue;
       const fade = p.landed && p.t > 5 ? (Math.floor(p.t * 8) % 2 ? 0.3 : 1) : 1;
       ctx.globalAlpha = fade;
-      const x = this.px(p.x), y = this.py(p.y, 4 + Math.sin(p.phase * 4) * 2);
-      shellShape(ctx, x, y, 9 * s, '#fff1d0', '#e8a96a');
+      const wx = this.ix(p), wy = this.iy(p), z = 4 + Math.sin(p.phase * 4) * 2;
+      if (this.sp.loaded && this.spr('pickup.shell', this.sp.pick('pickup.shell', p.landed ? 'land' : 'fall'), p.phase, wx, wy, z, this.opt(false, 1, 1, 0, 1, 0))) continue;
+      shellShape(ctx, this.px(wx), this.py(wy, z), 9 * s, '#fff1d0', '#e8a96a');
     }
     ctx.globalAlpha = 1;
   }
@@ -595,16 +746,30 @@ export class Renderer {
     for (let i = 0; i < g.enemies.length; i++) {
       const e = g.enemies[i];
       if (!e.alive) continue;
-      const x = this.px(e.x), y = this.py(e.y, e.z);
+      const wx = this.ix(e), wy = this.iy(e);
+      const x = this.px(wx), y = this.py(wy, e.z);
       const r = e.r * s;
       // ground shadow
       ctx.fillStyle = 'rgba(0,40,60,0.22)';
       ctx.beginPath();
-      ctx.ellipse(x, this.py(e.y) + r * 0.5, r * 0.9, r * 0.4, 0, 0, TAU);
+      ctx.ellipse(x, this.py(wy) + r * 0.5, r * 0.9, r * 0.4, 0, 0, TAU);
       ctx.fill();
 
       if (e.bossId) {
         this.drawBoss(e, x, y, r);
+        continue;
+      }
+      const key = 'enemy.' + e.type;
+      if (this.sp.loaded && this.sp.has(key)) {
+        const sp = this.sp;
+        const anim = sp.pick(key, e.stunT > 0 ? 'stun' : '', e.def.fuse && e.state === 1 ? 'inflate' : '', e.heldT > 0 ? 'held' : '',
+          e.busyT > 0 ? 'grab' : '', e.carry > 0 ? 'carry' : '', e.cracked ? 'cracked' : '', e.sad ? 'sad' : '', 'move');
+        const k = e.r / e.baseR, w = this.wob(key, e.anim);
+        const flip = Math.cos(e.angle) * e.dir < -0.1;
+        sp.draw(ctx, key, anim, g.clock + e.anim, x, y, s, this.opt(flip, k * (1 + w), k * (1 - w), 0, 1, e.hitT > 0 ? 0.6 : 0));
+        const h = sp.height(key) * k * s;
+        if (e.sad && !sp.has(key, 'sad') && !this.overlay('fx.sad', x, y - h)) blob(ctx, x + h * 0.25, y - h * 0.75, 3 * s, 4 * s, '#7fc8ff', 0.4);
+        this.drawEnemyStatus(e, x, y - h * 0.45, Math.max(r, h * 0.5));
         continue;
       }
       const wob = Math.sin(at * 9 + e.anim) * 0.08;
@@ -707,7 +872,10 @@ export class Renderer {
     let col = BOSS_COLORS[e.bossId];
     if (e.hitT > 0) col = mix(col, '#ffffff', 0.6);
     const wob = Math.sin(at * 5) * 0.05;
-    switch (e.bossId) {
+    const key = 'boss.' + e.bossId;
+    const art = this.sp.loaded && this.sp.has(key);
+    if (art) this.drawBossSprite(e, key, x, y, r);
+    else switch (e.bossId) {
       case 'chef': {
         for (let k = 0; k < 6; k++) {
           const a = (k / 6) * TAU + Math.sin(at * 4 + k) * 0.25;
@@ -808,6 +976,74 @@ export class Renderer {
     }
   }
 
+  drawBossSprite(e, key, x, y, r) {
+    const sp = this.sp, ctx = this.ctx, s = this.s, bf = this.bossFx, g = this.g;
+    const once = (name, since) => sp.has(key, name) && since < sp.duration(key, name);
+    let anim = 'move', t = g.clock;
+    switch (e.bossId) {
+      case 'chef':
+        if (once('throw', bf.throwT)) (anim = 'throw'), (t = bf.throwT);
+        else if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
+        else anim = sp.pick(key, e.phase ? 'move2' : '', 'move');
+        break;
+      case 'sharky':
+        anim = sp.pick(key, e.stunT > 0 ? 'stunned' : '', e.state === 1 ? 'windup' : '', e.state === 2 ? 'charge' : '', e.state === 3 ? 'recover' : '', 'move');
+        break;
+      case 'queen':
+        if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
+        else anim = sp.pick(key, e.state === 1 ? 'open' : 'closed', 'move');
+        break;
+      case 'kitty':
+        if (once('swipe', bf.swipeT)) (anim = 'swipe'), (t = bf.swipeT);
+        else if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
+        else anim = sp.pick(key, e.exposedT > 0 ? 'exposed' : '', e.phase ? 'move2' : '', 'move');
+        break;
+    }
+    anim = sp.pick(key, anim, 'move');
+    const w = this.wob(key, 0);
+    const flip = Math.cos(e.angle) * e.dir < -0.1;
+    sp.draw(ctx, key, anim, t, x, y, s, this.opt(flip, 1 + w, 1 - w, 0, 1, e.hitT > 0 ? 0.5 : 0));
+    const h = sp.height(key) * s;
+    const cy = y - h * 0.45;
+    // gameplay-critical tells are always drawn on top of the art
+    if (e.bossId === 'chef') {
+      // the hat is the weak point and sways in the simulation: draw it where the hitbox is
+      const hx = x + (chefHatX(e) - e.x) * s, hy = y - h * 0.9;
+      if (!sp.draw(ctx, 'boss.chef.hat', sp.pick('boss.chef.hat', 'idle'), g.clock, hx, hy, s, this.opt(false, 1, 1, 0, 1, e.hitT > 0 ? 0.5 : 0))) {
+        blob(ctx, hx, hy, r * 0.42, r * 0.16, '#f2f2f2', 0);
+        blob(ctx, hx, hy - r * 0.35, r * 0.38, r * 0.32, '#ffffff', 0.4);
+      }
+      if (Math.floor(this.time * 3) % 2) ring2(ctx, hx, hy - r * 0.25, r * 0.5, r * 0.42, '#fff36b', 2 * s);
+    } else if (e.bossId === 'queen' && e.state === 0) {
+      ring2(ctx, x, cy, r * 1.2, r * 1.2 * TILT, C.shield, 4 * s);
+    } else if (e.bossId === 'kitty') {
+      if (e.shield > 0 && !this.overlay('fx.purr', x, y)) {
+        ctx.fillStyle = 'rgba(140,235,255,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(x, cy, r * 1.4, r * 1.4 * TILT, 0, 0, TAU);
+        ctx.fill();
+        ring2(ctx, x, cy, r * 1.4, r * 1.4 * TILT, C.shield, 4 * s);
+      }
+      if (e.exposedT > 0) ring2(ctx, x, cy, r * 1.2, r * 1.2 * TILT, C.plus, 5 * s);
+    } else if (e.bossId === 'sharky' && e.state === 1 && Math.floor(this.time * 10) % 2) {
+      ring2(ctx, x, cy, r * 1.3, r * 1.3 * TILT, '#ff5d5d', 4 * s);
+    }
+  }
+
+  // Draws a looping overlay sprite (status effects) at a CSS-px point. False if absent.
+  overlay(key, x, y, scale = 1) {
+    if (!this.sp.loaded || !this.sp.has(key)) return false;
+    return this.sp.draw(this.ctx, key, this.sp.pick(key, 'loop'), this.g.clock, x, y, this.s, this.opt(false, scale, scale, 0, 1, 0));
+  }
+
+  towerKey(t) {
+    for (let l = t.level + 1; l >= 1; l--) {
+      const key = `tower.${t.type}.${l}`;
+      if (this.sp.has(key)) return key;
+    }
+    return '';
+  }
+
   drawTowers() {
     const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
     for (const t of g.towers) {
@@ -817,7 +1053,13 @@ export class Renderer {
       if (broken) col = '#8b8b8b';
       const homeX = this.px(t.x), homeY = this.py(t.y);
       const away = t.sx !== t.x || t.sy !== t.y;
-      const x = this.px(t.sx), y = this.py(t.sy, 14);
+      const bx = t.psx + (t.sx - t.psx) * this.a, by = t.psy + (t.sy - t.psy) * this.a;
+      const key = this.sp.loaded ? this.towerKey(t) : '';
+      if (key) {
+        this.drawTowerSprite(t, key, bx, by, homeX, homeY, away);
+        continue;
+      }
+      const x = this.px(bx), y = this.py(by, 14);
       // squash on fire
       const sq = t.fireT < 0.12 ? 1 - (0.12 - t.fireT) * 1.6 : 1;
       const breathe = 1 + Math.sin(at * 4 + t.id) * 0.03;
@@ -829,7 +1071,7 @@ export class Renderer {
       }
       ctx.fillStyle = 'rgba(0,40,60,0.25)';
       ctx.beginPath();
-      ctx.ellipse(x, this.py(t.sy) + 6 * s, r, r * 0.45, 0, 0, TAU);
+      ctx.ellipse(x, this.py(by) + 6 * s, r, r * 0.45, 0, 0, TAU);
       ctx.fill();
       const infl = t.type === 'puffer' ? 1 + t.inflate * 0.6 : 1;
       if (t.type === 'starfish' || (t.type === 'puffer' && t.inflate > 0)) {
@@ -882,11 +1124,56 @@ export class Renderer {
     }
   }
 
+  drawTowerSprite(t, key, bx, by, homeX, homeY, away) {
+    const sp = this.sp, ctx = this.ctx, s = this.s;
+    const disabled = t.covered || t.grabT > 0 || t.zapT > 0 || t.blindT > 0 || t.stunT > 0;
+    let anim, at = this.g.clock + t.id;
+    if (t.hp <= 0) anim = sp.pick(key, 'broken', 'disabled', 'idle');
+    else if (t.type === 'shark' && t.state !== 0) anim = sp.pick(key, 'charge', 'fire', 'idle');
+    else if (t.type === 'puffer' && t.inflate > 0) (anim = sp.pick(key, 'inflate', 'fire', 'idle')), (at = t.inflate);
+    else if (disabled) anim = sp.pick(key, 'disabled', 'idle');
+    else if (sp.has(key, 'fire') && t.fireT < sp.duration(key, 'fire')) (anim = 'fire'), (at = t.fireT);
+    else anim = sp.pick(key, 'idle');
+    // a lower-level sheet standing in for a higher level is scaled up a touch
+    const lvl = +key.slice(key.lastIndexOf('.') + 1);
+    const k = 1 + (t.level + 1 - lvl) * 0.08;
+    const w = this.wob(key, t.id);
+    const flip = Math.cos(t.aim) < -0.2;
+    if (away) {
+      ctx.globalAlpha = 0.35;
+      blob(ctx, homeX, homeY, 16 * s, 12 * s, TOWER_COLORS[t.type], 0);
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = 'rgba(0,40,60,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(this.px(bx), this.py(by) + 4 * s, 24 * s, 10 * s, 0, 0, TAU);
+    ctx.fill();
+    this.spr(key, anim, at, bx, by, 0, this.opt(flip, k * (1 + w), k * (1 - w), 0, 1, 0));
+    const x = this.px(bx), y = this.py(by);
+    const h = sp.height(key) * k * s, cy = y - h * 0.45, r = Math.max(22 * s, h * 0.45);
+    ctx.fillStyle = t.level === 2 ? '#ffd23f' : '#ffffff';
+    for (let i = 0; i <= t.level; i++) {
+      ctx.beginPath();
+      ctx.arc(homeX - t.level * 5 * s + i * 10 * s, homeY + 26 * s, 3.5 * s, 0, TAU);
+      ctx.fill();
+    }
+    if (t.grabT > 0 && !this.overlay('fx.grab', x, y)) ring2(ctx, x, cy, r * 1.15, r * 0.9, ENEMY_COLORS.kraken, 5 * s);
+    if (t.zapT > 0 && !this.overlay('fx.zapped', x, y) && Math.floor(this.time * 20) % 2) ring2(ctx, x, cy, r * 1.2, r, '#fff36b', 3 * s);
+    if (t.blindT > 0 && !this.overlay('fx.blind', x, y)) blob(ctx, x, cy, r * 0.8, r * 0.45, C.ink, 0);
+    if (t.plusT > 0 && !this.overlay('fx.plus_power', x, y)) ring2(ctx, x, cy, r * 1.3, r * 1.1, C.plus, 2 * s);
+    if (t.hp < t.maxHp) bar(ctx, homeX, Math.min(homeY - 38 * s, y - h - 6 * s), 40 * s, 5 * s, t.hp / t.maxHp);
+  }
+
   drawTentacles() {
     const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
     for (const tn of g.tentacles) {
       if (!tn.alive) continue;
       const x = this.px(tn.x), y = this.py(tn.y, 10);
+      if (this.sp.loaded && this.spr('boss.kitty.tentacle', this.sp.pick('boss.kitty.tentacle', 'grip'), tn.t, tn.x, tn.y, 0,
+        this.opt(false, 1, 1, 0, 1, tn.hitT > 0 ? 0.6 : 0))) {
+        bar(ctx, x, y - 44 * s, 40 * s, 5 * s, tn.hp / tn.maxHp, C.minus);
+        continue;
+      }
       const col = tn.hitT > 0 ? '#ffffff' : BOSS_COLORS.kitty;
       ctx.strokeStyle = col;
       ctx.lineCap = 'round';
@@ -907,6 +1194,12 @@ export class Renderer {
     const pulse = 1 + Math.sin(this.at * 3) * 0.04 + (h.hitT > 0 ? h.hitT * 0.3 : 0);
     const x = this.px(h.x), y = this.py(h.y, 10);
     const r = h.r * s * pulse;
+    if (this.sp.loaded && this.sp.has('heart')) {
+      const anim = this.sp.pick('heart', h.hitT > 0 ? 'hit' : '', h.hp < h.maxHp * 0.35 ? 'low' : '', 'idle');
+      const w = this.wob('heart', 0);
+      this.spr('heart', anim, g.clock, h.x, h.y, 0, this.opt(false, pulse * (1 + w), pulse * (1 - w), 0, 1, h.hitT > 0 ? 0.5 : 0));
+      return;
+    }
     blob(ctx, x, this.py(h.y) + 10 * s, r * 1.1, r * 0.45, 'rgba(0,40,60,0.25)', 0);
     for (let k = 0; k < 7; k++) {
       const a = (k / 7) * TAU + 0.3;
@@ -920,7 +1213,24 @@ export class Renderer {
     const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
     for (const p of g.projectiles) {
       if (!p.alive) continue;
-      const x = this.px(p.x), y = this.py(p.y, p.z);
+      const wx = this.ix(p), wy = this.iy(p), wz = p.pz + (p.z - p.pz) * this.a;
+      const x = this.px(wx), y = this.py(wy, wz);
+      if (this.sp.loaded) {
+        const key = 'proj.' + p.kind;
+        if (this.sp.has(key)) {
+          if (p.kind === 'plus') {
+            ctx.fillStyle = 'rgba(0,40,60,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(x, this.py(wy), p.r * s, p.r * s * 0.4, 0, 0, TAU);
+            ctx.fill();
+          }
+          const rot = this.sp.flag(key, 'orient') ? Math.atan2(p.vy * TILT, p.vx) : this.sp.flag(key, 'spin') ? p.t * 14 : 0;
+          // tower shots fly at body height
+          const lift = p.kind === 'minus' || p.kind === 'plus' || p.kind === 'ink' ? wz : wz + 10;
+          this.spr(key, this.sp.pick(key, p.leg ? 'return' : '', 'fly'), p.t, wx, wy, lift, this.opt(false, 1, 1, rot, 1, 0));
+          continue;
+        }
+      }
       switch (p.kind) {
         case 'minus':
           blob(ctx, x, y, p.r * s * 1.1, p.r * s * 1.1, C.minus, 0.45);
@@ -930,7 +1240,7 @@ export class Renderer {
         case 'plus':
           ctx.fillStyle = 'rgba(0,40,60,0.2)';
           ctx.beginPath();
-          ctx.ellipse(x, this.py(p.y), p.r * s, p.r * s * 0.4, 0, 0, TAU);
+          ctx.ellipse(x, this.py(wy), p.r * s, p.r * s * 0.4, 0, 0, TAU);
           ctx.fill();
           blob(ctx, x, y, p.r * s * 1.1, p.r * s * 1.1, C.plus, 0.45);
           ctx.fillStyle = '#ffffff';
@@ -965,7 +1275,9 @@ export class Renderer {
     const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
     for (const st of g.strikes) {
       if (!st.alive || st.kind === 'swipe') continue;
-      const x = this.px(st.x), y = this.py(st.y, st.z + 10);
+      const wx = this.ix(st), wy = this.iy(st), wz = st.pz + (st.z - st.pz) * this.a;
+      if (this.sp.loaded && this.spr('strike.' + st.kind, 'fly', st.t, wx, wy, wz + 10, this.opt(false, 1, 1, this.sp.flag('strike.' + st.kind, 'spin') ? st.t * 14 : 0, 1, 0))) continue;
+      const x = this.px(wx), y = this.py(wy, wz + 10);
       if (st.kind === 'ink') blob(ctx, x, y, 12 * s, 11 * s, C.ink, 0.25);
       else if (st.kind === 'spark') star(ctx, x, y, 10 * s, 4 * s, at * 20, '#fff36b');
       else star(ctx, x, y, 9 * s, 4 * s, at * 14, '#ffc94d');
@@ -976,7 +1288,11 @@ export class Renderer {
     const g = this.g, p = g.player, ctx = this.ctx, s = this.s, at = this.at;
     const inRun = g.phase !== 'title';
     if (!inRun) return;
-    const x = this.px(p.x), y = this.py(p.y, 18);
+    const px = g.phase === 'combat' ? p.px + (p.x - p.px) * this.a : p.x;
+    const x = this.px(px), y = this.py(p.y, 18);
+    if (p.vx < -1) this.playerFlip = true;
+    else if (p.vx > 1) this.playerFlip = false;
+    if (!p.alive && this.overlay('fx.respawn_bubble', x, this.py(p.y))) return;
     if (!p.alive) {
       // respawn bubble countdown
       ctx.globalAlpha = 0.6;
@@ -990,6 +1306,23 @@ export class Renderer {
       return;
     }
     if (p.invulnT > 0 && Math.floor(this.time * 12) % 2) return;
+    if (this.sp.loaded) {
+      const sp = this.sp;
+      const key = sp.has('player.' + p.skin) ? 'player.' + p.skin : sp.has('player.classic') ? 'player.classic' : '';
+      if (key) {
+        let anim, t = g.clock;
+        if (sp.has(key, 'plus') && p.plusShootT < sp.duration(key, 'plus')) (anim = 'plus'), (t = p.plusShootT);
+        else if (sp.has(key, 'shoot') && p.shootT < sp.duration(key, 'shoot')) (anim = 'shoot'), (t = p.shootT);
+        else anim = sp.pick(key, Math.abs(p.vx) > 1 ? 'swim' : '', 'idle');
+        ctx.fillStyle = 'rgba(0,40,60,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(x, this.py(p.y) + 8 * s, 26 * s, 9 * s, 0, 0, TAU);
+        ctx.fill();
+        const w = this.wob(key, 0);
+        this.spr(key, anim, t, px, p.y, 0, this.opt(this.playerFlip, 1 + w, 1 - w, 0, 1, 0));
+        return;
+      }
+    }
     const skin = SKIN_COLORS[p.skin] || SKIN_COLORS.classic;
     const facing = p.vx < -1 ? -1 : 1;
     const shootSq = p.shootT < 0.08 || p.plusShootT < 0.1 ? 0.85 : 1;

@@ -28,8 +28,8 @@ export function createTower(g, type, socketIdx, invested) {
   t.level = 0;
   t.stats = def.levels[0];
   t.socket = socketIdx;
-  t.x = t.sx = so.x;
-  t.y = t.sy = so.y;
+  t.x = t.sx = t.psx = so.x;
+  t.y = t.sy = t.psy = so.y;
   t.maxHp = t.hp = def.hp;
   t.invested = invested;
   t.cd = 0.3;

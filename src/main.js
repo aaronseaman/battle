@@ -4,6 +4,7 @@
 import { Game, PHASE } from './core/game.js';
 import { SIM } from './config.js';
 import { Renderer } from './render/renderer.js';
+import { SpriteBank } from './render/sprites.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { UI } from './ui/ui.js';
@@ -16,9 +17,15 @@ const debugEl = document.getElementById('debug');
 const settings = storage.loadSettings();
 const game = new Game({ meta: storage.loadMeta() });
 const view = { focusSocket: -1, previewType: '', showFocusInCombat: false };
-const renderer = new Renderer(canvas, game, view, settings);
-const input = new Input(canvas);
+const sprites = new SpriteBank('assets/art/');
+const renderer = new Renderer(canvas, game, view, settings, sprites);
+const input = new Input(canvas, settings);
 input.bindTouchControls(app);
+// Art loads in the background; the placeholder renderer covers anything not delivered yet.
+sprites.load().then(() => {
+  renderer.onArtLoaded();
+  if (sprites.loaded) console.info(`[art] ${sprites.loaded} sprites loaded`);
+});
 const audio = new Audio(settings);
 const ui = new UI({ game, view, audio, settings, storage, renderer, input, onSettings: applySettings });
 
@@ -30,23 +37,26 @@ function touchMode() {
   return coarse.matches || input.lastDevice === 'touch';
 }
 
-// Reads env(safe-area-inset-*) once via a probe element (CSS vars can't be read computed).
-const safe = (() => {
-  const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0';
-  document.body.appendChild(d);
-  const cs = getComputedStyle(d);
-  const out = { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 };
-  d.remove();
-  return out;
-})();
+// Safe-area insets (Dynamic Island / home indicator), read through the same CSS
+// variables the stylesheet uses. Re-read on every layout (rotation, PWA launch).
+const safeProbe = document.createElement('div');
+safeProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:var(--safe-top) 0 var(--safe-bottom) 0';
+document.body.appendChild(safeProbe);
+function safeArea() {
+  const cs = getComputedStyle(safeProbe);
+  return { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 };
+}
+
+const isPhoneLandscape = () => coarse.matches && window.innerWidth > window.innerHeight && window.innerHeight < 520;
 
 // Board insets are fixed per input mode (not measured from the HUD, which is hidden on the
 // title screen) so the reef never jumps around between menus and combat.
 function layout() {
   const touch = touchMode();
   app.classList.toggle('touch', touch);
+  const safe = safeArea();
   renderer.setInsets({ top: safe.top + 104, bottom: safe.bottom + (touch ? 168 : 56) });
+  if (isPhoneLandscape() && game.phase === PHASE.COMBAT && !game.paused) ui.openPause();
 }
 
 function applySettings() {
@@ -66,9 +76,18 @@ if (window.ResizeObserver) new ResizeObserver(() => {
 }).observe(canvas);
 else window.addEventListener('resize', () => renderer.resize());
 
-const unlockAudio = () => audio.unlock();
-window.addEventListener('pointerdown', unlockAudio);
-window.addEventListener('keydown', unlockAudio);
+// iOS only unlocks audio inside certain gestures; try them all.
+let persisted = false;
+const unlockAudio = () => {
+  audio.unlock();
+  if (!persisted && navigator.storage && navigator.storage.persist) {
+    persisted = true;
+    navigator.storage.persist().catch(() => {});
+  }
+};
+for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, unlockAudio, { passive: true });
+// Block Safari pinch-zoom / double-tap zoom inside the game.
+for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && game.phase === PHASE.COMBAT && !game.paused) ui.openPause();
@@ -83,6 +102,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 let last = performance.now();
 let acc = 0;
+let pausedFrames = 0;
 let lastTouch = touchMode();
 const perf = { ema: 16, simUs: 0, frames: 0, fpsT: 0, fps: 60, slowT: 0, fastT: 0 };
 
@@ -175,7 +195,12 @@ function frame(now) {
   }
 
   ui.update(dt);
-  renderer.render(dt);
+  // While paused the reef is static: draw a couple of frames, then idle the GPU (battery).
+  if (!game.paused || pausedFrames < 2 || renderer.dirty) {
+    renderer.render(dt, Math.min(1, acc / SIM.DT));
+    renderer.dirty = false;
+  }
+  pausedFrames = game.paused ? pausedFrames + 1 : 0;
 
   const frameMs = performance.now() - now;
   adaptQuality(frameMs, dt);
@@ -199,4 +224,4 @@ requestAnimationFrame((t) => {
 });
 
 // handy for debugging and automated smoke tests
-window.reef = { game, renderer, ui, input, audio, settings };
+window.reef = { game, renderer, ui, input, audio, settings, sprites };

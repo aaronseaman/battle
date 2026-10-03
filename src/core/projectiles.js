@@ -15,8 +15,8 @@ export function spawnProjectile(g, kind, x, y, r) {
   p.id = ++g.nextId;
   p.alive = true;
   p.kind = kind;
-  p.x = p.sx = x;
-  p.y = p.sy = y;
+  p.x = p.sx = p.px = x;
+  p.y = p.sy = p.py = y;
   p.r = r;
   g.projectiles.push(p);
   return p;

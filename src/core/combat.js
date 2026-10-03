@@ -39,6 +39,8 @@ export function spawnEnemy(g, type, dist, shield = false) {
   }
   if (def.throwCd) e.t1 = g.rng.range(1, 2);
   e.seg = g.path.sample(dist, e, 0);
+  e.px = e.x;
+  e.py = e.y;
   g.enemies.push(e);
   return e;
 }
@@ -198,8 +200,8 @@ export function spawnPickup(g, x, y, value) {
   const p = g.pools.pickup.get();
   p.reset();
   p.alive = true;
-  p.x = clamp(x, WORLD.RAIL_MIN, WORLD.RAIL_MAX);
-  p.y = y;
+  p.x = p.px = clamp(x, WORLD.RAIL_MIN, WORLD.RAIL_MAX);
+  p.y = p.py = y;
   p.vy = 70 + g.rng.next() * 50;
   p.vx = 0;
   p.value = value;

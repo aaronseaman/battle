@@ -49,9 +49,33 @@ const PADMAP = {
 
 const NAV = new Set(['left', 'right', 'up', 'down']);
 
+// Light haptic tick. Android: Vibration API. iOS 18+: Safari has no Vibration API,
+// but toggling a native <input type="checkbox" switch> plays the system haptic,
+// so we click a hidden one. Only works inside a user gesture (touch handlers).
+let hapticLabel = null;
+export function haptic() {
+  if (navigator.vibrate) {
+    navigator.vibrate(8);
+    return;
+  }
+  if (!hapticLabel) {
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = 'haptic-switch';
+    input.setAttribute('switch', '');
+    input.style.display = 'none';
+    hapticLabel = document.createElement('label');
+    hapticLabel.htmlFor = input.id;
+    hapticLabel.style.display = 'none';
+    document.body.append(input, hapticLabel);
+  }
+  hapticLabel.click();
+}
+
 export class Input {
-  constructor(canvas) {
+  constructor(canvas, settings = {}) {
     this.canvas = canvas;
+    this.settings = settings;
     this.keyHeld = Object.create(null);
     this.padHeld = Object.create(null);
     this.touchHeld = Object.create(null);
@@ -113,7 +137,8 @@ export class Input {
       const el = e.target.closest('[data-hold],[data-tap]');
       if (!el) return;
       e.preventDefault();
-      this.lastDevice = 'touch';
+      if (e.pointerType === 'touch') this.lastDevice = 'touch';
+      if (e.pointerType === 'touch' && this.settings.haptics) haptic();
       const hold = el.dataset.hold;
       const tap = el.dataset.tap;
       if (hold) {

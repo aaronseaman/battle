@@ -1,7 +1,7 @@
 // Reef Rumble: Clay Coral Defense — all tunable game data lives here.
 // The simulation reads only from this file, so balance changes never touch logic.
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 // World is a flat 2D plane (x right, y down). A 3D renderer maps (x, y) -> (x, 0, y)
 // and uses an entity's `z` as height above the reef floor.

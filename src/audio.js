@@ -16,6 +16,7 @@ export class Audio {
     this.last = Object.create(null);
     this.noiseBuf = null;
     this.musicMode = '';
+    this.userSuspended = false;
     this.nextNote = 0;
     this.step = 0;
     this.timer = 0;
@@ -24,12 +25,19 @@ export class Audio {
   // Must be called from a user gesture (browser autoplay policy).
   unlock() {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      // iOS reports 'interrupted' after calls, Siri, or app switches
+      if (this.ctx.state !== 'running' && !this.userSuspended) this.ctx.resume().catch(() => {});
       return;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    this.ctx = new AC();
+    // iOS 17+: 'ambient' respects the silent switch and mixes with the player's own music
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'ambient';
+    } catch {
+      /* not supported */
+    }
+    this.ctx = new AC({ latencyHint: 'interactive' });
     this.master = this.ctx.createGain();
     this.master.connect(this.ctx.destination);
     const comp = this.ctx.createDynamicsCompressor();
@@ -55,9 +63,10 @@ export class Audio {
   }
 
   suspend(on) {
+    this.userSuspended = on;
     if (!this.ctx) return;
-    if (on) this.ctx.suspend();
-    else this.ctx.resume();
+    if (on) this.ctx.suspend().catch(() => {});
+    else this.ctx.resume().catch(() => {});
   }
 
   ok(key, gap) {

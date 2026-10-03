@@ -54,6 +54,8 @@ export function spawnBoss(g, id, cycle = 0) {
       break;
   }
   e.seg = g.path.sample(0, e, 0);
+  e.px = e.x;
+  e.py = e.y;
   g.enemies.push(e);
   g.boss = e;
   g.events.emit('boss_spawn', e.x, e.y, e.maxHp, cycle, id, e);
@@ -298,8 +300,8 @@ export function spawnStrike(g, kind, sx, sy, tx, ty, dur, r) {
   s.reset();
   s.alive = true;
   s.kind = kind;
-  s.sx = s.x = sx;
-  s.sy = s.y = sy;
+  s.sx = s.x = s.px = sx;
+  s.sy = s.y = s.py = sy;
   s.tx = tx;
   s.ty = ty;
   s.dur = dur;
