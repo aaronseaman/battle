@@ -1,48 +1,37 @@
-// Unified input: keyboard, gamepad, on-screen touch buttons and canvas pointer.
+// Unified input: keyboard, gamepad, on-screen buttons and canvas pointer.
 // Produces logical actions:
-//   left right plus minus confirm back pause wash speed up down debug
+//   left right up down confirm back pause debug
 // `held(action)` for continuous control, `consume()` for edge presses.
+// Steering by drag reads `pointer` directly (see main.js).
 
 const KEYMAP = {
   ArrowLeft: ['left'],
   KeyA: ['left'],
   ArrowRight: ['right'],
   KeyD: ['right'],
-  ArrowUp: ['plus', 'up'],
-  KeyW: ['plus', 'up'],
-  KeyX: ['plus'],
-  KeyJ: ['plus'],
-  ArrowDown: ['minus', 'down'],
-  KeyS: ['minus', 'down'],
-  KeyZ: ['minus'],
-  KeyK: ['minus'],
-  Space: ['minus', 'confirm'],
+  ArrowUp: ['up'],
+  KeyW: ['up'],
+  ArrowDown: ['down'],
+  KeyS: ['down'],
+  Space: ['confirm'],
   Enter: ['confirm'],
   NumpadEnter: ['confirm'],
   KeyE: ['confirm'],
   Escape: ['back', 'pause'],
   Backspace: ['back'],
   KeyP: ['pause'],
-  KeyR: ['wash'],
-  KeyQ: ['wash'],
-  KeyF: ['speed'],
   Backquote: ['debug'],
   F3: ['debug'],
 };
 
 // Standard-mapping gamepad buttons.
 const PADMAP = {
-  0: ['confirm', 'minus'], // A
+  0: ['confirm'], // A
   1: ['back'], // B
-  2: ['plus'], // X
-  3: ['wash'], // Y
-  5: ['speed'], // RB
-  6: ['plus'], // LT
-  7: ['minus'], // RT
   8: ['pause'], // Back/Select
   9: ['pause'], // Start
-  12: ['up', 'plus'],
-  13: ['down', 'minus'],
+  12: ['up'],
+  13: ['down'],
   14: ['left'],
   15: ['right'],
 };

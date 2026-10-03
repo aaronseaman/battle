@@ -1,7 +1,7 @@
 {
-  "name": "Reef Rumble: Clay Coral Defense",
+  "name": "Reef Rumble",
   "short_name": "Reef Rumble",
-  "description": "A claymation tower defense shooter on a bright tropical reef.",
+  "description": "Swipe your clay fish school through the reef: pick gates, crack clams, beat the boss.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

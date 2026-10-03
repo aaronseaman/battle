@@ -3,28 +3,6 @@
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
-    "arena": {
-      "file": null,
-      "priority": "P2",
-      "frame": [
-        1600,
-        1886
-      ],
-      "anchor": [
-        0,
-        0
-      ],
-      "facing": "right",
-      "anims": {
-        "idle": {
-          "row": 0,
-          "frames": 1,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "The whole painted arena, seen from the tilted camera. Paint over docs/art/arena-template.png at exactly this size: open water on top (where the enemy formation flies), kelp/rocks at the side walls, the sandy reef shelf at the bottom with the 6 coral socket cups, a sandy patch for the Coral Heart, and the wooden/clay rail along the bottom. No path. Do NOT paint buddies, enemies, the Coral Heart or the fish (separate sprites)."
-    },
     "player.classic": {
       "file": "player/player-classic.webp",
       "priority": "P0",
@@ -1974,51 +1952,6 @@
         }
       },
       "notes": "Star thrown by a Star Minion. Landing telegraph circles stay procedural (gameplay readability)."
-    },
-    "strike.drop": {
-      "file": null,
-      "priority": "P2",
-      "frame": [
-        48,
-        48
-      ],
-      "anchor": [
-        0.5,
-        0.5
-      ],
-      "facing": "right",
-      "anims": {
-        "fly": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Enemy shot dropped by diving jellies and krakens: a wobbly pink-purple goo bubble about 18 world units across. Falls straight down."
-    },
-    "strike.spike": {
-      "file": null,
-      "priority": "P2",
-      "frame": [
-        48,
-        48
-      ],
-      "anchor": [
-        0.5,
-        0.5
-      ],
-      "facing": "right",
-      "orient": true,
-      "anims": {
-        "fly": {
-          "row": 0,
-          "frames": 2,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Sea Urchin spike shot: a purple clay needle pointing right (the game rotates it along its flight)."
     },
     "pickup.shell": {
       "file": "projectiles/pickup-shell.webp",

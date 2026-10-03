@@ -1,15 +1,14 @@
 {
   "name": "reef-rumble",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Reef Rumble: Clay Coral Defense — claymation arcade wave shooter PWA",
+  "description": "Reef Rumble — claymation lane runner PWA: swipe your fish school through the reef",
   "scripts": {
     "start": "npx --yes http-server . -p 8080 -c-1",
     "test": "node tools/test.mjs",
     "sim": "node tools/sim.mjs",
     "icons": "node tools/make-icons.mjs",
-    "check-art": "node tools/check-art.mjs",
-    "arena-template": "node tools/make-arena-template.mjs"
+    "check-art": "node tools/check-art.mjs"
   }
 }

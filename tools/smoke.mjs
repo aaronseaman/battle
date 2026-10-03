@@ -1,5 +1,7 @@
-// Browser smoke test: boots the PWA in headless Chromium, plays through the
-// menus with real keyboard input, runs a wave, and fails on any console error.
+// Browser smoke test: boots the PWA in headless Chromium, starts a level from the
+// title with real keyboard input, steers with a real drag, pauses, plays the level
+// out, checks the result screen, the saved progress and the offline boot, and
+// fails on any console error.
 //   npx http-server . -p 8080 &   then   node tools/smoke.mjs [url] [outDir]
 
 import { chromium } from 'playwright';
@@ -17,97 +19,81 @@ async function run(viewport, label, touch) {
   });
   page.on('pageerror', (e) => errors.push(`[${label}] ${e.message}`));
   await page.goto(url);
-  await page.waitForFunction(() => window.reef && window.reef.game);
+  await page.waitForFunction(() => window.reef && window.reef.game && window.reef.sprites.ready, null, { timeout: 30000 });
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${out}/${label}-1-title.png` });
 
   const phase = () => page.evaluate(() => window.reef.game.phase);
-  const press = async (key, n = 1) => {
-    for (let i = 0; i < n; i++) {
-      await page.keyboard.press(key);
-      await page.waitForTimeout(60);
-    }
+  const press = async (key) => {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(80);
   };
 
-  // title -> New Reef Run (first item when no save)
+  // title -> Play (first item)
   await press('Enter');
-  if ((await phase()) !== 'draft') throw new Error(`${label}: expected draft, got ${await phase()}`);
-  await page.screenshot({ path: `${out}/${label}-2-draft.png` });
-  await press('ArrowRight');
-  await press('Enter');
-  if ((await phase()) !== 'place') throw new Error(`${label}: expected place, got ${await phase()}`);
-  await press('ArrowRight', 2);
-  await page.screenshot({ path: `${out}/${label}-3-place.png` });
-  await press('Enter');
-  if ((await phase()) !== 'build') throw new Error(`${label}: expected build, got ${await phase()}`);
-  // open the socket we just filled and look at its menu, then back out
-  await press('Enter');
-  await page.screenshot({ path: `${out}/${label}-4-socket.png` });
-  await press('Escape');
-  // jump to buttons (Up) -> Start Wave is focused -> confirm
-  await press('ArrowUp');
-  await page.screenshot({ path: `${out}/${label}-5-build.png` });
-  await press('Enter');
-  if ((await phase()) !== 'combat') throw new Error(`${label}: expected combat, got ${await phase()}`);
+  if ((await phase()) !== 'play') throw new Error(`${label}: expected play, got ${await phase()}`);
+  await page.waitForTimeout(600);
 
-  // play: hold minus, nudge right then left, and keep firing until something
-  // in the incoming squadrons or the formation pops
-  await page.keyboard.down('ArrowDown');
-  await page.keyboard.down('ArrowRight');
+  // steer with a real drag: the school follows the finger sideways
+  const cx = viewport.width / 2, cy = viewport.height * 0.7;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let k = 1; k <= 6; k++) {
+    await page.mouse.move(cx + k * 15, cy);
+    await page.waitForTimeout(40);
+  }
+  await page.waitForTimeout(300);
+  const x1 = await page.evaluate(() => window.reef.game.school.x);
+  await page.mouse.move(cx - 60, cy);
   await page.waitForTimeout(400);
-  await page.keyboard.up('ArrowRight');
-  await page.keyboard.down('ArrowLeft');
-  await page.waitForTimeout(700);
-  await page.keyboard.up('ArrowLeft');
-  await page.waitForFunction(() => window.reef.game.waveStats.kills > 0, null, { timeout: 40000 }).catch(() => {});
-  await page.keyboard.up('ArrowDown');
-  await press('ArrowUp'); // a plus shot
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: `${out}/${label}-6-combat.png` });
-  const stats = await page.evaluate(() => {
-    const g = window.reef.game;
-    return { phase: g.phase, enemies: g.enemies.length, kills: g.waveStats.kills, meter: Math.round(g.player.meter), x: Math.round(g.player.x), fps: document.getElementById('debug').textContent };
-  });
-  console.log(label, JSON.stringify(stats));
-  if (stats.kills < 1) throw new Error(`${label}: no kills after shooting`);
+  await page.mouse.up();
+  const x2 = await page.evaluate(() => window.reef.game.school.x);
+  console.log(label, 'drag steering', Math.round(x1), Math.round(x2));
+  if (!(x1 > 30 && x2 < x1 - 30)) throw new Error(`${label}: drag did not steer (${x1}, ${x2})`);
+  await page.screenshot({ path: `${out}/${label}-2-play.png` });
 
-  // pause menu
+  // pause / resume
   await press('Escape');
   if (!(await page.evaluate(() => window.reef.game.paused))) throw new Error(`${label}: pause failed`);
-  await page.screenshot({ path: `${out}/${label}-7-pause.png` });
+  await page.screenshot({ path: `${out}/${label}-3-pause.png` });
   await press('Escape');
   if (await page.evaluate(() => window.reef.game.paused)) throw new Error(`${label}: resume failed`);
 
-  // fast-forward the rest of the wave headlessly and check the wave-end flow
-  await page.evaluate(() => {
+  // play the rest of the level headlessly (pick the better gate, aim at the nearest thing)
+  const stats = await page.evaluate(() => {
     const g = window.reef.game;
-    for (let i = 0; i < 60 * 240 && g.phase === 'combat'; i++) {
-      g.input.minus = true;
-      g.input.moveX = g.enemies[0] ? g.enemies[0].x : 400;
+    const worth = (e) => (e.type === 'add' ? g.school.n + e.value : e.type === 'mul' ? g.school.n * e.value : g.school.n + 5);
+    for (let i = 0; i < 60 * 180 && g.phase === 'play'; i++) {
+      let gate = null;
+      for (const o of g.things) if (o.alive && o.kind === 'gate' && o.x < 0 && o.z > 0 && (!gate || o.z < gate.z)) gate = o;
+      let goal = g.school.x;
+      if (g.boss && g.stage === 1) goal = g.boss.x;
+      else if (gate && gate.z < 600) goal = worth(gate.gate) >= worth(gate.partner.gate) ? -75 : 75;
+      else {
+        let b = null;
+        for (const o of g.things) if (o.alive && o.kind !== 'gate' && o.kind !== 'boss' && o.z > 0 && (!b || o.z < b.z)) b = o;
+        if (b) goal = b.x;
+      }
+      g.input.targetX = goal;
       g.update(1 / 60);
     }
+    return { phase: g.phase, fish: g.school.n, level: g.meta.level, coins: g.meta.coins };
   });
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: `${out}/${label}-8-waveend.png` });
-  const ph = await phase();
-  if (ph !== 'waveEnd' && ph !== 'defeat') throw new Error(`${label}: expected waveEnd, got ${ph}`);
-  await press('Enter');
-  await page.screenshot({ path: `${out}/${label}-9-fork.png` });
-  if ((await phase()) !== 'fork') throw new Error(`${label}: expected fork, got ${await phase()}`);
-  await press('ArrowRight');
-  await press('Enter');
-  if ((await phase()) !== 'draft') throw new Error(`${label}: expected draft after fork`);
+  console.log(label, 'level played out', JSON.stringify(stats));
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${out}/${label}-4-result.png` });
+  if (stats.phase !== 'won' && stats.phase !== 'lost') throw new Error(`${label}: level did not end (${stats.phase})`);
 
-  // reload: save should offer Continue and restore the draft screen
+  // the result screen's first button starts the next attempt
+  await press('Enter');
+  if ((await phase()) !== 'play') throw new Error(`${label}: expected play after the result screen`);
+
+  // reload: progress is saved
   await page.reload();
   await page.waitForFunction(() => window.reef && window.reef.game);
-  await page.waitForTimeout(300);
-  await press('Enter');
-  const resumed = await page.evaluate(() => ({ phase: window.reef.game.phase, wave: window.reef.game.wave, towers: window.reef.game.towers.length }));
-  console.log(label, 'resumed', JSON.stringify(resumed));
-  if (resumed.phase !== 'draft' || resumed.wave !== 2 || resumed.towers !== 1) throw new Error(`${label}: resume failed`);
-  const sw = await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()));
-  console.log(label, 'service worker registered:', sw);
+  const meta = await page.evaluate(() => window.reef.game.meta);
+  console.log(label, 'saved progress', JSON.stringify({ level: meta.level, coins: meta.coins }));
+  if (meta.level !== stats.level || meta.coins !== stats.coins) throw new Error(`${label}: progress not saved`);
 
   // offline: once the service worker is active, the whole game (art included) must boot with no network
   await page.evaluate(() => navigator.serviceWorker.ready);
@@ -127,7 +113,7 @@ async function run(viewport, label, touch) {
 
 try {
   await run({ width: 1280, height: 800 }, 'desktop', false);
-  await run({ width: 390, height: 844 }, 'phone', true);
+  await run({ width: 402, height: 874 }, 'phone', true);
 } finally {
   await browser.close();
 }

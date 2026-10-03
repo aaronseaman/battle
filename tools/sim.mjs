@@ -1,60 +1,64 @@
-// Headless balance simulation: plays full runs with the autopilot bot.
-//   node tools/sim.mjs [runs=6] [skill=good|basic|sloppy|idle] [maxWave=20]
+// Headless balance simulation: plays levels in a row with the autopilot,
+// buying upgrades with coins between levels like a player would.
+//   node tools/sim.mjs [runs=4] [skill=good|sloppy|idle] [levels=12]
 
 import { Game, PHASE } from '../src/core/game.js';
-import { SIM } from '../src/config.js';
-import { RNG } from '../src/core/util.js';
-import { botDecide, botInput } from './bot.mjs';
+import { SIM, UPGRADES } from '../src/config.js';
+import { botInput, botReset } from './bot.mjs';
 
-export function playRun(seed, skill = 'good', maxWave = 20, onWave = null) {
-  const g = new Game({ seed });
-  g.newRun({ seed });
-  const rng = new RNG(seed * 7 + 3);
-  const waves = [];
-  let ticks = 0, simMs = 0, maxEnemies = 0, maxProj = 0, waveTicks = 0;
-  for (let guard = 0; guard < 2e6; guard++) {
-    if (g.phase === PHASE.COMBAT) {
+function spend(g) {
+  for (let guard = 0; guard < 50; guard++) {
+    let cheapest = null, cc = Infinity;
+    for (const id in UPGRADES) {
+      const c = g.upgradeCost(id);
+      if (c != null && c < cc) {
+        cc = c;
+        cheapest = id;
+      }
+    }
+    if (!cheapest || g.meta.coins < cc) return;
+    g.buyUpgrade(cheapest);
+  }
+}
+
+// Plays until `levels` are cleared or `maxTries` attempts are used up.
+export function playCampaign(skill = 'good', levels = 12, maxTries = 40, onLevel = null, seed = 1) {
+  botReset(seed);
+  const g = new Game();
+  const out = [];
+  let tries = 0, ticks = 0, simMs = 0, maxThings = 0, maxBullets = 0;
+  while (g.meta.level <= levels && tries < maxTries) {
+    tries++;
+    g.startLevel();
+    let t = 0;
+    while (g.phase === PHASE.PLAY) {
       botInput(g, skill);
       const t0 = performance.now();
       g.update(SIM.DT);
       simMs += performance.now() - t0;
       g.events.clear();
       ticks++;
-      waveTicks++;
-      if (g.enemies.length > maxEnemies) maxEnemies = g.enemies.length;
-      if (g.projectiles.length > maxProj) maxProj = g.projectiles.length;
-      if (g.phase !== PHASE.COMBAT) {
-        const ws = g.waveSummary;
-        const rec = { wave: ws.wave, secs: +(waveTicks * SIM.DT).toFixed(1), heart: Math.round(g.heart.hp), dmg: Math.round(ws.heartDmg), kills: ws.kills, shells: g.shells, towers: g.towers.length, eaten: ws.towersEaten, hits: ws.playerHits, score: g.score };
-        waves.push(rec);
-        if (onWave) onWave(rec, g);
-        waveTicks = 0;
-      }
-      if (waveTicks > 60 * 600) throw new Error(`wave ${g.wave} stuck (seed ${seed})`);
-      continue;
+      t += SIM.DT;
+      if (g.things.length > maxThings) maxThings = g.things.length;
+      if (g.bullets.length > maxBullets) maxBullets = g.bullets.length;
+      if (t > 600) throw new Error(`level ${g.level} stuck`);
     }
-    if (g.phase === PHASE.WAVE_END && g.wave >= maxWave) break;
-    if (!botDecide(g, rng, skill)) break;
+    const r = { level: g.result.level, won: g.result.won, secs: +t.toFixed(1), fish: g.result.fish, coins: g.result.coins };
+    out.push(r);
+    if (onLevel) onLevel(r, g);
+    spend(g);
   }
-  return {
-    seed, skill, outcome: g.phase === PHASE.DEFEAT ? 'defeat' : g.phase === PHASE.VICTORY ? 'victory' : 'stopped',
-    wave: g.wave, score: g.score, waves, usPerTick: ticks ? (simMs * 1000) / ticks : 0, maxEnemies, maxProj,
-    towers: g.towers.map((t) => `${t.type}${t.level + 1}`).join(' '),
-  };
+  return { skill, reached: g.meta.level, tries, levels: out, usPerTick: ticks ? (simMs * 1000) / ticks : 0, maxThings, maxBullets, up: { ...g.meta.up } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const runs = +(process.argv[2] || 6);
+  const runs = +(process.argv[2] || 4);
   const skill = process.argv[3] || 'good';
-  const maxWave = +(process.argv[4] || 20);
-  const results = [];
+  const levels = +(process.argv[4] || 12);
   for (let i = 0; i < runs; i++) {
-    const r = playRun(1000 + i * 17, skill, maxWave);
-    results.push(r);
-    console.log(`seed ${r.seed} ${r.outcome.padEnd(8)} wave ${String(r.wave).padStart(2)}  score ${r.score}  ${r.usPerTick.toFixed(0)}µs/tick  maxE ${r.maxEnemies} maxP ${r.maxProj}  [${r.towers}]`);
-    console.log('   ' + r.waves.map((w) => `w${w.wave}:${w.secs}s/h${w.heart}${w.hits ? '/x' + w.hits : ''}${w.eaten ? '/eat' + w.eaten : ''}`).join(' '));
+    const r = playCampaign(skill, levels, 40, null, i + 1);
+    const fails = r.levels.filter((l) => !l.won).length;
+    console.log(`${skill}: reached level ${r.reached} in ${r.tries} tries (${fails} fails)  ${r.usPerTick.toFixed(0)}µs/tick  maxThings ${r.maxThings} maxBullets ${r.maxBullets}  up ${JSON.stringify(r.up)}`);
+    console.log('   ' + r.levels.map((l) => `L${l.level}${l.won ? '✓' : '✗'}${l.secs}s/${l.fish}f`).join(' '));
   }
-  const wins = results.filter((r) => r.outcome === 'victory').length;
-  const avgWave = results.reduce((a, r) => a + r.wave, 0) / results.length;
-  console.log(`\n${skill}: ${wins}/${runs} wins, avg wave reached ${avgWave.toFixed(1)}`);
 }

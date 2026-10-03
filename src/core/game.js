@@ -1,149 +1,150 @@
-// Game — the whole simulation. Pure logic: no DOM, no canvas, no audio, so it
-// runs identically in the browser and headless in Node (tools/sim.mjs).
+// Game — the whole simulation of the lane runner. Pure logic: no DOM, no canvas,
+// no audio, so it runs identically in the browser and headless in Node.
 //
-// Loop:  fork (left/right) -> draft (pick capsule) -> place -> build (shop) -> combat -> waveEnd -> ...
-// Combat is an arcade wave shooter: enemies swoop into a formation and dive at
-// the reef; the fish shoots from the bottom rail while buddies help from the reef.
-// UI and bots drive it only through the command methods (chooseFork, placePending, ...),
-// which return { ok, reason }.
+// Phases: title -> play -> won / lost -> play (next level or retry) ...
+// The school swims forward and shoots by itself; the only control is steering
+// (`input.targetX` from a drag, or `input.left` / `input.right`).
+//
+// Coordinates: x across the road (0 = middle, ±ROAD.half = edges), z = distance
+// ahead of the school (things come down the road toward z = 0).
 
 import {
-  WORLD, MAP, PLAYER, HEART, ECONOMY, TOWERS, STARTER_TOWERS, FORKS, UPGRADES, UNLOCKS, WAVES, SCORE, VERSION,
+  ROAD, SCHOOL, GATES, CLAM, ENEMIES, BOSSES, BOSS_ATTACK, LEVELS, UPGRADES, BUDDIES, BUDDY_MAX, SKINS, VERSION,
 } from '../config.js';
-import { RNG, Pool, compact } from './util.js';
-import { SpatialGrid } from './grid.js';
+import { Pool, compact, clamp } from './util.js';
 import { EventQueue } from './events.js';
-import { Enemy, Tower, Projectile, Strike, Pickup, Tentacle } from './entities.js';
-import { clearTowerDebuffs, removeTower } from './combat.js';
-import { spawnBoss, updateTentacles, retractTentacles } from './bosses.js';
-import { updateEnemies, updateStrikes, updateFormation, resetFormation, spawnFormation } from './enemies.js';
-import { updateTowers, createTower, towerMaxHp } from './towers.js';
-import { updateProjectiles } from './projectiles.js';
-import { updatePlayer, updatePickups, resetPlayer, collectPickup } from './player.js';
-import { buildWave, hpMul, speedMul, isBossWave, rollForks, updateDives, shotCap } from './waves.js';
+import { buildLevel, bossForLevel } from './level.js';
 
-export const PHASE = {
-  TITLE: 'title',
-  FORK: 'fork',
-  DRAFT: 'draft',
-  PLACE: 'place',
-  BUILD: 'build',
-  COMBAT: 'combat',
-  WAVE_END: 'waveEnd',
-  VICTORY: 'victory',
-  DEFEAT: 'defeat',
-};
+export const PHASE = { TITLE: 'title', PLAY: 'play', WON: 'won', LOST: 'lost' };
+export const STAGE = { RUN: 0, BOSS: 1 };
 
 const OK = { ok: true, reason: '' };
 const fail = (reason) => ({ ok: false, reason });
 
-const NEUTRAL_MODS = Object.freeze({ id: 'none', name: 'Open Reef' });
+// Hex-packed fish positions around the school's centre, nearest first.
+export const SCHOOL_OFFSETS = (() => {
+  const s = SCHOOL.spacing, pts = [];
+  for (let j = -8; j <= 8; j++) {
+    for (let i = -8; i <= 8; i++) {
+      const x = (i + (j & 1 ? 0.5 : 0)) * s, z = j * s * 0.8;
+      pts.push({ x, z, d: x * x + z * z * 1.3 + i * 0.01 });
+    }
+  }
+  pts.sort((a, b) => a.d - b.d);
+  return pts.slice(0, SCHOOL.shown).map((p) => ({ x: p.x, z: p.z }));
+})();
+
+// Anything on the road: gate halves, clams, critters, the boss.
+export class Thing {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.id = 0;
+    this.alive = false;
+    this.kind = ''; // gate | clam | enemy | boss
+    this.type = ''; // enemy type / boss id
+    this.x = 0;
+    this.z = 0;
+    this.px = 0; // previous tick (render interpolation)
+    this.pz = 0;
+    this.w = 0; // half-width (what bullets and the school collide with)
+    this.depth = 0; // half-depth along z
+    this.hp = 0;
+    this.maxHp = 0;
+    this.speed = 0;
+    this.bite = 0;
+    this.coins = 0;
+    this.gate = null; // { type, value, buddy } for gates; the prize for clams
+    this.partner = null; // the other half of a gate pair
+    this.charge = 0; // bubble hits a number gate has taken toward its next +1
+    this.hitT = 0;
+    this.anim = 0;
+    this.state = 0; // boss: 0 hold, 1 charge wind-up, 2 charging, 3 swimming back
+    this.stateT = 0;
+    this.attackT = 0;
+    this.attacks = 0; // boss attacks so far / times a gate has been bumped
+    this.homeZ = 0;
+    this.tx = 0;
+    this.cycle = 0;
+  }
+}
+
+export class Bullet {
+  constructor() {
+    this.hitIds = new Int32Array(8);
+    this.reset();
+  }
+  reset() {
+    this.alive = false;
+    this.kind = 'bubble'; // bubble | dart | ink | star
+    this.x = 0;
+    this.z = 0;
+    this.px = 0;
+    this.pz = 0;
+    this.vx = 0;
+    this.vz = 0;
+    this.dmg = 0;
+    this.r = 0;
+    this.pierce = 1;
+    this.splash = 0;
+    this.t = 0;
+    this.buddy = false;
+    this.hitN = 0;
+  }
+}
+
+// Boss attacks: thrown ones land on the school's line after `dur` (red target
+// circle until then).
+export class Shot {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.alive = false;
+    this.kind = ''; // ink | star | swipe
+    this.x = 0;
+    this.r = 0;
+    this.fromX = 0;
+    this.fromZ = 0;
+    this.t = 0;
+    this.dur = 0;
+  }
+}
 
 export class Game {
   constructor(opts = {}) {
-    this.events = new EventQueue(2048);
-    this.grid = new SpatialGrid(WORLD.W, WORLD.H, WORLD.CELL);
-    this.sockets = MAP.sockets.map(([x, y], i) => ({ i, x, y, tower: null, tentacle: null }));
-    this.formation = { x: 0, y: 0, t: 0, descend: 0 };
-    this.heart = { x: MAP.heart.x, y: MAP.heart.y, r: MAP.heart.r, hp: HEART.hp, maxHp: HEART.hp, regen: 0, hitT: 0 };
-    this.player = {
-      x: WORLD.W / 2, y: WORLD.RAIL_Y, px: WORLD.W / 2, r: PLAYER.r, vx: 0,
-      alive: true, deadT: 0, invulnT: 0, hearts: PLAYER.hearts, maxHearts: PLAYER.hearts,
-      meter: PLAYER.meterMax, cdMinus: 0, cdPlus: 0, shootT: 9, plusShootT: 9, skin: 'classic',
-    };
+    this.events = new EventQueue(1024);
     this.pools = {
-      enemy: new Pool(() => new Enemy(), 128),
-      proj: new Pool(() => new Projectile(), 256),
-      strike: new Pool(() => new Strike(), 48),
-      pickup: new Pool(() => new Pickup(), 32),
-      tentacle: new Pool(() => new Tentacle(), 8),
-      tower: new Pool(() => new Tower(), 0),
+      thing: new Pool(() => new Thing(), 96),
+      bullet: new Pool(() => new Bullet(), 96),
+      shot: new Pool(() => new Shot(), 8),
     };
-    this.enemies = [];
-    this.towers = [];
-    this.projectiles = [];
-    this.strikes = [];
-    this.pickups = [];
-    this.tentacles = [];
-
-    // Written by input (browser) or a bot (headless). Read by updatePlayer.
-    this.input = { left: false, right: false, plus: false, minus: false, plusPressed: false, minusPressed: false, moveX: -1 };
-
-    this.meta = opts.meta || { endlessUnlocked: false, skins: ['classic'], skin: 'classic', bestWave: 0, bestEndless: 0, bestScore: 0, wins: 0, runs: 0 };
+    this.things = [];
+    this.bullets = [];
+    this.shots = [];
+    this.school = {
+      x: 0, px: 0, n: 0, fireT: 0, volley: 0, dmgMul: 1, rateMul: 1,
+      buddies: [], // { type, level, cd, side, fireT }
+      hitT: 0, gainT: 0,
+    };
+    // Written by input (browser) or a bot (headless). targetX: NaN when not dragging.
+    this.input = { targetX: NaN, left: false, right: false };
+    this.meta = normalizeMeta(opts.meta);
     this.phase = PHASE.TITLE;
     this.paused = false;
-    this.clock = 0; // always advancing (animations in menus)
-    this.uiVersion = 0; // bumped on any state change the UI should redraw for
-    this.saveRequest = ''; // 'save' | 'clear' — consumed by the host
+    this.clock = 0; // always advancing (menus animate)
+    this.uiVersion = 0;
     this.metaDirty = false;
     this.nextId = 0;
-    this.stats = {};
-    this.newRun({ seed: opts.seed || 1, dryRun: true });
-    this.player.skin = this.meta.skin || 'classic';
-    this.phase = PHASE.TITLE;
-    this.saveRequest = '';
+    this.level = this.meta.level;
+    this.plan = buildLevel(this.level);
+    this.resetLevelState();
   }
 
-  // ---------------------------------------------------------------- run setup
+  // ---------------------------------------------------------------- level flow
 
-  newRun({ seed = (Math.random() * 2 ** 31) | 0, endless = false, dryRun = false } = {}) {
-    this.seed = seed >>> 0 || 1;
-    this.rng = new RNG(this.seed);
-    this.endless = endless;
-    this.wave = 1;
-    this.shells = ECONOMY.startShells;
-    this.pearls = ECONOMY.startPearls;
-    this.upgrades = {};
-    for (const k in UPGRADES) this.upgrades[k] = 0;
-    this.reefWash = 0;
-    this.unlocked = {};
-    this.towerTypes = STARTER_TOWERS.slice();
-    this.forkOptions = [];
-    this.fork = NEUTRAL_MODS;
-    this.mods = NEUTRAL_MODS;
-    this.draftOptions = STARTER_TOWERS.slice();
-    this.pendingTower = '';
-    this.bossesDefeated = 0;
-    this.boss = null;
-    this.waveSummary = null;
-    this.score = 0;
-    this.combo = 0;
-    this.comboT = 0;
-    this.runStats = { kills: 0, shells: 0, towersBuilt: 0, perfectWaves: 0 };
-    this.clearCombat();
-    for (const t of this.towers) t.alive = false;
-    this.towers.length = 0;
-    for (const s of this.sockets) {
-      s.tower = null;
-      s.tentacle = null;
-    }
-    this.player.x = WORLD.W / 2;
-    this.recalcStats();
-    this.heart.hp = this.heart.maxHp;
-    resetPlayer(this);
-    this.waveStats = this.freshWaveStats();
-    this.waveHpMul = 1;
-    this.waveSpeedMul = 1;
-    this.waveShellMul = 1;
-    this.isBossWave = false;
-    this.speed = 1;
-    this.paused = false;
-    if (!dryRun) {
-      this.meta.runs++;
-      this.metaDirty = true;
-    }
-    this.setPhase(PHASE.DRAFT);
-    return OK;
-  }
-
-  freshWaveStats() {
-    return {
-      kills: 0, shells: 0, pearls: 0, leaks: 0, heartDmg: 0, playerHits: 0, shellsStolen: 0, score: 0,
-      towersEaten: 0, unlockedTower: '', bossDefeated: '', perfect: false, clearBonus: 0, scoreBonus: 0,
-    };
-  }
-
-  clearCombat() {
+  resetLevelState() {
     const release = (arr, pool) => {
       for (const o of arr) {
         o.alive = false;
@@ -151,580 +152,667 @@ export class Game {
       }
       arr.length = 0;
     };
-    release(this.enemies, this.pools.enemy);
-    release(this.projectiles, this.pools.proj);
-    release(this.strikes, this.pools.strike);
-    release(this.pickups, this.pools.pickup);
-    release(this.tentacles, this.pools.tentacle);
-    for (const s of this.sockets) s.tentacle = null;
+    release(this.things, this.pools.thing);
+    release(this.bullets, this.pools.bullet);
+    release(this.shots, this.pools.shot);
+    const s = this.school;
+    const up = this.meta.up;
+    s.x = s.px = 0;
+    s.n = SCHOOL.start + up.fish;
+    s.fireT = 0.1;
+    s.volley = 0;
+    s.dmgMul = 1 + 0.1 * up.dmg;
+    s.rateMul = 1 + 0.06 * up.rate;
+    s.buddies.length = 0;
+    s.hitT = 0;
+    s.gainT = 0;
+    this.input.targetX = NaN;
+    this.dist = 0;
+    this.t = 0;
+    this.stage = STAGE.RUN;
+    this.planIdx = 0;
     this.boss = null;
-    this.swallowed = [];
-    this.spawns = [];
-    this.spawnIdx = 0;
-    this.waveTime = 0;
-    this.diveT = 0;
-    this.combo = 0;
-    this.comboT = 0;
-    resetFormation(this);
+    this.ending = '';
+    this.endT = 0;
+    this.coinsRun = 0;
+    this.result = null;
   }
 
-  recalcStats() {
-    const u = this.upgrades;
-    const s = this.stats;
-    s.meterRegen = PLAYER.meterRegen * (1 + 0.25 * u.meterRegen);
-    s.meterMax = PLAYER.meterMax + 25 * u.meterCap;
-    s.minusDmg = PLAYER.minusDmg * (1 + 0.3 * u.minusPower);
-    s.minusSlowPer = PLAYER.minusSlowPer + 0.01 * u.minusPower;
-    s.minusArmorPer = PLAYER.minusArmorPer + 0.005 * u.minusPower;
-    s.plusHealTower = PLAYER.plusHealTower * (1 + 0.4 * u.plusPower);
-    s.plusHealHeart = PLAYER.plusHealHeart * (1 + 0.4 * u.plusPower);
-    s.plusPowerDur = PLAYER.plusPowerDur + u.plusPower;
-    s.plusDmg = PLAYER.plusDmg;
-    s.magnetR = this.unlocked.magnet ? PLAYER.magnetRUpgraded : PLAYER.magnetR;
-    s.pickupMeter = this.unlocked.magnet ? PLAYER.pickupMeterUpgraded : PLAYER.pickupMeter;
-    this.heart.maxHp = HEART.hp + 25 * u.heartHp;
-    this.heart.regen = HEART.regen + 0.4 * u.heartRegen;
-    this.player.maxHearts = PLAYER.hearts + (this.unlocked.extraHeart ? 1 : 0);
+  // Starts (or restarts) the level in meta.level.
+  startLevel() {
+    this.level = this.meta.level;
+    this.plan = buildLevel(this.level);
+    this.resetLevelState();
+    this.paused = false;
+    this.meta.runs++;
+    this.metaDirty = true;
+    this.setPhase(PHASE.PLAY);
+    this.events.emit('level_start', 0, 0, this.level, 0, this.plan.boss);
+    return OK;
   }
 
-  setPhase(phase) {
-    this.phase = phase;
+  setPhase(p) {
+    this.phase = p;
     this.uiVersion++;
-    if (phase === PHASE.FORK || phase === PHASE.DRAFT || phase === PHASE.PLACE || phase === PHASE.BUILD) this.saveRequest = 'save';
-    if (phase === PHASE.DEFEAT || phase === PHASE.VICTORY) this.saveRequest = 'clear';
-    this.events.emit('phase', 0, 0, 0, 0, phase);
-  }
-
-  get totalWaves() {
-    return WAVES.total;
-  }
-
-  // ---------------------------------------------------------------- commands
-
-  chooseFork(i) {
-    if (this.phase !== PHASE.FORK) return fail('Not choosing a fork');
-    const id = this.forkOptions[i];
-    const f = FORKS.find((x) => x.id === id);
-    if (!f) return fail('No such fork');
-    this.fork = f;
-    if (f.shells) this.shells += f.shells;
-    if (f.pearls) this.pearls += f.pearls;
-    if (f.heal) this.heart.hp = Math.min(this.heart.maxHp, this.heart.hp + f.heal);
-    this.events.emit('fork', 0, 0, i, 0, f.id);
-    const n = f.capsules || (this.unlocked.luckyCapsule ? 3 : 2);
-    this.draftOptions = this.rollCapsules(n);
-    this.setPhase(PHASE.DRAFT);
-    return OK;
-  }
-
-  rollCapsules(n) {
-    const types = this.towerTypes.slice();
-    this.rng.shuffle(types);
-    const out = types.slice(0, Math.min(n, types.length));
-    while (out.length < n) out.push(this.rng.pick(this.towerTypes));
-    return out;
-  }
-
-  skipCapsuleValue() {
-    let min = Infinity;
-    for (const t of this.draftOptions) min = Math.min(min, TOWERS[t].cost);
-    return Math.round(min * ECONOMY.skipCapsuleFrac);
-  }
-
-  // i = -1 takes shells instead of a buddy.
-  chooseDraft(i) {
-    if (this.phase !== PHASE.DRAFT) return fail('Not drafting');
-    if (i === -1 || !this.canPlace(this.draftOptions[i])) {
-      const v = this.skipCapsuleValue();
-      this.shells += v;
-      this.events.emit('capsule_skip', 0, 0, v);
-      this.pendingTower = '';
-      this.setPhase(PHASE.BUILD);
-      return OK;
-    }
-    const type = this.draftOptions[i];
-    if (!type) return fail('No such capsule');
-    this.pendingTower = type;
-    this.events.emit('capsule', 0, 0, i, 0, type);
-    this.setPhase(PHASE.PLACE);
-    return OK;
-  }
-
-  hasEmptySocket() {
-    return this.sockets.some((s) => !s.tower);
-  }
-
-  // A capsule can go in an empty socket, or onto a twin of the same type to level it up.
-  canMerge(socketIdx, type) {
-    const t = this.sockets[socketIdx]?.tower;
-    if (!t || t.type !== type) return false;
-    const info = this.upgradeInfo(t);
-    return !info.max && !info.locked;
-  }
-
-  canPlace(type) {
-    if (!type) return false;
-    return this.sockets.some((s) => !s.tower || this.canMerge(s.i, type));
-  }
-
-  placePending(socketIdx) {
-    if (this.phase !== PHASE.PLACE || !this.pendingTower) return fail('Nothing to place');
-    const so = this.sockets[socketIdx];
-    if (!so) return fail('No such socket');
-    const type = this.pendingTower;
-    const value = Math.round(TOWERS[type].cost * ECONOMY.capsuleValue);
-    if (so.tower) {
-      if (!this.canMerge(socketIdx, type)) return fail('Socket is taken');
-      const t = so.tower;
-      t.level++;
-      t.stats = t.def.levels[t.level];
-      t.maxHp = t.hp = towerMaxHp(t.def, t.level);
-      t.invested += value;
-      this.pendingTower = '';
-      this.events.emit('tower_upgrade', t.x, t.y, t.level, 1, t.type, t);
-      this.setPhase(PHASE.BUILD);
-      return OK;
-    }
-    const t = createTower(this, type, socketIdx, value);
-    this.pendingTower = '';
-    this.runStats.towersBuilt++;
-    this.events.emit('tower_place', t.x, t.y, 0, 0, type, t);
-    this.setPhase(PHASE.BUILD);
-    return OK;
-  }
-
-  buyTower(type, socketIdx) {
-    if (this.phase !== PHASE.BUILD) return fail('Can only build between waves');
-    if (!this.towerTypes.includes(type)) return fail('Tower locked');
-    const so = this.sockets[socketIdx];
-    if (!so || so.tower) return fail('Socket is taken');
-    const cost = TOWERS[type].cost;
-    if (this.shells < cost) return this.denied('Not enough shells');
-    this.shells -= cost;
-    const t = createTower(this, type, socketIdx, cost);
-    this.runStats.towersBuilt++;
-    this.events.emit('tower_place', t.x, t.y, cost, 0, type, t);
-    this.uiVersion++;
-    this.saveRequest = 'save';
-    return OK;
-  }
-
-  upgradeInfo(t) {
-    if (!t) return null;
-    if (t.level >= 2) return { cost: 0, max: true, locked: false, name: '' };
-    const locked = t.level === 1 && !this.unlocked['evo_' + t.type];
-    const next = t.def.levels[t.level + 1];
-    return { cost: t.def.upgrade[t.level], max: false, locked, name: next.name || `${t.def.short} Lv${t.level + 2}` };
-  }
-
-  upgradeTower(socketIdx) {
-    if (this.phase !== PHASE.BUILD) return fail('Can only upgrade between waves');
-    const t = this.sockets[socketIdx]?.tower;
-    if (!t) return fail('No tower here');
-    const info = this.upgradeInfo(t);
-    if (info.max) return fail('Already maxed');
-    if (info.locked) return this.denied('Unlock its evolution with pearls first');
-    if (this.shells < info.cost) return this.denied('Not enough shells');
-    this.shells -= info.cost;
-    t.invested += info.cost;
-    t.level++;
-    t.stats = t.def.levels[t.level];
-    t.maxHp = t.hp = towerMaxHp(t.def, t.level);
-    this.events.emit('tower_upgrade', t.x, t.y, t.level, 0, t.type, t);
-    this.uiVersion++;
-    this.saveRequest = 'save';
-    return OK;
-  }
-
-  sellValue(t) {
-    return Math.floor(t.invested * ECONOMY.sellRefund);
-  }
-
-  sellTower(socketIdx) {
-    if (this.phase !== PHASE.BUILD) return fail('Can only sell between waves');
-    const t = this.sockets[socketIdx]?.tower;
-    if (!t) return fail('No tower here');
-    const v = this.sellValue(t);
-    this.shells += v;
-    removeTower(this, t);
-    this.events.emit('tower_sell', t.x, t.y, v, 0, t.type, null);
-    this.uiVersion++;
-    this.saveRequest = 'save';
-    return OK;
-  }
-
-  upgradeCost(id) {
-    const u = UPGRADES[id];
-    if (!u) return null;
-    if (u.consumable) return this.reefWash >= u.max ? null : u.cost[0];
-    const lvl = this.upgrades[id];
-    return lvl >= u.max ? null : u.cost[lvl];
-  }
-
-  buyUpgrade(id) {
-    if (this.phase !== PHASE.BUILD) return fail('Shop is open between waves');
-    const u = UPGRADES[id];
-    if (!u) return fail('No such upgrade');
-    const cost = this.upgradeCost(id);
-    if (cost == null) return fail('Maxed out');
-    if (this.shells < cost) return this.denied('Not enough shells');
-    this.shells -= cost;
-    if (u.consumable) this.reefWash++;
-    else {
-      this.upgrades[id]++;
-      const before = this.heart.maxHp;
-      this.recalcStats();
-      if (id === 'heartHp') this.heart.hp = Math.min(this.heart.maxHp, this.heart.hp + (this.heart.maxHp - before));
-      if (id === 'meterCap') this.player.meter = this.stats.meterMax;
-    }
-    this.events.emit('buy_upgrade', 0, 0, cost, 0, id);
-    this.uiVersion++;
-    this.saveRequest = 'save';
-    return OK;
-  }
-
-  buyUnlock(id) {
-    if (this.phase !== PHASE.BUILD) return fail('Unlocks are between waves');
-    const u = UNLOCKS[id];
-    if (!u) return fail('No such unlock');
-    if (this.unlocked[id]) return fail('Already unlocked');
-    if (this.pearls < u.pearls) return this.denied('Not enough pearls');
-    this.pearls -= u.pearls;
-    this.unlocked[id] = true;
-    if (u.tower && !this.towerTypes.includes(u.tower)) this.towerTypes.push(u.tower);
-    this.recalcStats();
-    if (id === 'extraHeart') this.player.hearts = this.player.maxHearts;
-    this.events.emit('buy_unlock', 0, 0, u.pearls, 0, id);
-    this.uiVersion++;
-    this.saveRequest = 'save';
-    return OK;
-  }
-
-  denied(reason) {
-    this.events.emit('denied', 0, 0, 0, 0, reason);
-    return fail(reason);
-  }
-
-  startWave() {
-    if (this.phase !== PHASE.BUILD) return fail('Not ready');
-    if (this.pendingTower) return fail('Place your capsule first');
-    this.clearCombat();
-    const w = this.wave;
-    this.mods = this.fork;
-    this.waveHpMul = hpMul(w) * (this.mods.hpMul || 1);
-    this.waveSpeedMul = speedMul(w) * (this.mods.speedMul || 1);
-    this.waveShellMul = (1 + ECONOMY.shellScalePerWave * (w - 1)) * (this.mods.shellMul || 1);
-    this.spawns = buildWave(this.rng, w, this.mods);
-    this.spawnIdx = 0;
-    this.waveTime = 0;
-    this.diveT = WAVES.diveStart;
-    this.shotCap = shotCap(w);
-    this.waveStats = this.freshWaveStats();
-    this.isBossWave = isBossWave(w);
-    resetPlayer(this);
-    const hpStart = this.mods.towerHpStart || 1;
-    for (const t of this.towers) {
-      t.hp = t.maxHp * hpStart;
-      clearTowerDebuffs(t);
-      t.plusT = 0;
-      t.covered = false;
-      t.state = 0;
-      t.inflate = 0;
-      t.sx = t.psx = t.x;
-      t.sy = t.psy = t.y;
-      t.aim = -Math.PI / 2;
-      t.cd = this.rng.range(0.1, 0.6);
-      t.cd2 = 1;
-      t.cd3 = 2;
-    }
-    this.input.left = this.input.right = this.input.plus = this.input.minus = false;
-    this.input.moveX = -1;
-    this.setPhase(PHASE.COMBAT);
-    this.events.emit('wave_start', 0, 0, w, this.isBossWave ? 1 : 0, this.mods.id);
-    return OK;
-  }
-
-  useReefWash() {
-    if (this.phase !== PHASE.COMBAT || this.paused) return fail('Only during a wave');
-    if (this.reefWash <= 0) return this.denied('No Reef Wash — buy one in the shop');
-    this.reefWash--;
-    for (const t of this.towers) clearTowerDebuffs(t);
-    for (const s of this.strikes) s.alive = false; // wash away every incoming shot
-    this.events.emit('reef_wash', WORLD.W / 2, WORLD.H / 2);
-    this.uiVersion++;
-    return OK;
-  }
-
-  continueAfterWave() {
-    if (this.phase === PHASE.VICTORY) {
-      this.endless = true;
-    } else if (this.phase !== PHASE.WAVE_END) return fail('Wave not over');
-    this.wave++;
-    this.forkOptions = rollForks(this.rng, this.wave);
-    this.setPhase(PHASE.FORK);
-    return OK;
+    this.events.emit('phase', 0, 0, 0, 0, p);
   }
 
   setPaused(p) {
-    if (this.phase === PHASE.TITLE) p = false;
+    if (this.phase !== PHASE.PLAY) p = false;
     if (this.paused === p) return;
     this.paused = p;
     this.uiVersion++;
     this.events.emit(p ? 'pause' : 'resume');
   }
 
+  quitToTitle() {
+    this.paused = false;
+    this.resetLevelState();
+    this.setPhase(PHASE.TITLE);
+  }
+
+  upgradeCost(id) {
+    const u = UPGRADES[id];
+    const lvl = this.meta.up[id];
+    if (!u || lvl >= u.max) return null;
+    return Math.round(u.base * Math.pow(u.grow, lvl));
+  }
+
+  buyUpgrade(id) {
+    if (this.phase === PHASE.PLAY) return fail('Not during a level');
+    const cost = this.upgradeCost(id);
+    if (cost == null) return fail('Maxed out');
+    if (this.meta.coins < cost) {
+      this.events.emit('denied', 0, 0, 0, 0, 'Not enough coins');
+      return fail('Not enough coins');
+    }
+    this.meta.coins -= cost;
+    this.meta.up[id]++;
+    this.metaDirty = true;
+    this.uiVersion++;
+    this.events.emit('buy', 0, 0, cost, this.meta.up[id], id);
+    return OK;
+  }
+
   setSkin(id) {
     if (!this.meta.skins.includes(id)) return fail('Skin locked');
     this.meta.skin = id;
-    this.player.skin = id;
     this.metaDirty = true;
     this.uiVersion++;
     return OK;
   }
 
-  // Clears the board behind the title screen. The stored save (last build/fork
-  // screen) is untouched, so "Continue" still works.
-  quitToTitle() {
-    this.newRun({ seed: 1, dryRun: true });
-    this.saveRequest = '';
-    this.setPhase(PHASE.TITLE);
+  get progress() {
+    const end = this.plan.length - BOSSES[this.plan.boss].stopZ;
+    return this.stage === STAGE.BOSS ? 1 : clamp(this.dist / end, 0, 1);
   }
 
   // ---------------------------------------------------------------- simulation
 
-  // Advance one fixed step. Call at SIM.DT intervals.
   update(dt) {
     if (this.paused) return;
     this.clock += dt;
-    if (this.heart.hitT > 0) this.heart.hitT -= dt;
-    if (this.phase !== PHASE.COMBAT) return;
-
-    this.waveTime += dt;
-    if (this.comboT > 0) {
-      this.comboT -= dt;
-      if (this.comboT <= 0) this.combo = 0;
-    }
+    if (this.phase !== PHASE.PLAY) return;
+    this.t += dt;
     this.snapshot();
-    this.spawnTick();
-    updateFormation(this, dt);
-    updateDives(this, dt);
-    updatePlayer(this, dt);
-    updateEnemies(this, dt);
+    const s = this.school;
+    if (s.hitT > 0) s.hitT -= dt;
+    if (s.gainT > 0) s.gainT -= dt;
+    if (!this.ending) this.steer(dt);
+    const adv = this.stage === STAGE.RUN && !this.ending ? ROAD.speed * dt : 0;
+    this.dist += adv;
+    this.spawn();
+    this.moveThings(dt, adv);
+    if (!this.ending) this.fire(dt);
+    this.updateBullets(dt);
+    this.updateShots(dt);
+    if (!this.ending) this.collide();
+    compact(this.things, this.pools.thing);
+    compact(this.bullets, this.pools.bullet);
+    compact(this.shots, this.pools.shot);
+    if (!this.ending && s.n <= 0) this.end('lost');
+    if (this.ending) {
+      this.endT -= dt;
+      if (this.endT <= 0) this.finish();
+    }
+  }
 
-    const grid = this.grid;
-    grid.clear();
-    for (let i = 0; i < this.enemies.length; i++) if (this.enemies[i].alive) grid.insert(this.enemies[i]);
+  snapshot() {
+    for (let i = 0; i < this.things.length; i++) {
+      const o = this.things[i];
+      o.px = o.x;
+      o.pz = o.z;
+    }
+    for (let i = 0; i < this.bullets.length; i++) {
+      const o = this.bullets[i];
+      o.px = o.x;
+      o.pz = o.z;
+    }
+    this.school.px = this.school.x;
+  }
 
-    updateTowers(this, dt);
-    updateProjectiles(this, dt);
-    updateStrikes(this, dt);
-    updateTentacles(this, dt);
-    updatePickups(this, dt);
+  // Half-width of the school (what critters and clams collide with) and how far
+  // its front row reaches up the road.
+  get schoolHalfW() {
+    const n = Math.min(this.school.n, SCHOOL.shown);
+    return 14 + SCHOOL.spacing * 0.55 * Math.sqrt(Math.max(1, n));
+  }
+  get schoolFront() {
+    const n = Math.min(this.school.n, SCHOOL.shown);
+    return 8 + SCHOOL.spacing * 0.45 * Math.sqrt(Math.max(1, n));
+  }
 
-    const h = this.heart;
-    if (h.regen > 0 && h.hp > 0) h.hp = Math.min(h.maxHp, h.hp + h.regen * dt);
+  steer(dt) {
+    const s = this.school, inp = this.input;
+    const lim = ROAD.half - ROAD.edge;
+    const dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+    if (dir) s.x += dir * SCHOOL.keySpeed * dt;
+    else if (inp.targetX === inp.targetX) {
+      const d = clamp(inp.targetX, -lim, lim) - s.x;
+      const step = SCHOOL.steer * dt;
+      s.x += Math.abs(d) <= step ? d : Math.sign(d) * step;
+    }
+    s.x = clamp(s.x, -lim, lim);
+  }
 
-    compact(this.enemies, this.pools.enemy);
-    compact(this.projectiles, this.pools.proj);
-    compact(this.strikes, this.pools.strike);
-    compact(this.pickups, this.pools.pickup);
-    compact(this.tentacles, this.pools.tentacle);
+  spawn() {
+    const items = this.plan.items;
+    while (this.planIdx < items.length && items[this.planIdx].at - this.dist <= ROAD.view) {
+      const it = items[this.planIdx++];
+      const z = it.at - this.dist;
+      if (it.kind === 'gates') {
+        const l = this.addThing('gate', '', -GATES.w / 2, z);
+        const r = this.addThing('gate', '', GATES.w / 2, z);
+        l.w = r.w = GATES.w / 2 - 4;
+        l.depth = r.depth = 8;
+        l.gate = { ...it.left };
+        r.gate = { ...it.right };
+        l.partner = r;
+        r.partner = l;
+      } else if (it.kind === 'clam') {
+        const c = this.addThing('clam', 'clam', it.x, z);
+        c.w = CLAM.w / 2;
+        c.depth = 22;
+        c.hp = c.maxHp = it.hp;
+        c.gate = { ...it.prize };
+        c.coins = 3;
+      } else if (it.kind === 'enemy') {
+        const def = ENEMIES[it.type];
+        const e = this.addThing('enemy', it.type, it.x, z);
+        e.w = def.r;
+        e.depth = def.r;
+        e.hp = e.maxHp = it.hp;
+        e.speed = def.speed;
+        e.bite = def.bite;
+        e.coins = def.coins;
+        e.anim = (e.id * 0.37) % 6;
+      } else if (it.kind === 'boss') {
+        const def = BOSSES[it.id];
+        const b = this.addThing('boss', it.id, 0, z);
+        b.w = def.r;
+        b.depth = def.r * 0.6;
+        b.hp = b.maxHp = it.hp;
+        b.cycle = bossForLevel(this.level).cycle;
+        b.attackT = 1.2;
+        this.boss = b;
+        this.events.emit('boss_spawn', b.x, b.z, b.maxHp, 0, b.type, b);
+      }
+    }
+  }
 
-    if (h.hp <= 0) {
-      this.onDefeat();
+  addThing(kind, type, x, z) {
+    const o = this.pools.thing.get();
+    o.reset();
+    o.id = ++this.nextId;
+    o.alive = true;
+    o.kind = kind;
+    o.type = type;
+    o.x = o.px = x;
+    o.z = o.pz = z;
+    this.things.push(o);
+    return o;
+  }
+
+  moveThings(dt, adv) {
+    const s = this.school;
+    for (let i = 0; i < this.things.length; i++) {
+      const o = this.things[i];
+      if (!o.alive) continue;
+      if (o.hitT > 0) o.hitT -= dt;
+      o.anim += dt;
+      if (o.kind === 'boss') {
+        this.moveBoss(o, dt, adv);
+        continue;
+      }
+      o.z -= adv;
+      if (o.kind === 'enemy') {
+        o.z -= o.speed * dt;
+        // critters close in on the school once they're near
+        if (o.z < 520 && o.z > 0 && !this.ending) {
+          const d = s.x - o.x;
+          o.x += clamp(d, -26 * dt, 26 * dt);
+        }
+      }
+      if (o.z < -ROAD.behind) o.alive = false;
+    }
+  }
+
+  // ---------------------------------------------------------------- shooting
+
+  fire(dt) {
+    const s = this.school;
+    s.fireT -= dt * s.rateMul;
+    if (s.fireT <= 0 && s.n > 0) {
+      s.fireT += SCHOOL.fireEvery;
+      const shown = Math.min(s.n, SCHOOL.shown);
+      const B = Math.min(shown, SCHOOL.bulletsMax);
+      const per = (s.n * SCHOOL.dps * s.dmgMul * SCHOOL.fireEvery) / B;
+      for (let k = 0; k < B; k++) {
+        const off = SCHOOL_OFFSETS[(s.volley * B + k * 5) % shown];
+        this.addBullet('bubble', s.x + off.x, Math.max(0, off.z) + 10, 0, SCHOOL.bulletSpeed, per, SCHOOL.bulletR, 1, 0, false);
+      }
+      s.volley++;
+      this.events.emit('shoot', s.x, 0, s.n);
+    }
+    for (let i = 0; i < s.buddies.length; i++) {
+      const b = s.buddies[i];
+      b.fireT += dt;
+      b.cd -= dt;
+      if (b.cd > 0) continue;
+      const def = BUDDIES[b.type];
+      const bx = this.buddyX(b);
+      const tgt = this.nearestTarget(bx);
+      if (!tgt) {
+        b.cd = 0.15;
+        continue;
+      }
+      b.cd = def.every;
+      const speed = SCHOOL.bulletSpeed * 0.8;
+      const time = Math.max(0.05, tgt.z / speed);
+      const vx = clamp((tgt.x - bx) / time, -500, 500);
+      const mul = 1 + 0.6 * (b.level - 1);
+      this.addBullet(def.shot, bx, 20, vx, speed, def.dmg * mul * s.dmgMul, 12, def.pierce, def.splash || 0, true);
+      b.fireT = 0;
+      this.events.emit('buddy_fire', bx, 20, 0, 0, b.type);
+    }
+  }
+
+  buddyX(b) {
+    return clamp(this.school.x + b.side * (this.schoolHalfW + 22), -ROAD.half, ROAD.half);
+  }
+
+  // The closest thing ahead worth shooting (a buddy's aim).
+  nearestTarget(x) {
+    let best = null, bv = Infinity;
+    for (let i = 0; i < this.things.length; i++) {
+      const o = this.things[i];
+      if (!o.alive || o.kind === 'gate' || o.z <= 0 || o.z > ROAD.view * 0.85) continue;
+      const v = o.z + Math.abs(o.x - x) * 0.6;
+      if (v < bv) {
+        bv = v;
+        best = o;
+      }
+    }
+    return best;
+  }
+
+  addBullet(kind, x, z, vx, vz, dmg, r, pierce, splash, buddy) {
+    const b = this.pools.bullet.get();
+    b.reset();
+    b.alive = true;
+    b.kind = kind;
+    b.x = b.px = x;
+    b.z = b.pz = z;
+    b.vx = vx;
+    b.vz = vz;
+    b.dmg = dmg;
+    b.r = r;
+    b.pierce = pierce;
+    b.splash = splash;
+    b.buddy = buddy;
+    this.bullets.push(b);
+    return b;
+  }
+
+  updateBullets(dt) {
+    for (let i = 0; i < this.bullets.length; i++) {
+      const b = this.bullets[i];
+      if (!b.alive) continue;
+      b.t += dt;
+      const z0 = b.z;
+      b.z += b.vz * dt;
+      b.x += b.vx * dt;
+      if (b.z > ROAD.view + 40 || b.x < -ROAD.half - 60 || b.x > ROAD.half + 60) {
+        b.alive = false;
+        continue;
+      }
+      // the nearest thing the bullet passed through this tick
+      let hit = null;
+      for (let j = 0; j < this.things.length; j++) {
+        const o = this.things[j];
+        if (!o.alive || (hit && o.z >= hit.z)) continue;
+        if (o.kind === 'gate' && (o.gate.type !== 'add' || b.buddy)) continue;
+        if (o.z + o.depth < z0 || o.z - o.depth > b.z) continue;
+        if (Math.abs(o.x - b.x) > o.w + b.r) continue;
+        if (seen(b, o.id)) continue;
+        hit = o;
+      }
+      if (!hit) continue;
+      if (b.hitN < b.hitIds.length) b.hitIds[b.hitN++] = hit.id;
+      this.damage(hit, b.dmg);
+      if (b.splash) {
+        const r2 = b.splash * b.splash;
+        for (let j = 0; j < this.things.length; j++) {
+          const o = this.things[j];
+          if (!o.alive || o === hit || o.kind === 'gate') continue;
+          const dx = o.x - b.x, dz = o.z - hit.z;
+          if (dx * dx + dz * dz <= r2) this.damage(o, b.dmg * 0.5);
+        }
+        this.events.emit('splash', b.x, hit.z, b.splash, 0, b.kind);
+      }
+      if (--b.pierce <= 0) b.alive = false;
+    }
+  }
+
+  damage(o, dmg) {
+    if (!o.alive) return;
+    if (o.kind === 'gate') {
+      // every few bubbles nudge a number gate up by one (however big the school is)
+      if (o.attacks >= GATES.bumpMax) return;
+      if (++o.charge >= GATES.hitsPerBump) {
+        o.charge = 0;
+        o.attacks++;
+        o.gate.value++;
+        if (o.gate.value === 0) o.gate.value = 1; // no +0 gates
+        o.hitT = 0.08;
+        this.events.emit('gate_bump', o.x, o.z, o.gate.value);
+      }
       return;
     }
-    if (this.spawnIdx >= this.spawns.length && this.enemies.length === 0) this.onWaveCleared();
+    o.hp -= dmg;
+    o.hitT = 0.08;
+    this.events.emit('hit', o.x, o.z, dmg, 0, o.kind);
+    if (o.hp <= 0) this.kill(o);
   }
 
-  // Remember where everything was so renderers can interpolate between ticks
-  // (smooth motion on 120 Hz / throttled 30 Hz displays and uneven frame pacing).
-  snapshot() {
-    const lists = [this.enemies, this.projectiles, this.strikes];
-    for (let l = 0; l < lists.length; l++) {
-      const arr = lists[l];
-      for (let i = 0; i < arr.length; i++) {
-        const o = arr[i];
-        o.px = o.x;
-        o.py = o.y;
-        if (o.pz !== undefined) o.pz = o.z;
+  kill(o) {
+    o.alive = false;
+    o.hp = 0;
+    if (o.kind === 'enemy') {
+      this.coinsRun += o.coins;
+      this.events.emit('kill', o.x, o.z, o.coins, 0, o.type);
+    } else if (o.kind === 'clam') {
+      this.coinsRun += o.coins;
+      this.events.emit('clam_crack', o.x, o.z, o.coins, 0, o.gate.type);
+      this.applyEffect(o.gate, o.x, o.z, 'prize');
+    } else if (o.kind === 'boss') {
+      this.coinsRun += 25 + 10 * this.level;
+      this.events.emit('boss_defeat', o.x, o.z, 0, 0, o.type);
+      this.end('won');
+    }
+  }
+
+  // ---------------------------------------------------------------- effects
+
+  applyEffect(e, x, z, source) {
+    const s = this.school;
+    const before = s.n;
+    switch (e.type) {
+      case 'add':
+        this.setFish(s.n + e.value);
+        break;
+      case 'mul':
+        this.setFish(s.n * e.value);
+        break;
+      case 'rate':
+        s.rateMul *= 1.15;
+        break;
+      case 'dmg':
+        s.dmgMul *= 1.2;
+        break;
+      case 'buddy':
+        this.addBuddy(e.buddy);
+        break;
+    }
+    const good = e.type !== 'add' || e.value > 0;
+    this.events.emit(source, x, z, s.n - before, good ? 1 : 0, e.type);
+  }
+
+  setFish(n) {
+    const s = this.school;
+    const v = clamp(Math.round(n), 0, SCHOOL.max);
+    if (v > s.n) s.gainT = 0.4;
+    else if (v < s.n) s.hitT = 0.4;
+    s.n = v;
+  }
+
+  loseFish(k, x, z) {
+    const s = this.school;
+    const lost = Math.min(s.n, Math.max(1, Math.round(k)));
+    this.setFish(s.n - lost);
+    this.events.emit('bite', x, z, lost, s.n);
+  }
+
+  addBuddy(type) {
+    const list = this.school.buddies;
+    const same = list.find((b) => b.type === type);
+    if (same) {
+      same.level = Math.min(3, same.level + 1);
+      this.events.emit('buddy_up', this.buddyX(same), 0, same.level, 0, type);
+      return;
+    }
+    let side = list.length === 0 ? -1 : -list[0].side;
+    if (list.length >= BUDDY_MAX) {
+      // replace the weaker one
+      let weak = 0;
+      for (let i = 1; i < list.length; i++) if (list[i].level < list[weak].level) weak = i;
+      side = list[weak].side;
+      list.splice(weak, 1);
+    }
+    const b = { type, level: 1, cd: 0.5, side, fireT: 9 };
+    list.push(b);
+    this.events.emit('buddy_join', this.buddyX(b), 0, 1, 0, type);
+  }
+
+  // ---------------------------------------------------------------- collisions
+
+  collide() {
+    const s = this.school;
+    const hw = this.schoolHalfW, front = this.schoolFront;
+    for (let i = 0; i < this.things.length; i++) {
+      const o = this.things[i];
+      if (!o.alive) continue;
+      if (o.kind === 'gate') {
+        if (o.z > 0 || o.x > 0) continue; // each pair resolves once, from its left half
+        const pick = s.x < 0 ? o : o.partner;
+        o.alive = false;
+        o.partner.alive = false;
+        this.applyEffect(pick.gate, pick.x, 0, 'gate');
+        continue;
       }
-    }
-    for (let i = 0; i < this.pickups.length; i++) {
-      const o = this.pickups[i];
-      o.px = o.x;
-      o.py = o.y;
-    }
-    for (let i = 0; i < this.towers.length; i++) {
-      const t = this.towers[i];
-      t.psx = t.sx;
-      t.psy = t.sy;
-    }
-    this.player.px = this.player.x;
-  }
-
-  spawnTick() {
-    const list = this.spawns;
-    while (this.spawnIdx < list.length && list[this.spawnIdx].t <= this.waveTime) {
-      const s = list[this.spawnIdx++];
-      if (s.type === 'boss') spawnBoss(this, s.boss, s.cycle);
-      else spawnFormation(this, s);
+      if (o.kind === 'boss') continue;
+      if (o.z - o.depth > front || o.z + o.depth < -front) continue;
+      if (Math.abs(o.x - s.x) > hw + o.w * 0.8) continue;
+      o.alive = false;
+      if (o.kind === 'enemy') this.loseFish(o.bite, o.x, o.z);
+      else this.loseFish(Math.max(2, (o.hp * CLAM.crush) / 3), o.x, o.z);
     }
   }
 
-  get enemiesRemaining() {
-    return this.enemies.length + (this.spawns.length - this.spawnIdx);
-  }
+  // ---------------------------------------------------------------- the boss
 
-  onWaveCleared() {
-    const ws = this.waveStats;
-    // sweep remaining shells into the bank
-    for (const p of this.pickups) if (p.alive) collectPickup(this, p);
-    const bonus = Math.round((ECONOMY.waveClearBase + ECONOMY.waveClearPerWave * this.wave) * (this.mods.shellMul || 1));
-    ws.clearBonus = bonus;
-    this.shells += bonus;
-    ws.shells += bonus;
-    ws.scoreBonus = SCORE.waveClear * this.wave;
-    if (ws.heartDmg <= 0) {
-      ws.perfect = true;
-      this.pearls += ECONOMY.perfectPearls;
-      ws.pearls += ECONOMY.perfectPearls;
-      this.runStats.perfectWaves++;
-      ws.scoreBonus += SCORE.perfect;
-    }
-    this.score += ws.scoreBonus;
-    ws.score += ws.scoreBonus;
-    retractTentacles(this);
-    this.restoreSwallowed();
-    this.clearCombat();
-    for (const t of this.towers) {
-      t.hp = t.maxHp;
-      clearTowerDebuffs(t);
-      t.plusT = 0;
-      t.covered = false;
-      t.state = 0;
-      t.inflate = 0;
-      t.sx = t.psx = t.x;
-      t.sy = t.psy = t.y;
-      t.aim = -Math.PI / 2;
-    }
-    resetPlayer(this);
-    this.waveSummary = { wave: this.wave, ...ws, total: this.score };
-    const m = this.meta;
-    if (this.endless) {
-      if (this.wave > m.bestEndless) m.bestEndless = this.wave;
-      if (this.wave >= 30 && !m.skins.includes('galaxy')) {
-        m.skins.push('galaxy');
-        this.waveSummary.newSkin = 'galaxy';
+  moveBoss(b, dt, adv) {
+    const def = BOSSES[b.type];
+    const s = this.school;
+    if (this.stage === STAGE.RUN) {
+      b.z -= adv;
+      if (b.z <= def.stopZ) {
+        b.z = b.homeZ = def.stopZ;
+        this.stage = STAGE.BOSS;
+        this.events.emit('boss_stage', b.x, b.z, 0, 0, b.type, b);
       }
+      return;
     }
-    if (this.wave > m.bestWave) m.bestWave = this.wave;
-    this.recordScore();
-    this.events.emit('wave_end', 0, 0, this.wave, bonus);
-    if (this.wave === WAVES.total && !this.endless) {
-      m.wins++;
-      m.endlessUnlocked = true;
-      for (const s of ['golden', 'neon']) if (!m.skins.includes(s)) m.skins.push(s);
-      this.events.emit('victory');
-      this.setPhase(PHASE.VICTORY);
-    } else this.setPhase(PHASE.WAVE_END);
-  }
-
-  // Sharky spits out the towers he swallowed once the fight is over.
-  restoreSwallowed() {
-    for (const s of this.swallowed) {
-      if (this.sockets[s.socket].tower) continue;
-      const t = createTower(this, s.type, s.socket, s.invested);
-      t.level = s.level;
-      t.stats = t.def.levels[t.level];
-      t.maxHp = t.hp = towerMaxHp(t.def, t.level);
-      t.kills = s.kills;
-      this.events.emit('tower_spat', t.x, t.y, 0, 0, t.type, t);
+    if (this.ending) return;
+    const speedUp = Math.pow(0.88, b.cycle);
+    switch (b.state) {
+      case 0: {
+        b.homeZ -= def.creep * dt;
+        b.z = b.homeZ;
+        const want = Math.sin(this.t * 0.7) * 70;
+        b.x += clamp(want - b.x, -90 * dt, 90 * dt);
+        b.attackT -= dt;
+        if (b.attackT <= 0) {
+          b.attackT = def.attackEvery * speedUp;
+          this.bossAttack(b, def);
+        }
+        if (b.homeZ - b.depth <= this.schoolFront) {
+          this.events.emit('boss_reach', b.x, b.z, 0, 0, b.type, b);
+          this.loseFish(s.n, s.x, 0);
+        }
+        break;
+      }
+      case 1: // wind-up: line up over a lane
+        b.stateT -= dt;
+        b.x += clamp(b.tx - b.x, -520 * dt, 520 * dt);
+        if (b.stateT <= 0) {
+          b.state = 2;
+          this.events.emit('boss_charge', b.x, b.z, 0, 0, b.type, b);
+        }
+        break;
+      case 2: // charge down the lane
+        b.z -= BOSS_ATTACK.chargeSpeed * dt;
+        if (b.z - b.depth <= this.schoolFront) {
+          if (Math.abs(s.x - b.x) < BOSS_ATTACK.chargeW / 2 + this.schoolHalfW * 0.5) {
+            this.loseFish(this.bossBite() * 2, s.x, 0);
+          } else this.events.emit('dodge', b.x, 0);
+          b.state = 3;
+        }
+        break;
+      default: // swim back
+        b.z += 520 * dt;
+        if (b.z >= b.homeZ) {
+          b.z = b.homeZ;
+          b.state = 0;
+        }
     }
-    this.swallowed.length = 0;
   }
 
-  onDefeat() {
-    this.heart.hp = 0;
-    this.waveSummary = { wave: this.wave, ...this.waveStats, total: this.score };
-    const m = this.meta;
-    if (this.wave - 1 > m.bestWave) m.bestWave = this.wave - 1;
-    this.recordScore();
-    this.events.emit('defeat', this.heart.x, this.heart.y, this.wave);
-    this.setPhase(PHASE.DEFEAT);
+  bossBite() {
+    return BOSS_ATTACK.bite + Math.floor(this.level / 3);
   }
 
-  recordScore() {
+  bossAttack(b, def) {
+    const s = this.school;
+    b.attacks++;
+    switch (def.attack) {
+      case 'charge':
+        b.state = 1;
+        b.stateT = BOSS_ATTACK.chargeWindup;
+        b.tx = clamp(s.x, -ROAD.half + 50, ROAD.half - 50);
+        this.events.emit('boss_windup', b.x, b.z, b.tx, 0, b.type, b);
+        break;
+      case 'stars':
+        this.throwShot(b, 'star', s.x, BOSS_ATTACK.r * 0.8);
+        if (s.x - 150 > -ROAD.half) this.throwShot(b, 'star', s.x - 150, BOSS_ATTACK.r * 0.8);
+        if (s.x + 150 < ROAD.half) this.throwShot(b, 'star', s.x + 150, BOSS_ATTACK.r * 0.8);
+        break;
+      case 'swipe':
+        this.throwShot(b, 'swipe', s.x < 0 ? -ROAD.half / 2 : ROAD.half / 2, ROAD.half / 2 + 10);
+        break;
+      default:
+        this.throwShot(b, 'ink', s.x, BOSS_ATTACK.r);
+    }
+    if (def.minion && b.attacks % 3 === 0) {
+      const mdef = ENEMIES[def.minion];
+      const n = 3 + Math.min(4, Math.floor(this.level / 3));
+      for (let k = 0; k < n; k++) {
+        const e = this.addThing('enemy', def.minion, clamp(b.x + (k - (n - 1) / 2) * 34, -ROAD.half + 20, ROAD.half - 20), b.z - b.depth - 30);
+        e.w = e.depth = mdef.r;
+        e.hp = e.maxHp = Math.round(mdef.hp * this.plan.minionHp);
+        e.speed = mdef.speed;
+        e.bite = mdef.bite;
+        e.coins = mdef.coins;
+      }
+      this.events.emit('boss_summon', b.x, b.z, n, 0, b.type, b);
+    }
+  }
+
+  throwShot(b, kind, x, r) {
+    const sh = this.pools.shot.get();
+    sh.reset();
+    sh.alive = true;
+    sh.kind = kind;
+    sh.x = clamp(x, -ROAD.half + 20, ROAD.half - 20);
+    sh.r = r;
+    sh.fromX = b.x;
+    sh.fromZ = b.z;
+    sh.dur = BOSS_ATTACK.delay;
+    this.shots.push(sh);
+    this.events.emit('boss_throw', b.x, b.z, sh.x, 0, kind, b);
+  }
+
+  updateShots(dt) {
+    const s = this.school;
+    for (let i = 0; i < this.shots.length; i++) {
+      const sh = this.shots[i];
+      if (!sh.alive) continue;
+      sh.t += dt;
+      if (sh.t < sh.dur) continue;
+      sh.alive = false;
+      const hit = !this.ending && Math.abs(s.x - sh.x) < sh.r + this.schoolHalfW * 0.35;
+      if (hit) this.loseFish(this.bossBite(), s.x, 0);
+      this.events.emit('strike_land', sh.x, 0, sh.r, hit ? 1 : 0, sh.kind);
+    }
+  }
+
+  // ---------------------------------------------------------------- endings
+
+  end(result) {
+    this.ending = result;
+    this.endT = result === 'won' ? 1.4 : 1.1;
+    for (const sh of this.shots) sh.alive = false;
+    this.events.emit(result === 'won' ? 'win' : 'lose', this.school.x, 0, this.level);
+  }
+
+  finish() {
     const m = this.meta;
-    if (this.score > (m.bestScore || 0)) {
-      m.bestScore = this.score;
-      if (this.waveSummary) this.waveSummary.newBest = true;
+    const won = this.ending === 'won';
+    let bonus = 0;
+    if (won) bonus = LEVELS.clearCoins + LEVELS.clearCoinsPerLevel * this.level + this.school.n;
+    const coins = this.coinsRun + bonus;
+    m.coins += coins;
+    this.result = { won, level: this.level, coins, kills: this.coinsRun, bonus, fish: this.school.n, newSkin: '' };
+    if (won) {
+      if (this.level > m.best) m.best = this.level;
+      m.level = this.level + 1;
+      for (const [id, need] of [['golden', 10], ['neon', 20], ['galaxy', 30]]) {
+        if (this.level >= need && !m.skins.includes(id)) {
+          m.skins.push(id);
+          this.result.newSkin = id;
+        }
+      }
     }
     this.metaDirty = true;
+    this.ending = '';
+    this.setPhase(won ? PHASE.WON : PHASE.LOST);
   }
+}
 
-  // ---------------------------------------------------------------- save / load
+function seen(b, id) {
+  for (let i = 0; i < b.hitN; i++) if (b.hitIds[i] === id) return true;
+  return false;
+}
 
-  // Only non-combat state is saved; a resumed run restarts from the last build/fork/draft screen.
-  serialize() {
-    return {
-      v: VERSION,
-      seed: this.seed,
-      rng: this.rng.s,
-      endless: this.endless,
-      wave: this.wave,
-      phase: this.phase,
-      shells: this.shells,
-      pearls: this.pearls,
-      score: this.score,
-      upgrades: { ...this.upgrades },
-      unlocked: { ...this.unlocked },
-      towerTypes: this.towerTypes.slice(),
-      reefWash: this.reefWash,
-      heartHp: this.heart.hp,
-      fork: this.fork.id,
-      forkOptions: this.forkOptions.slice(),
-      draftOptions: this.draftOptions.slice(),
-      pendingTower: this.pendingTower,
-      bossesDefeated: this.bossesDefeated,
-      runStats: { ...this.runStats },
-      towers: this.towers.map((t) => ({ s: t.socket, type: t.type, level: t.level, invested: t.invested, kills: t.kills })),
-    };
-  }
-
-  deserialize(d) {
-    if (!d || !d.towers) return fail('Bad save');
-    if (parseInt(d.v, 10) < 2) return fail('Save is from the tower-defense version');
-    const resumable = [PHASE.FORK, PHASE.DRAFT, PHASE.PLACE, PHASE.BUILD];
-    if (!resumable.includes(d.phase)) return fail('Save not resumable');
-    this.newRun({ seed: d.seed, endless: d.endless, dryRun: true });
-    this.rng.s = d.rng >>> 0;
-    this.wave = d.wave;
-    this.shells = d.shells;
-    this.pearls = d.pearls;
-    this.score = d.score | 0;
-    Object.assign(this.upgrades, d.upgrades);
-    this.unlocked = { ...d.unlocked };
-    this.towerTypes = d.towerTypes.filter((t) => TOWERS[t]);
-    this.reefWash = d.reefWash | 0;
-    this.fork = FORKS.find((f) => f.id === d.fork) || NEUTRAL_MODS;
-    this.forkOptions = d.forkOptions || [];
-    this.draftOptions = d.draftOptions || [];
-    this.pendingTower = d.pendingTower || '';
-    this.bossesDefeated = d.bossesDefeated | 0;
-    Object.assign(this.runStats, d.runStats);
-    this.recalcStats();
-    this.heart.hp = Math.min(this.heart.maxHp, d.heartHp);
-    for (const tw of d.towers) {
-      if (!TOWERS[tw.type] || !this.sockets[tw.s] || this.sockets[tw.s].tower) continue;
-      const t = createTower(this, tw.type, tw.s, tw.invested);
-      t.level = Math.min(2, tw.level | 0);
-      t.stats = t.def.levels[t.level];
-      t.maxHp = t.hp = towerMaxHp(t.def, t.level);
-      t.kills = tw.kills | 0;
-    }
-    resetPlayer(this);
-    this.setPhase(d.phase);
-    return OK;
-  }
+export function normalizeMeta(m) {
+  const base = { v: VERSION, level: 1, coins: 0, best: 0, up: { fish: 0, dmg: 0, rate: 0 }, skins: ['classic'], skin: 'classic', runs: 0 };
+  if (!m || typeof m !== 'object') return base;
+  const out = { ...base, ...m, up: { ...base.up, ...(m.up || {}) } };
+  out.level = Math.max(1, out.level | 0);
+  out.coins = Math.max(0, out.coins | 0);
+  if (!Array.isArray(out.skins)) out.skins = ['classic'];
+  out.skins = out.skins.filter((s) => SKINS[s]);
+  if (!out.skins.includes('classic')) out.skins.unshift('classic');
+  if (!out.skins.includes(out.skin)) out.skin = 'classic';
+  return out;
 }

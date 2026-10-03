@@ -1,5 +1,8 @@
 // Boot + main loop. Fixed-timestep simulation (60 Hz) decoupled from rendering;
 // the renderer, audio and UI all read the same Game and consume its event queue.
+//
+// Steering: drag (or swipe) anywhere and the school follows your finger
+// sideways, relative to where the drag started. Arrow keys / A D / gamepad also steer.
 
 import { Game, PHASE } from './core/game.js';
 import { SIM } from './config.js';
@@ -16,26 +19,19 @@ const debugEl = document.getElementById('debug');
 
 const settings = storage.loadSettings();
 const game = new Game({ meta: storage.loadMeta() });
-const view = { focusSocket: -1, previewType: '', showFocusInCombat: false };
 const sprites = new SpriteBank('assets/art/');
-const renderer = new Renderer(canvas, game, view, settings, sprites);
+const renderer = new Renderer(canvas, game, settings, sprites);
 const input = new Input(canvas, settings);
 input.bindTouchControls(app);
-// Art loads in the background; the placeholder renderer covers anything not delivered yet.
+// Art loads in the background; placeholder shapes cover anything not delivered yet.
 sprites.load().then(() => {
   renderer.onArtLoaded();
   if (sprites.loaded) console.info(`[art] ${sprites.loaded} sprites loaded`);
 });
 const audio = new Audio(settings);
-const ui = new UI({ game, view, audio, settings, storage, renderer, input, onSettings: applySettings });
+const ui = new UI({ game, audio, settings, input, onSettings: applySettings });
 
 const coarse = window.matchMedia ? window.matchMedia('(pointer: coarse)') : { matches: false };
-
-function touchMode() {
-  if (settings.touch === 'on') return true;
-  if (settings.touch === 'off') return false;
-  return coarse.matches || input.lastDevice === 'touch';
-}
 
 // Safe-area insets (Dynamic Island / home indicator), read through the same CSS
 // variables the stylesheet uses. Re-read on every layout (rotation, PWA launch).
@@ -49,20 +45,15 @@ function safeArea() {
 
 const isPhoneLandscape = () => coarse.matches && window.innerWidth > window.innerHeight && window.innerHeight < 520;
 
-// Board insets are fixed per input mode (not measured from the HUD, which is hidden on the
-// title screen) so the reef never jumps around between menus and combat.
 function layout() {
-  const touch = touchMode();
-  app.classList.toggle('touch', touch);
   const safe = safeArea();
-  renderer.setInsets({ top: safe.top + 104, bottom: safe.bottom + (touch ? 168 : 56) });
-  if (isPhoneLandscape() && game.phase === PHASE.COMBAT && !game.paused) ui.openPause();
+  renderer.setInsets({ top: safe.top + 56, bottom: safe.bottom + 12 });
+  if (isPhoneLandscape() && game.phase === PHASE.PLAY && !game.paused) ui.openPause();
 }
 
 function applySettings() {
   storage.saveSettings(settings);
   audio.applySettings();
-  app.classList.toggle('tiltshift', !!settings.tiltShift);
   debugEl.hidden = !settings.showFps && !ui.debug;
   layout();
   ui.renderedKey = '';
@@ -90,7 +81,7 @@ for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) w
 for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && game.phase === PHASE.COMBAT && !game.paused) ui.openPause();
+  if (document.hidden && game.phase === PHASE.PLAY && !game.paused) ui.openPause();
   audio.suspend(document.hidden);
 });
 
@@ -98,36 +89,42 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 }
 
+// ------------------------------------------------------------ steering
+
+const DRAG_GAIN = 1.25; // school moves a bit further than the finger: less thumb travel
+const drag = { active: false, startPx: 0, startX: 0 };
+
+function syncSteering() {
+  const gi = game.input;
+  const active = game.phase === PHASE.PLAY && !game.paused && ui.stack.length === 0;
+  if (!active) {
+    gi.left = gi.right = false;
+    gi.targetX = NaN;
+    drag.active = false;
+    return;
+  }
+  gi.left = input.held('left');
+  gi.right = input.held('right');
+  const p = input.pointer;
+  if (p.down) {
+    if (!drag.active) {
+      drag.active = true;
+      drag.startPx = p.x;
+      drag.startX = game.school.x;
+    }
+    gi.targetX = drag.startX + ((p.x - drag.startPx) / renderer.pxPerUnit) * DRAG_GAIN;
+  } else {
+    drag.active = false;
+    gi.targetX = NaN;
+  }
+}
+
 // ------------------------------------------------------------ loop
 
 let last = performance.now();
 let acc = 0;
 let pausedFrames = 0;
-let lastTouch = touchMode();
 const perf = { ema: 16, simUs: 0, frames: 0, fpsT: 0, fps: 60, slowT: 0, fastT: 0 };
-
-function syncCombatInput(presses) {
-  const gi = game.input;
-  const active = game.phase === PHASE.COMBAT && !game.paused && ui.stack.length === 0;
-  if (!active) {
-    gi.left = gi.right = gi.plus = gi.minus = false;
-    gi.moveX = -1;
-    return;
-  }
-  let plusEdge = false, minusEdge = false;
-  for (const a of presses) {
-    if (a === 'plus') plusEdge = true;
-    else if (a === 'minus') minusEdge = true;
-  }
-  gi.left = input.held('left');
-  gi.right = input.held('right');
-  // a press+release inside one frame still counts as a shot
-  gi.plus = input.held('plus') || plusEdge;
-  gi.minus = input.held('minus') || minusEdge;
-  if (plusEdge) gi.plusPressed = true;
-  if (minusEdge) gi.minusPressed = true;
-  gi.moveX = input.pointer.down ? renderer.screenToWorld(input.pointer.x, input.pointer.y).x : -1;
-}
 
 function adaptQuality(frameMs, dt) {
   perf.ema += (frameMs - perf.ema) * 0.05;
@@ -155,23 +152,19 @@ function frame(now) {
   if (dt < 0) dt = 0;
 
   input.poll(dt);
-  const presses = input.consume();
-  ui.handle(presses);
-  ui.handleTaps(input.consumeTaps());
-  ui.handleHover(input.hover.x, input.hover.y);
-  syncCombatInput(presses);
+  ui.handle(input.consume());
+  input.consumeTaps();
+  syncSteering();
 
   const t0 = performance.now();
-  const speed = game.phase === PHASE.COMBAT ? game.speed : 1;
-  acc += dt * speed;
+  acc += dt;
   let steps = 0;
-  const maxSteps = SIM.MAX_STEPS * speed;
-  while (acc >= SIM.DT && steps < maxSteps) {
+  while (acc >= SIM.DT && steps < SIM.MAX_STEPS) {
     game.update(SIM.DT);
     acc -= SIM.DT;
     steps++;
   }
-  if (steps >= maxSteps) acc = 0; // drop backlog instead of spiralling
+  if (steps >= SIM.MAX_STEPS) acc = 0; // drop backlog instead of spiralling
   const simMs = performance.now() - t0;
 
   renderer.consume(game.events);
@@ -179,19 +172,9 @@ function frame(now) {
   ui.consume(game.events);
   game.events.clear();
 
-  if (game.saveRequest) {
-    if (game.saveRequest === 'save') storage.saveRun(game.serialize());
-    else storage.clearRun();
-    game.saveRequest = '';
-  }
   if (game.metaDirty) {
     storage.saveMeta(game.meta);
     game.metaDirty = false;
-  }
-  const t = touchMode();
-  if (t !== lastTouch) {
-    lastTouch = t;
-    layout();
   }
 
   ui.update(dt);
@@ -213,7 +196,7 @@ function frame(now) {
     perf.fpsT = 0;
     if (!debugEl.hidden) {
       debugEl.textContent = `${perf.fps.toFixed(0)} fps · frame ${perf.ema.toFixed(1)}ms · sim ${perf.simUs.toFixed(0)}µs · ` +
-        `E${game.enemies.length} P${game.projectiles.length} FX${renderer.particles.length} · q${renderer.quality}`;
+        `T${game.things.length} B${game.bullets.length} FX${renderer.particles.length} · q${renderer.quality}`;
     }
   }
 }

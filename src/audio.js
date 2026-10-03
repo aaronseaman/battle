@@ -157,72 +157,39 @@ export class Audio {
     for (let i = 0; i < q.n; i++) {
       const e = q.items[i];
       switch (e.type) {
-        case 'shoot_minus': if (this.ok('sm', 0.05)) this.pop(1.25 + Math.random() * 0.1); break;
-        case 'shoot_plus': if (this.ok('sp', 0.08)) this.boing(true); break;
-        case 'minus_hit': if (this.ok('mh', 0.05)) this.noise(0.06, 1800, 2, 0.15); break;
-        case 'kill': if (this.ok('k', 0.04)) { this.pop(0.8 + Math.random() * 0.4); this.noise(0.12, 900, 1.5, 0.12); } break;
-        case 'dive': if (this.ok('dv', 0.35)) this.tone(900, 0.35, 'triangle', 0.05, 380); break;
-        case 'enemy_shot': if (this.ok('es', 0.12)) this.tone(e.s === 'spike' ? 520 : 340, 0.08, 'square', 0.04, e.s === 'spike' ? 260 : 200); break;
-        case 'leak': if (this.ok('lk', 0.15)) this.noise(0.18, 260, 2, 0.22); break;
-        case 'crash': if (this.ok('cr2', 0.1)) { this.noise(0.2, 500, 1, 0.25); this.pop(0.6); } break;
-        case 'boss_slam_warn': this.tone(70, 1.2, 'sawtooth', 0.12, 50); break;
-        case 'boss_lap': this.noise(0.6, 180, 1, 0.45); this.tone(55, 0.6, 'sine', 0.4, 35); break;
-        case 'tower_fire':
-          if (e.s === 'fish' && this.ok('tf', 0.09)) this.tone(900 + Math.random() * 200, 0.04, 'sine', 0.06, 500);
-          else if (e.s === 'starfish' && this.ok('ts', 0.15)) this.tone(500, 0.15, 'triangle', 0.07, 900);
-          else if (e.s === 'seahorse' && this.ok('th', 0.15)) this.tone(1400, 0.1, 'square', 0.05, 300);
-          else if (e.s === 'octopus' && this.ok('to', 0.15)) this.noise(0.15, 400, 2, 0.12);
-          else if (e.s === 'crab' && this.ok('tc', 0.12)) this.tone(1800, 0.03, 'square', 0.05);
+        case 'shoot': if (this.ok('sh', 0.11)) this.pop(1.3 + Math.random() * 0.15); break;
+        case 'hit': if (this.ok('h', 0.06)) this.noise(0.04, 2000, 2, 0.08); break;
+        case 'kill': if (this.ok('k', 0.05)) { this.pop(0.8 + Math.random() * 0.4); this.noise(0.1, 900, 1.5, 0.1); } break;
+        case 'gate':
+        case 'prize':
+          if (e.b) [72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.05, 0.22));
+          else { this.tone(220, 0.35, 'square', 0.1, 90); this.noise(0.2, 400, 1, 0.15); }
           break;
-        case 'shark_charge': if (this.ok('sc', 0.2)) this.tone(120, 0.3, 'sawtooth', 0.08, 60); break;
-        case 'chomp': if (this.ok('ch', 0.08)) this.noise(0.08, 300, 4, 0.25); break;
-        case 'pulse': if (this.ok('pu', 0.2)) { this.tone(80, 0.25, 'sine', 0.35, 40); this.tone(1200, 0.05, 'square', 0.04); } break;
-        case 'ink_splash': if (this.ok('is', 0.1)) this.noise(0.18, 350, 1, 0.14); break;
-        case 'tower_explode':
-        case 'explode': if (this.ok('ex', 0.1)) { this.noise(0.35, 600, 0.7, 0.35); this.tone(90, 0.3, 'sine', 0.3, 40); } break;
-        case 'heart_hit': if (this.ok('hh', 0.15)) { this.tone(160, 0.3, 'sine', 0.35, 70); this.noise(0.2, 300, 1, 0.2); } break;
-        case 'plus_tower':
-        case 'plus_heart': if (this.ok('pt', 0.06)) { this.marimba(84); this.marimba(88, 0.07); } break;
-        case 'shield_pop': if (this.ok('shp', 0.06)) { this.pop(1.6); this.noise(0.1, 3000, 2, 0.12); } break;
-        case 'sad': if (this.ok('sad', 0.15)) this.tone(500, 0.35, 'triangle', 0.1, 260); break;
-        case 'crack': if (this.ok('cr', 0.1)) this.noise(0.12, 2500, 3, 0.25); break;
-        case 'zap': if (this.ok('z', 0.1)) this.tone(1200, 0.12, 'sawtooth', 0.08, 300); break;
-        case 'grab': if (this.ok('g', 0.15)) this.noise(0.2, 500, 3, 0.15); break;
-        case 'pickup': if (this.ok('pk', 0.04)) this.marimba(91 + ((Math.random() * 3) | 0) * 2, 0, 0.12); break;
-        case 'player_hit': if (this.ok('ph', 0.2)) { this.boing(false); this.noise(0.25, 700, 1, 0.25); } break;
-        case 'player_respawn': if (this.ok('pr', 0.2)) this.strum(67); break;
-        case 'tower_place': if (this.ok('tp', 0.1)) this.boing(true); break;
-        case 'tower_upgrade': if (this.ok('tu', 0.1)) this.strum(64); break;
-        case 'tower_sell': if (this.ok('tsl', 0.1)) { this.marimba(79); this.marimba(72, 0.08); } break;
-        case 'tower_broken': if (this.ok('tb', 0.15)) this.tone(300, 0.3, 'triangle', 0.15, 90); break;
-        case 'eaten': if (this.ok('ea', 0.2)) { this.noise(0.3, 250, 3, 0.4); this.tone(70, 0.4, 'square', 0.12, 40); } break;
-        case 'tower_spat': if (this.ok('spt', 0.1)) this.boing(true); break;
-        case 'weak_hit': if (this.ok('wh', 0.08)) this.marimba(96, 0, 0.18); break;
-        case 'steal': if (this.ok('st', 0.2)) [79, 76, 72].forEach((m, k) => this.marimba(m, k * 0.06, 0.15)); break;
-        case 'recover': if (this.ok('rc', 0.2)) [72, 76, 79].forEach((m, k) => this.marimba(m, k * 0.06, 0.15)); break;
-        case 'meter_empty': if (this.ok('me', 0.25)) this.tone(140, 0.12, 'square', 0.06); break;
-        case 'denied': if (this.ok('dn', 0.2)) { this.tone(160, 0.1, 'square', 0.08); this.tone(120, 0.12, 'square', 0.08, 0, 0.1); } break;
-        case 'buy_upgrade':
-        case 'buy_unlock': if (this.ok('bu', 0.1)) this.strum(60 + 12); break;
-        case 'wave_start': this.strum(60); this.strum(67, 0.2); break;
-        case 'wave_end': [72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.09)); break;
+        case 'gate_bump': if (this.ok('gb', 0.07)) this.marimba(91, 0, 0.12); break;
+        case 'clam_crack': if (this.ok('cc', 0.1)) { this.noise(0.15, 2500, 3, 0.25); this.strum(72, 0.05); } break;
+        case 'bite': if (this.ok('bt', 0.08)) { this.boing(false); this.noise(0.15, 500, 2, 0.2); } break;
+        case 'buddy_join':
+        case 'buddy_up': this.strum(64); this.strum(71, 0.12); break;
+        case 'buddy_fire': if (this.ok('bf', 0.12)) this.tone(500, 0.12, 'triangle', 0.07, 900); break;
+        case 'splash': if (this.ok('sp', 0.12)) this.noise(0.18, 350, 1, 0.14); break;
         case 'boss_spawn': [0, 0.3, 0.6].forEach((w) => this.tone(110, 0.35, 'sine', 0.35, 55, w)); break;
-        case 'boss_phase': this.tone(220, 0.5, 'sawtooth', 0.1, 110); break;
+        case 'boss_stage': this.tone(70, 0.9, 'sawtooth', 0.12, 50); break;
+        case 'boss_throw': if (this.ok('bt2', 0.2)) this.tone(300, 0.3, 'triangle', 0.1, 600); break;
         case 'boss_windup': if (this.ok('bw', 0.3)) this.tone(90, 0.8, 'sawtooth', 0.1, 180); break;
-        case 'boss_stunned': if (this.ok('bs', 0.3)) [88, 91, 95].forEach((m, k) => this.marimba(m, k * 0.05, 0.15)); break;
-        case 'boss_open':
-        case 'boss_exposed': if (this.ok('bo', 0.3)) this.strum(76); break;
+        case 'boss_charge': this.noise(0.4, 300, 1, 0.3); break;
+        case 'boss_summon': if (this.ok('bs', 0.3)) this.noise(0.3, 600, 2, 0.15); break;
+        case 'strike_land': if (this.ok('sl', 0.1)) { this.noise(0.2, 300, 1, e.b ? 0.35 : 0.18); if (e.b) this.tone(160, 0.3, 'sine', 0.3, 70); } break;
+        case 'dodge': this.marimba(88, 0, 0.15); break;
         case 'boss_defeat': [60, 64, 67, 72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.07, 0.25)); break;
-        case 'tentacle': if (this.ok('tt', 0.2)) this.noise(0.3, 200, 2, 0.2); break;
-        case 'tentacle_break': if (this.ok('tbk', 0.1)) { this.pop(0.6); this.noise(0.15, 800, 1, 0.2); } break;
-        case 'reef_wash': this.noise(0.9, 1200, 0.5, 0.3); break;
-        case 'victory': [60, 64, 67, 72, 67, 72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.12, 0.28)); break;
-        case 'defeat': [67, 64, 60, 55].forEach((m, k) => this.marimba(m, k * 0.22, 0.25)); break;
-        case 'capsule':
-        case 'fork': this.boing(true); break;
+        case 'win': [60, 64, 67, 72, 67, 72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.1, 0.26)); break;
+        case 'lose': [67, 64, 60, 55].forEach((m, k) => this.marimba(m, k * 0.2, 0.25)); break;
+        case 'level_start': this.strum(60); this.strum(67, 0.2); break;
+        case 'buy': this.strum(72); break;
+        case 'denied': if (this.ok('dn', 0.2)) { this.tone(160, 0.1, 'square', 0.08); this.tone(120, 0.12, 'square', 0.08, 0, 0.1); } break;
       }
     }
   }
+
 
   ui(kind) {
     if (!this.ctx || !this.settings.sfx) return;

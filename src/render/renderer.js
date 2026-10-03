@@ -1,91 +1,47 @@
-// Canvas2D renderer: draws sprite-sheet art from assets/art/manifest.json
-// (see docs/ART_HANDOFF.md) and falls back, per sprite key, to built-in
-// placeholder clay shapes. Art can therefore land piece by piece.
+// Canvas2D renderer for the lane runner: a pseudo-3D reef road that narrows
+// toward the horizon. Everything on the road is drawn far-to-near and scaled by
+// depth. Sprite art comes from assets/art/manifest.json (see docs/ART_HANDOFF.md);
+// anything not delivered falls back to placeholder clay shapes.
 //
-// Contract used by main.js (also documented in README.md):
-//   new Renderer(canvas, game, view, settings, spriteBank)
-//   resize()                 — canvas size / DPR changed
-//   consume(eventQueue)      — once per frame, before clear(): spawn VFX
-//   render(frameDt, alpha)   — draw; alpha (0..1) interpolates between sim ticks
-//   screenToWorld(px, py)    — CSS-pixel -> world coords (for tapping sockets)
-//   setInsets({top,bottom})  — HUD / touch-control space to keep clear
-//   onArtLoaded()            — sprites finished loading (rebuild the cached arena)
-//   quality                  — 0.5..1, lowered automatically when frames are slow
+// Contract used by main.js:
+//   new Renderer(canvas, game, settings, spriteBank)
+//   resize() · setInsets({ top, bottom }) · setQuality(q) · onArtLoaded()
+//   consume(eventQueue)    once per frame, before the queue is cleared: spawn VFX
+//   render(frameDt, alpha) draw; alpha (0..1) interpolates between sim ticks
+//   pxPerUnit              screen px per world unit at the school's line (for drag steering)
 //
 // Nothing in here mutates game state.
 
-import { WORLD, MAP, SIM, TOWERS } from '../config.js';
-import { chefHatX } from '../core/bosses.js';
-import { towerRange } from '../core/towers.js';
+import { ROAD, SIM, BOSSES, BOSS_ATTACK, ENEMIES, SCHOOL } from '../config.js';
+import { SCHOOL_OFFSETS, STAGE } from '../core/game.js';
 import { SpriteBank } from './sprites.js';
 
-export const TILT = 0.82; // y squash for the tilted-tabletop look
-export const TOP_MARGIN = 70; // world units above y=0 kept visible (enemies swoop in from here)
 const TAU = Math.PI * 2;
+const PERSP = 560; // perspective distance: scale(z) = PERSP / (PERSP + z)
+const GATE_H = 86; // gate panel height (world units)
+
+// how big each kind of sprite is drawn (relative to its sheet at pxPerUnit 2)
+const SIZE = { fish: 0.4, enemy: 0.95, boss: 1.0, buddy: 0.6, clam: 3.1, bullet: 1.1, buddyShot: 1.3, strike: 1.3 };
 
 const C = {
-  bgDeep: '#0d5d73',
-  waterTop: '#46dbd3',
-  waterBot: '#1aa9c4',
-  sand: '#f7e2a8',
-  sandEdge: '#e2b971',
-  kelp: '#3fae6a',
-  kelpDark: '#2a8a52',
-  socket: '#ff8fa3',
-  socketRim: '#cf5672',
-  socketHi: '#ffe066',
-  rail: '#f0c987',
-  railEdge: '#b98b4e',
-  heart: '#ff6f91',
-  heartRim: '#c43d64',
+  water1: '#0b4f73',
+  water2: '#1689a8',
+  bedDark: '#2f8f77',
+  road: '#f7e2a8',
+  roadDark: '#e8c98a',
+  rim: '#ff8fa3',
+  rimDark: '#cf5672',
+  good: '45,140,255',
+  bad: '255,70,80',
   ink: '#2a2440',
-  outline: 'rgba(40,20,50,0.55)',
-  white: '#ffffff',
-  plus: '#ffd23f',
-  minus: '#9b5cff',
-  shield: 'rgba(120,230,255,0.55)',
-  hpBack: 'rgba(30,20,40,0.55)',
-  hpGood: '#7ee081',
-  hpMid: '#ffd23f',
-  hpBad: '#ff5d5d',
-};
-
-const TOWER_COLORS = {
-  fish: '#ffb347', octopus: '#b06ee0', shark: '#8aa0b8', starfish: '#ff7a59',
-  puffer: '#ffd84d', seahorse: '#ff9fc6', crab: '#ff5a4d',
 };
 
 const ENEMY_COLORS = {
-  jelly: '#ff8fd8', jellyMini: '#ffb3e6', crab: '#ff5e3a', kraken: '#9b6bff', puffer: '#ffe14d',
-  urchin: '#5b3f8c', eel: '#8fe04d', octoMini: '#c58cff', starMinion: '#ffc94d',
+  jelly: '#ff8fd8', crab: '#ff5e3a', kraken: '#9b6bff', puffer: '#ffe14d', urchin: '#5b3f8c', eel: '#8fe04d',
+  octoMini: '#c58cff', starMinion: '#ffc94d',
 };
-
 const BOSS_COLORS = { chef: '#c070ff', sharky: '#9fb2c8', queen: '#ff9a3c', kitty: '#ff86c8' };
-
-// Event -> one-shot effect sprite (used only when that sprite exists in the manifest).
-const EVENT_FX = {
-  explode: 'fx.explode',
-  tower_explode: 'fx.explode',
-  ink_splash: 'fx.ink',
-  strike_land: 'fx.ink',
-  plus_tower: 'fx.heal',
-  plus_heart: 'fx.heal',
-  shield_pop: 'fx.shield_pop',
-  chomp: 'fx.chomp',
-  eaten: 'fx.chomp',
-  crack: 'fx.crack',
-  tower_place: 'fx.poof',
-  tower_upgrade: 'fx.poof',
-  tower_spat: 'fx.poof',
-  tower_sell: 'fx.poof',
-  pulse: 'fx.pulse',
-  reef_wash: 'fx.wave',
-  weak_hit: 'fx.hat_hit',
-  minus_hit: 'fx.minus_pop',
-  heart_hit: 'fx.heart_hit',
-  player_hit: 'fx.player_hit',
-  pickup: 'fx.sparkle',
-};
+const BUDDY_COLORS = { fish: '#ffb347', octopus: '#b06ee0', shark: '#8aa0b8', starfish: '#ff7a59', puffer: '#ffd84d', seahorse: '#ff9fc6', crab: '#ff5a4d' };
 
 export const SKIN_COLORS = {
   classic: { body: '#ff8a1f', stripe: '#ffffff', fin: '#e0620a' },
@@ -94,49 +50,50 @@ export const SKIN_COLORS = {
   galaxy: { body: '#5b3cc4', stripe: '#ffd6ff', fin: '#2a1a73' },
 };
 
+export const BUDDY_ICONS = { fish: '🐠', octopus: '🐙', shark: '🦈', starfish: '⭐', puffer: '🐡', seahorse: '🌊', crab: '🦀' };
+
 export class Renderer {
-  constructor(canvas, game, view, settings, sprites = new SpriteBank()) {
+  constructor(canvas, game, settings, sprites = new SpriteBank()) {
     this.canvas = canvas;
-    this.sp = sprites;
-    this.a = 1; // interpolation alpha between the previous and current sim tick
-    this.corpses = []; // one-shot sprite effects: { key, anim, t, dur, x, y, z, flip, scale }
-    this.bossFx = { throwT: 9, summonT: 9, swipeT: 9 };
-    this.o = { flip: false, rot: 0, sx: 1, sy: 1, alpha: 1, add: 0 };
-    this.playerFlip = false;
-    this.suppress = false;
-    this.dirty = true;
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.g = game;
-    this.view = view;
     this.settings = settings;
+    this.sp = sprites;
     this.bg = document.createElement('canvas');
     this.dpr = 1;
     this.cssW = 1;
     this.cssH = 1;
-    this.s = 1;
-    this.ox = 0;
-    this.oy = 0;
-    this.insets = { top: 0, bottom: 0, left: 0, right: 0 };
+    this.insets = { top: 0, bottom: 0 };
     this.quality = 1;
+    this.a = 1;
     this.time = 0;
+    this.at = 0;
+    this.dirty = true;
     this.shakeT = 0;
     this.shakeMag = 0;
     this.particles = [];
     this.freeParticles = [];
     this.rings = [];
-    this.lines = [];
-    this.decals = [];
     this.texts = [];
-    this.lastPhase = '';
+    this.corpses = [];
+    this.draws = []; // reusable far-to-near draw list
+    this.bossFx = { throwT: 9, summonT: 9 };
+    this.labelBump = 0; // school counter pop
+    this.schoolX = 0;
+    this.horizon = 0;
+    this.o = { flip: false, rot: 0, sx: 1, sy: 1, alpha: 1, add: 0 };
+    // projection
+    this.cx = 0;
+    this.k = 1;
+    this.hy = 0;
+    this.gy = 0;
+    this.pxPerUnit = 1;
   }
 
   setInsets(ins) {
-    const i = this.insets;
-    if (i.top === ins.top && i.bottom === ins.bottom && i.left === (ins.left || 0) && i.right === (ins.right || 0)) return;
-    i.top = ins.top;
-    i.bottom = ins.bottom;
-    i.left = ins.left || 0;
-    i.right = ins.right || 0;
+    if (this.insets.top === ins.top && this.insets.bottom === ins.bottom) return;
+    this.insets.top = ins.top;
+    this.insets.bottom = ins.bottom;
     this.resize();
   }
 
@@ -148,45 +105,46 @@ export class Renderer {
 
   resize() {
     const c = this.canvas;
-    const cssW = Math.max(1, c.clientWidth);
-    const cssH = Math.max(1, c.clientHeight);
+    const cssW = Math.max(1, c.clientWidth), cssH = Math.max(1, c.clientHeight);
     const dpr = Math.min(2, window.devicePixelRatio || 1) * (this.quality < 1 ? 0.75 : 1);
     this.cssW = cssW;
     this.cssH = cssH;
     this.dpr = dpr;
-    this.dirty = true;
     c.width = Math.round(cssW * dpr);
     c.height = Math.round(cssH * dpr);
-    const ins = this.insets;
-    const aw = cssW - ins.left - ins.right;
-    const ah = cssH - ins.top - ins.bottom;
-    const worldH = (WORLD.H + TOP_MARGIN) * TILT;
-    this.s = Math.max(0.1, Math.min(aw / WORLD.W, ah / worldH));
-    this.ox = ins.left + (aw - WORLD.W * this.s) / 2;
-    this.oy = ins.top + (ah - worldH * this.s) / 2 + TOP_MARGIN * TILT * this.s;
+    const top = this.insets.top, bottom = cssH - this.insets.bottom;
+    const h = Math.max(100, bottom - top);
+    // the road's half-width at the school's line fills ~47% of the width (capped on wide screens)
+    const halfPx = Math.min(cssW * 0.47, h * 0.42);
+    this.cx = cssW / 2;
+    this.k = halfPx / ROAD.half;
+    this.hy = top - h * 0.1;
+    this.gy = top + h * 0.82;
+    this.pxPerUnit = this.k;
+    this.dirty = true;
     this.buildBackground();
   }
 
-  px(x) {
-    return this.ox + x * this.s;
-  }
-  py(y, z = 0) {
-    return this.oy + (y * TILT - z) * this.s;
+  onArtLoaded() {
+    this.buildBackground();
   }
 
-  screenToWorld(sx, sy) {
-    return { x: (sx - this.ox) / this.s, y: (sy - this.oy) / this.s / TILT };
+  // ------------------------------------------------------------ projection
+
+  sc(z) {
+    if (z < -PERSP * 0.7) z = -PERSP * 0.7;
+    return PERSP / (PERSP + z);
+  }
+  X(x, z) {
+    return this.cx + x * this.k * this.sc(z);
+  }
+  Y(z) {
+    return this.hy + (this.gy - this.hy) * this.sc(z);
+  }
+  U(z) {
+    return this.k * this.sc(z);
   }
 
-  // interpolated world position of an entity with px/py (previous tick) and x/y
-  ix(o) {
-    return o.px + (o.x - o.px) * this.a;
-  }
-  iy(o) {
-    return o.py + (o.y - o.py) * this.a;
-  }
-
-  // reusable draw options (no per-sprite allocation)
   opt(flip, sx, sy, rot, alpha, add) {
     const o = this.o;
     o.flip = flip;
@@ -198,20 +156,7 @@ export class Renderer {
     return o;
   }
 
-  // clay squash/stretch, stepped with the 12 fps animation clock
-  wob(key, seed) {
-    return this.sp.flag(key, 'wobble') ? Math.sin(this.at * 9 + seed) * 0.045 : 0;
-  }
-
-  spr(key, anim, t, wx, wy, wz, o) {
-    return this.sp.draw(this.ctx, key, anim, t, this.px(wx), this.py(wy, wz), this.s, o);
-  }
-
-  onArtLoaded() {
-    this.buildBackground();
-  }
-
-  // ------------------------------------------------------------ background
+  // ------------------------------------------------------------ background (cached)
 
   buildBackground() {
     const b = this.bg;
@@ -219,345 +164,135 @@ export class Renderer {
     b.height = this.canvas.height;
     const ctx = b.getContext('2d');
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    const s = this.s, W = WORLD.W;
-    ctx.fillStyle = C.bgDeep;
-    ctx.fillRect(0, 0, this.cssW, this.cssH);
-    // painted arena: anchored at the world's top-left (x 0, y -TOP_MARGIN)
-    if (this.sp.has('arena')) {
-      this.sp.draw(ctx, 'arena', this.sp.pick('arena', 'idle'), 0, this.px(0), this.py(-TOP_MARGIN), s, null);
-      this.vignette(ctx);
-      return;
-    }
-
-    // the diorama box: open water above a sandy reef shelf
-    const x0 = this.px(0), x1 = this.px(W);
-    const y0 = this.py(-TOP_MARGIN), y1 = this.py(WORLD.H);
-    const grad = ctx.createLinearGradient(0, y0, 0, y1);
-    grad.addColorStop(0, '#1c8fb0');
-    grad.addColorStop(0.45, C.waterTop);
-    grad.addColorStop(1, C.waterBot);
+    const W = this.cssW, H = this.cssH;
+    const horizon = this.Y(ROAD.view * 1.6);
+    this.horizon = horizon;
+    const grad = ctx.createLinearGradient(0, 0, 0, horizon);
+    grad.addColorStop(0, C.water1);
+    grad.addColorStop(1, C.water2);
     ctx.fillStyle = grad;
-    roundRect(ctx, x0 - 10 * s, y0 - 10 * s, x1 - x0 + 20 * s, y1 - y0 + 20 * s, 28 * s);
-    ctx.fill();
-    ctx.lineWidth = 6 * s;
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-    ctx.stroke();
-
-    ctx.save();
-    roundRect(ctx, x0 - 10 * s, y0 - 10 * s, x1 - x0 + 20 * s, y1 - y0 + 20 * s, 28 * s);
-    ctx.clip();
-    // sun shafts
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    for (const [x, w] of [[120, 60], [330, 90], [560, 50], [700, 80]]) {
+    ctx.fillRect(0, 0, W, horizon + 2);
+    // light shafts
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    for (const [x, w] of [[0.12, 0.08], [0.38, 0.12], [0.66, 0.07], [0.84, 0.1]]) {
       ctx.beginPath();
-      ctx.moveTo(this.px(x), y0);
-      ctx.lineTo(this.px(x + w), y0);
-      ctx.lineTo(this.px(x + w - 160), this.py(800));
-      ctx.lineTo(this.px(x - 200), this.py(800));
+      ctx.moveTo(W * x, 0);
+      ctx.lineTo(W * (x + w), 0);
+      ctx.lineTo(W * (x + w - 0.1), horizon);
+      ctx.lineTo(W * (x - 0.16), horizon);
       ctx.closePath();
       ctx.fill();
     }
-    let seed = 7;
-    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    // drifting background bubbles
-    for (let i = 0; i < 26; i++) {
-      const x = 20 + rnd() * (W - 40), y = -40 + rnd() * 780, r = 2 + rnd() * 5;
-      ctx.globalAlpha = 0.18 + rnd() * 0.2;
-      ring2(ctx, this.px(x), this.py(y), r * s, r * s, '#ffffff', 1.5 * s);
-    }
-    ctx.globalAlpha = 1;
-    // kelp along both walls
-    for (const side of [0, 1]) {
-      for (let k = 0; k < 3; k++) {
-        const bx = side ? W - 14 - k * 22 : 14 + k * 22;
-        const top = 380 + rnd() * 260;
-        for (let y = 900; y > top; y -= 26) {
-          const sway = Math.sin(y * 0.03 + k) * 8;
-          blob(ctx, this.px(bx + sway), this.py(y), 11 * s, 16 * s * TILT, k % 2 ? C.kelpDark : C.kelp, 0.2);
-        }
-      }
-    }
-    // sandy reef shelf
-    const shelf = 870;
-    ctx.fillStyle = C.sandEdge;
+    // distant reef silhouette on the horizon
+    ctx.fillStyle = 'rgba(20,90,110,0.85)';
     ctx.beginPath();
-    ctx.moveTo(x0 - 10 * s, this.py(shelf + 6));
-    for (let x = 0; x <= W; x += 40) ctx.lineTo(this.px(x), this.py(shelf + 6 + Math.sin(x * 0.05) * 8));
-    ctx.lineTo(x1 + 10 * s, y1 + 10 * s);
-    ctx.lineTo(x0 - 10 * s, y1 + 10 * s);
+    ctx.moveTo(0, horizon);
+    for (let x = 0; x <= W; x += 12) ctx.lineTo(x, horizon - 8 - Math.abs(Math.sin(x * 0.031) * 14 + Math.sin(x * 0.11) * 5));
+    ctx.lineTo(W, horizon);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = C.sand;
-    ctx.beginPath();
-    ctx.moveTo(x0 - 10 * s, this.py(shelf + 14));
-    for (let x = 0; x <= W; x += 40) ctx.lineTo(this.px(x), this.py(shelf + 14 + Math.sin(x * 0.05) * 8));
-    ctx.lineTo(x1 + 10 * s, y1 + 10 * s);
-    ctx.lineTo(x0 - 10 * s, y1 + 10 * s);
-    ctx.closePath();
-    ctx.fill();
-    // clay coral and pebbles on the shelf, clear of the sockets and the heart
-    for (let i = 0; i < 40; i++) {
-      const x = 10 + rnd() * (W - 20), y = shelf + 20 + rnd() * 110;
-      let near = Math.hypot(MAP.heart.x - x, MAP.heart.y - y) < 70;
-      for (const so of MAP.sockets) if (Math.hypot(so[0] - x, so[1] - y) < 50) near = true;
-      if (near) continue;
-      const r = 5 + rnd() * 10;
-      const col = ['#ff9fb2', '#ffd36e', '#9be7a0', '#7fd4ff', '#c9a6ff'][i % 5];
-      blob(ctx, this.px(x), this.py(y), r * s, r * s * TILT, col, 0.25);
-    }
-    ctx.restore();
-
-    // sockets (coral cups)
-    for (const so of MAP.sockets) {
-      const x = this.px(so[0]), y = this.py(so[1]);
-      blob(ctx, x, y + 4 * s, MAP.socketR * s * 1.05, MAP.socketR * s * TILT * 1.05, C.socketRim, 0);
-      blob(ctx, x, y, MAP.socketR * s, MAP.socketR * s * TILT, C.socket, 0.3);
-      blob(ctx, x, y + 2 * s, MAP.socketR * 0.6 * s, MAP.socketR * 0.6 * s * TILT, C.socketRim, 0);
-    }
-
-    // player rail
-    const ry = this.py(WORLD.RAIL_Y + 22);
-    ctx.fillStyle = C.railEdge;
-    roundRect(ctx, this.px(WORLD.RAIL_MIN - 30), ry - 4 * s, this.px(WORLD.RAIL_MAX + 30) - this.px(WORLD.RAIL_MIN - 30), 16 * s, 8 * s);
-    ctx.fill();
-    ctx.fillStyle = C.rail;
-    roundRect(ctx, this.px(WORLD.RAIL_MIN - 30), ry - 8 * s, this.px(WORLD.RAIL_MAX + 30) - this.px(WORLD.RAIL_MIN - 30), 14 * s, 7 * s);
-    ctx.fill();
-
-    this.vignette(ctx);
-  }
-
-  // soft vignette (cheap stand-in for tilt-shift falloff)
-  vignette(ctx) {
-    const vg = ctx.createRadialGradient(this.cssW / 2, this.cssH / 2, Math.min(this.cssW, this.cssH) * 0.35, this.cssW / 2, this.cssH / 2, Math.max(this.cssW, this.cssH) * 0.75);
-    vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,20,40,0.35)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, this.cssW, this.cssH);
+    // seabed below the horizon
+    const bed = ctx.createLinearGradient(0, horizon, 0, H);
+    bed.addColorStop(0, '#5cc2a5');
+    bed.addColorStop(1, C.bedDark);
+    ctx.fillStyle = bed;
+    ctx.fillRect(0, horizon, W, H - horizon);
+    // haze where the road meets the horizon
+    const hz = ctx.createLinearGradient(0, horizon - 30, 0, horizon + 60);
+    hz.addColorStop(0, 'rgba(127,227,224,0)');
+    hz.addColorStop(0.5, 'rgba(127,227,224,0.55)');
+    hz.addColorStop(1, 'rgba(127,227,224,0)');
+    ctx.fillStyle = hz;
+    ctx.fillRect(0, horizon - 30, W, 90);
   }
 
   // ------------------------------------------------------------ VFX from events
 
   consume(q) {
-    const g = this.g;
     const lowFx = this.quality < 1;
+    const g = this.g;
     for (let i = 0; i < q.n; i++) {
       const e = q.items[i];
-      this.suppress = this.spriteFx(e);
       switch (e.type) {
-        case 'hit':
-          if (e.b === 1 && !lowFx) this.burst(e.x, e.y, 3, C.minus, 90, 3);
-          break;
-        case 'minus_hit':
-          this.ring(e.x, e.y, 6, 22, 0.25, C.minus);
-          break;
         case 'kill':
-          this.burst(e.x, e.y, lowFx ? 4 : 9, ENEMY_COLORS[e.s] || '#fff', 160, 5);
+          if (!this.corpse('enemy.' + e.s, 'die', e.x, e.y, SIZE.enemy)) this.burst(e.x, e.y, 14, lowFx ? 4 : 9, ENEMY_COLORS[e.s] || '#fff', 120, 5);
           break;
-        case 'score':
-          if (e.s) this.text(e.x, e.y - 20, String(e.a), e.s === 'boss' ? '#fff36b' : '#fff3b0', e.s === 'boss' ? 1.6 : 0.9);
-          if (e.b >= 5 && e.b % 5 === 0) this.text(e.x, e.y - 48, `×${Math.min(4, 1 + (e.b - 1) * 0.1).toFixed(1)} combo`, '#9be7ff', 1.1);
+        case 'gate':
+        case 'prize': {
+          const good = e.b === 1;
+          const s = g.school;
+          if (e.s === 'add' || e.s === 'mul') this.text(s.x, 30, `${e.a >= 0 ? '+' : '−'}${Math.abs(e.a)}`, good ? '#7dff9a' : '#ff6b6b', 2);
+          else if (e.s === 'rate') this.text(s.x, 30, 'FIRE RATE UP!', '#ffe066', 1.4);
+          else if (e.s === 'dmg') this.text(s.x, 30, 'POWER UP!', '#ffe066', 1.4);
+          this.ring(s.x, 0, 20, 140, 0.45, good ? '#7dff9a' : '#ff6b6b');
+          if (!good) this.shake(6);
+          this.labelBump = 0.35;
           break;
-        case 'crash':
-          this.burst(e.x, e.y, lowFx ? 5 : 10, ENEMY_COLORS[e.s] || '#fff', 200, 5);
+        }
+        case 'gate_bump':
+          this.burst(e.x, e.y, GATE_H * 0.6, 3, '#ffffff', 80, 4);
           break;
-        case 'leak':
-          this.burst(e.x, e.y, lowFx ? 4 : 8, C.heart, 160, 5);
-          this.ring(e.x, e.y, 8, 40, 0.35, C.heart);
+        case 'clam_crack':
+          this.corpse('fx.pop', '', e.x, e.y, 1.6);
+          this.burst(e.x, e.y, 20, lowFx ? 6 : 14, '#fff1d0', 160, 6);
           break;
-        case 'split':
-          this.ring(e.x, e.y, 8, 30, 0.3, ENEMY_COLORS.jelly);
+        case 'bite':
+          this.text(e.x, 40, `−${e.a}`, '#ff5d5d', 1.5);
+          this.burst(e.x, e.y, 20, lowFx ? 4 : 8, '#ff8a1f', 140, 5);
+          this.shake(Math.min(12, 3 + e.a));
+          this.labelBump = 0.35;
           break;
-        case 'explode':
-        case 'tower_explode':
-          this.ring(e.x, e.y, 10, e.a, 0.4, e.type === 'explode' ? '#ff7043' : TOWER_COLORS.puffer);
-          this.burst(e.x, e.y, lowFx ? 6 : 14, '#ffd84d', 240, 6);
-          this.shake(e.type === 'explode' ? 6 : 3);
+        case 'buddy_join':
+        case 'buddy_up':
+          this.ring(e.x, 0, 10, 70, 0.5, '#ffffff');
+          this.text(e.x, 60, e.type === 'buddy_up' ? `${(e.s || '').toUpperCase()} Lv${e.a}!` : `+${(e.s || '').toUpperCase()}!`, '#ffe066', 1.3);
+          this.corpse('fx.poof', '', e.x, 0, 1);
           break;
-        case 'heart_hit':
-          this.burst(e.x, e.y - 10, 10, C.heart, 200, 6);
-          this.text(e.x, e.y - 60, `-${Math.round(e.a)}`, '#ff5d5d');
-          this.shake(Math.min(14, 4 + e.a * 0.3));
-          break;
-        case 'shield_pop':
-          this.ring(e.x, e.y, 12, 40, 0.35, '#8ff0ff');
-          this.burst(e.x, e.y, 6, '#bff7ff', 150, 4);
-          break;
-        case 'sad':
-          this.text(e.x, e.y - 24, 'sad…', '#9fd3ff');
-          break;
-        case 'crack':
-          this.burst(e.x, e.y, 8, '#3a2a5c', 180, 4);
-          this.text(e.x, e.y - 24, 'CRACK!', '#ffffff');
-          break;
-        case 'plus_tower':
-        case 'plus_heart':
-          this.burst(e.x, e.y, 8, C.plus, 120, 4);
-          this.ring(e.x, e.y, 10, 44, 0.4, C.plus);
-          if (e.a >= 1) this.text(e.x, e.y - 30, `+${Math.round(e.a)}`, '#c6ff8a');
-          break;
-        case 'zap':
-          this.line(e.x, e.y, e.a, e.b, 0.2, '#fff36b');
-          break;
-        case 'grab':
-          this.line(e.a, e.b, e.x, e.y, 0.5, '#9b6bff');
-          this.text(e.x, e.y - 30, 'grabbed!', '#e2c6ff');
-          break;
-        case 'tentacle_grab':
-          this.line(e.x, e.y, e.a, e.b, 0.4, TOWER_COLORS.octopus);
-          break;
-        case 'chomp':
-          this.burst(e.x, e.y, lowFx ? 2 : 5, '#ffffff', 140, 4);
-          break;
-        case 'ink_splash':
-          this.decal(e.x, e.y, e.a * 0.8, 1.2);
-          break;
-        case 'pulse':
-          this.ring(e.x, e.y, 20, e.a, 0.45, '#ff6bd5');
-          break;
-        case 'pinch_steal':
-          this.text(e.x, e.y - 18, `+${e.a}`, '#fff3b0');
-          break;
-        case 'steal':
-          this.text(e.x, e.y - 24, `-${e.a} shells!`, '#ff9a9a');
-          break;
-        case 'recover':
-          this.text(e.x, e.y - 30, `+${e.a} back!`, '#fff3b0');
-          break;
-        case 'crab_escape':
-          if (e.a > 0) this.text(e.x, e.y + 10, `lost ${e.a}`, '#ff9a9a');
-          break;
-        case 'pickup':
-          this.burst(e.x, e.y, 4, '#fff3b0', 90, 3);
-          break;
-        case 'player_hit':
-          this.burst(e.x, e.y, 12, '#ff8a1f', 220, 6);
-          if (e.b > 0) this.text(e.x, e.y - 50, `-${e.b} shells`, '#ff9a9a');
-          this.shake(8);
-          break;
-        case 'player_respawn':
-          this.ring(e.x, e.y, 10, 50, 0.4, '#ffffff');
-          break;
-        case 'tower_place':
-        case 'tower_upgrade':
-        case 'tower_spat':
-          this.ring(e.x, e.y, 10, 60, 0.5, '#ffffff');
-          this.burst(e.x, e.y, 10, TOWER_COLORS[e.s] || '#fff', 180, 5);
-          if (e.type === 'tower_spat') this.text(e.x, e.y - 30, 'ptoo!', '#ffffff');
-          break;
-        case 'tower_sell':
-          this.burst(e.x, e.y, 8, '#fff3b0', 160, 4);
-          this.text(e.x, e.y - 20, `+${e.a}`, '#fff3b0');
-          break;
-        case 'tower_broken':
-          this.burst(e.x, e.y, 8, '#777', 160, 5);
-          this.text(e.x, e.y - 30, 'broken!', '#ffb0b0');
-          break;
-        case 'tower_revived':
-          this.text(e.x, e.y - 30, 'back!', '#c6ff8a');
-          break;
-        case 'eaten':
-          this.burst(e.x, e.y, 16, TOWER_COLORS[e.s] || '#fff', 260, 6);
-          this.text(e.x, e.y - 30, 'CHOMP!', '#ffffff');
-          this.shake(10);
-          break;
-        case 'weak_hit':
-          this.burst(e.x, e.y, 6, '#ffffff', 160, 4);
-          this.text(e.x, e.y - 10, 'HAT!', '#fff36b');
+        case 'splash':
+          this.ring(e.x, e.y, 10, e.a, 0.35, e.s === 'ink' ? '#2a2440' : '#bff7ff');
           break;
         case 'boss_spawn':
-          this.shake(10);
-          break;
-        case 'boss_phase':
-          this.text(e.x, e.y - 80, 'PHASE UP!', '#ffffff', 1.6);
           this.shake(8);
           break;
-        case 'boss_windup':
-          this.text(e.x, e.y - 70, 'Grrr…', '#ffffff');
+        case 'boss_throw':
+          this.bossFx.throwT = 0;
           break;
-        case 'boss_stunned':
-          this.text(e.x, e.y - 70, 'Stunned!', '#fff36b');
-          break;
-        case 'boss_open':
-          this.text(e.x, e.y - 80, 'Arms open!', '#fff36b');
-          break;
-        case 'purr':
-          this.text(e.x, e.y - 90, 'Purr shield!', '#8ff0ff');
-          break;
-        case 'boss_exposed':
-          this.text(e.x, e.y - 90, 'EXPOSED!', '#fff36b', 1.4);
-          this.ring(e.x, e.y, 30, 120, 0.5, C.plus);
-          break;
-        case 'boss_slam_warn':
-          this.text(e.x, e.y - 90, 'Rumble…', '#ffb0b0', 1.3);
-          break;
-        case 'boss_lap':
-          this.text(g.heart.x, g.heart.y - 110, 'REEF SLAM!', '#ff9a9a', 1.6);
-          this.ring(g.heart.x, WORLD.REEF_Y, 30, 420, 0.7, '#ff9a9a');
-          this.shake(14);
-          break;
-        case 'boss_defeat':
-          this.burst(e.x, e.y, 40, BOSS_COLORS[e.s] || '#fff', 320, 8);
-          this.ring(e.x, e.y, 30, 200, 0.8, '#ffffff');
-          this.shake(14);
-          break;
-        case 'tentacle_break':
-          this.burst(e.x, e.y, 10, BOSS_COLORS.kitty, 200, 5);
-          break;
-        case 'reef_wash':
-          this.ring(WORLD.W / 2, WORLD.RAIL_Y, 40, 1100, 0.9, '#bff7ff');
+        case 'boss_summon':
+          this.bossFx.summonT = 0;
           break;
         case 'strike_land':
-          if (e.s === 'ink') this.decal(e.x, e.y, e.a, 2);
-          else if (e.s === 'swipe') this.ring(e.x, e.y, 20, e.a, 0.35, BOSS_COLORS.kitty);
-          else this.burst(e.x, e.y, 5, e.s === 'spark' ? '#fff36b' : '#ffc94d', 150, 4);
+          this.ring(e.x, 0, 10, e.a * 1.2, 0.4, e.s === 'swipe' ? '#ff86c8' : e.s === 'star' ? '#ffc94d' : '#2a2440');
+          if (!this.corpse(e.s === 'ink' ? 'fx.ink' : 'fx.spark', '', e.x, 0, 1.2)) this.burst(e.x, 0, 10, 8, '#2a2440', 160, 5);
+          if (e.b) this.shake(8);
+          break;
+        case 'dodge':
+          this.text(e.x, 60, 'Dodged!', '#ffffff', 1.2);
+          break;
+        case 'boss_defeat':
+          this.corpse('boss.' + e.s, 'die', e.x, e.y, SIZE.boss);
+          this.corpse('fx.confetti', '', e.x, e.y, 2.2);
+          this.burst(e.x, e.y, 60, lowFx ? 16 : 40, BOSS_COLORS[e.s] || '#fff', 320, 8);
+          this.shake(14);
+          break;
+        case 'win':
+          this.corpse('fx.confetti', '', g.school.x, 120, 2.6);
+          break;
+        case 'phase':
+          if (e.s !== 'play') {
+            this.texts.length = 0;
+            this.rings.length = 0;
+          }
           break;
       }
     }
   }
 
-  // Plays sprite effects for an event. Returns true when art handled it, which
-  // suppresses the placeholder particles (texts and shake still happen).
-  spriteFx(e) {
-    const bf = this.bossFx;
-    if (e.type === 'boss_throw') bf.throwT = 0;
-    else if (e.type === 'boss_summon') bf.summonT = 0;
-    else if (e.type === 'boss_swipe') bf.swipeT = 0;
-    if (!this.sp.loaded) return false;
-    switch (e.type) {
-      case 'kill': {
-        const key = 'enemy.' + e.s;
-        const ref = e.ref;
-        const flip = ref ? Math.cos(ref.angle) * ref.dir < -0.1 : false;
-        if (this.sp.has(key, 'die')) return this.corpse(key, 'die', e.x, e.y, ref ? ref.z : 0, flip, ref ? ref.r / ref.baseR : 1);
-        return this.corpse('fx.pop', '', e.x, e.y, 0, false, 1);
-      }
-      case 'boss_defeat': {
-        const key = 'boss.' + e.s;
-        if (this.sp.has(key, 'die')) this.corpse(key, 'die', e.x, e.y, 0, false, 1);
-        return this.corpse('fx.confetti', '', e.x, e.y, 0, false, 1);
-      }
-      case 'tentacle_break':
-        return this.corpse('boss.kitty.tentacle', 'break', e.x, e.y, 0, false, 1, true);
-      case 'zap': return this.corpse('fx.zap', '', e.a, e.b, 0, false, 1); // at the struck tower
-      case 'shoot_minus': return this.corpse('fx.minus_muzzle', '', e.x, e.y, 0, false, 1);
-      case 'shoot_plus': return this.corpse('fx.plus_muzzle', '', e.x, e.y, 0, false, 1);
-      default: {
-        const key = EVENT_FX[e.type];
-        if (!key) return false;
-        if (e.type === 'strike_land' && e.s !== 'ink') return this.corpse('fx.spark', '', e.x, e.y, 0, false, 1);
-        return this.corpse(key, '', e.x, e.y, 0, false, 1);
-      }
-    }
-  }
-
-  corpse(key, anim, x, y, z, flip, scale, needAnim = false) {
-    if (!this.sp.has(key, anim || undefined)) return false;
-    if (needAnim && !this.sp.has(key, anim)) return false;
+  corpse(key, anim, x, z, scale) {
+    if (!this.sp.loaded || !this.sp.has(key)) return false;
+    if (anim && !this.sp.has(key, anim)) return false;
     const a = anim || this.sp.pick(key, 'play');
-    if (this.corpses.length > 60) this.corpses.shift();
-    const dur = this.sp.duration(key, a) || 0.5;
-    this.corpses.push({ key, anim: a, t: 0, dur, x, y, z, flip, scale });
+    if (this.corpses.length > 40) this.corpses.shift();
+    this.corpses.push({ key, anim: a, t: 0, dur: this.sp.duration(key, a) || 0.5, x, z, scale });
     return true;
   }
 
@@ -567,45 +302,32 @@ export class Renderer {
     this.shakeT = 0.3;
   }
 
-  burst(x, y, n, color, speed, size) {
-    if (this.suppress) return;
-    const cap = this.quality < 1 ? 150 : 400;
+  burst(x, z, h, n, color, speed, size) {
+    const cap = this.quality < 1 ? 150 : 360;
     for (let i = 0; i < n && this.particles.length < cap; i++) {
       const p = this.freeParticles.pop() || {};
       const a = Math.random() * TAU, v = speed * (0.4 + Math.random() * 0.6);
       p.x = x;
-      p.y = y;
-      p.z = 6;
+      p.z = z;
+      p.h = h;
       p.vx = Math.cos(a) * v;
-      p.vy = Math.sin(a) * v;
-      p.vz = 80 + Math.random() * 160;
-      p.life = p.max = 0.45 + Math.random() * 0.4;
+      p.vz = Math.sin(a) * v;
+      p.vh = 60 + Math.random() * 140;
+      p.life = p.max = 0.45 + Math.random() * 0.35;
       p.color = color;
       p.size = size * (0.6 + Math.random() * 0.6);
       this.particles.push(p);
     }
   }
 
-  ring(x, y, r0, r1, life, color) {
-    if (this.suppress) return;
-    if (this.rings.length > 40) return;
-    this.rings.push({ x, y, r0, r1, life, max: life, color });
+  ring(x, z, r0, r1, life, color) {
+    if (this.rings.length > 30) return;
+    this.rings.push({ x, z, r0, r1, life, max: life, color });
   }
 
-  line(x1, y1, x2, y2, life, color) {
-    if (this.lines.length > 40) return;
-    this.lines.push({ x1, y1, x2, y2, life, max: life, color });
-  }
-
-  decal(x, y, r, life) {
-    if (this.suppress) return;
-    if (this.decals.length > 30) this.decals.shift();
-    this.decals.push({ x, y, r, life, max: life });
-  }
-
-  text(x, y, str, color, scale = 1) {
-    if (this.texts.length > 40) this.texts.shift();
-    this.texts.push({ x, y, str, color, life: 1, max: 1, scale });
+  text(x, h, str, color, scale = 1) {
+    if (this.texts.length > 24) this.texts.shift();
+    this.texts.push({ x, h, str, color, life: 1.1, max: 1.1, scale });
   }
 
   // ------------------------------------------------------------ frame
@@ -613,26 +335,13 @@ export class Renderer {
   render(dt, alpha = 1) {
     const g = this.g, ctx = this.ctx;
     this.time += dt;
-    this.a = g.phase === 'combat' && !g.paused ? alpha : 1;
+    this.a = g.phase === 'play' && !g.paused ? alpha : 1;
+    this.at = this.settings.stopMotion ? Math.floor(g.clock * SIM.ANIM_FPS) / SIM.ANIM_FPS : g.clock;
     if (!g.paused) {
-      const bf = this.bossFx;
-      bf.throwT += dt;
-      bf.summonT += dt;
-      bf.swipeT += dt;
+      this.bossFx.throwT += dt;
+      this.bossFx.summonT += dt;
+      if (this.labelBump > 0) this.labelBump -= dt;
     }
-    // stop-motion: wobble animations step at 12 fps, positions stay smooth
-    const at = this.settings.stopMotion ? Math.floor(g.clock * SIM.ANIM_FPS) / SIM.ANIM_FPS : g.clock;
-    this.at = at;
-
-    if (g.phase !== this.lastPhase) {
-      this.lastPhase = g.phase;
-      if (g.phase !== 'combat') {
-        this.decals.length = 0;
-        this.lines.length = 0;
-        if (g.phase !== 'waveEnd' && g.phase !== 'victory' && g.phase !== 'defeat') this.texts.length = 0;
-      }
-    }
-
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(this.bg, 0, 0);
     let sx = 0, sy = 0;
@@ -644,786 +353,388 @@ export class Renderer {
       if (this.shakeT <= 0) this.shakeMag = 0;
     }
     ctx.setTransform(this.dpr, 0, 0, this.dpr, sx * this.dpr, sy * this.dpr);
+    const fdt = g.paused ? 0 : dt;
+    const d = this.scrollDist();
+    this.drawRoad(d);
+    this.drawDecor(d);
+    this.drawShotsOnGround();
+    this.drawWorld();
+    this.drawCorpses(fdt);
+    this.drawShotsInFlight();
+    this.drawLabels();
+    this.drawFx(fdt);
+  }
 
-    this.drawDecals(dt);
-    this.drawSocketsOverlay();
-    this.drawStrikeTelegraphs();
-    this.drawPickups();
-    this.drawEnemies();
-    this.drawTowers();
-    this.drawTentacles();
-    this.drawHeart();
-    this.drawProjectiles();
-    this.drawStrikes();
-    this.drawPlayer();
-    this.drawCorpses(g.paused ? 0 : dt);
-    this.drawFx(g.paused ? 0 : dt);
-    this.suppress = false;
+  running() {
+    const g = this.g;
+    return g.phase === 'play' && g.stage === STAGE.RUN && !g.ending && !g.paused;
+  }
+
+  // distance travelled, interpolated between ticks (the title screen drifts slowly)
+  scrollDist() {
+    const g = this.g;
+    if (g.phase === 'title') return g.clock * ROAD.speed * 0.35;
+    return this.running() ? g.dist - ROAD.speed * SIM.DT * (1 - this.a) : g.dist;
+  }
+
+  drawRoad(d) {
+    const ctx = this.ctx, H = ROAD.half;
+    const zf = ROAD.view * 1.6, zn = -PERSP * 0.69;
+    const quad = (x0, x1, z0, z1, color) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(this.X(x0, z0), this.Y(z0));
+      ctx.lineTo(this.X(x1, z0), this.Y(z0));
+      ctx.lineTo(this.X(x1, z1), this.Y(z1));
+      ctx.lineTo(this.X(x0, z1), this.Y(z1));
+      ctx.closePath();
+      ctx.fill();
+    };
+    quad(-H, H, zn, zf, C.road);
+    // sand ripples scrolling toward the school
+    const step = 70;
+    const off = d % step;
+    for (let z = step - off - step; z < ROAD.view * 1.3; z += step) {
+      ctx.globalAlpha = 0.5 * (1 - Math.max(0, z) / (ROAD.view * 1.3));
+      quad(-H, H, z - 6, z + 6, C.roadDark);
+    }
+    // the middle line: where one gate ends and the other begins
+    ctx.globalAlpha = 0.6;
+    for (let z = 2 * step - (d % (2 * step)) - 2 * step; z < ROAD.view * 1.3; z += 2 * step) quad(-3, 3, z, z + step * 0.6, '#ffffff');
+    ctx.globalAlpha = 1;
+    // coral rims
+    quad(-H - 16, -H, zn, zf, C.rimDark);
+    quad(H, H + 16, zn, zf, C.rimDark);
+    quad(-H - 10, -H, zn, zf, C.rim);
+    quad(H, H + 10, zn, zf, C.rim);
+  }
+
+  // Kelp, coral and rocks along the roadside, scrolling with the road.
+  drawDecor(d) {
+    const ctx = this.ctx, step = 110;
+    const first = Math.floor((d - PERSP * 0.6) / step);
+    const last = Math.floor((d + ROAD.view * 1.3) / step);
+    for (let i = last; i >= first; i--) {
+      const z = i * step - d;
+      for (const side of [-1, 1]) {
+        const h = hash(i * 2 + (side > 0 ? 1 : 0));
+        const x = side * (ROAD.half + 40 + h * 120);
+        const U = this.U(z), X = this.X(x, z), Y = this.Y(z);
+        if (Y < this.horizon - 4) continue;
+        const kind = Math.floor(h * 97) % 3;
+        if (kind === 0) {
+          const tall = 4 + Math.floor(h * 5);
+          for (let k = 0; k < tall; k++) {
+            const sway = Math.sin(this.time * 1.6 + i + k * 0.6) * k * U * 1.2;
+            blob(ctx, X + sway, Y - k * 16 * U, 8 * U, 11 * U, k % 2 ? '#2a8a52' : '#3fae6a', 0.2);
+          }
+        } else if (kind === 1) {
+          const col = ['#ff9fb2', '#ffd36e', '#c9a6ff', '#7fd4ff'][Math.floor(h * 13) % 4];
+          blob(ctx, X, Y - 10 * U, 22 * U, 16 * U, col, 0.3);
+          blob(ctx, X - 14 * U, Y - 22 * U, 10 * U, 12 * U, col, 0.3);
+          blob(ctx, X + 12 * U, Y - 26 * U, 9 * U, 13 * U, col, 0.3);
+        } else {
+          blob(ctx, X, Y - 6 * U, 18 * U, 10 * U, '#8a7f72', 0.25);
+        }
+      }
+    }
+  }
+
+  // Red target circles where boss attacks will land (on the school's line).
+  drawShotsOnGround() {
+    const g = this.g, ctx = this.ctx;
+    for (const sh of g.shots) {
+      if (!sh.alive) continue;
+      const k = sh.t / sh.dur;
+      const x = this.X(sh.x, 0), y = this.Y(0), rx = sh.r * this.U(0), ry = rx * 0.32;
+      ctx.fillStyle = `rgba(255,60,60,${0.15 + 0.3 * k})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255,40,40,${0.6 + 0.4 * Math.sin(this.time * 18)})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx * (1 - k * 0.5), ry * (1 - k * 0.5), 0, 0, TAU);
+      ctx.stroke();
+    }
+    // Sharky's charge lane
+    const b = g.boss;
+    if (b && b.alive && b.type === 'sharky' && (b.state === 1 || b.state === 2)) {
+      const w = BOSS_ATTACK.chargeW / 2;
+      ctx.fillStyle = `rgba(255,60,60,${b.state === 2 || Math.floor(this.time * 8) % 2 ? 0.28 : 0.14})`;
+      ctx.beginPath();
+      ctx.moveTo(this.X(b.tx - w, 0), this.Y(0));
+      ctx.lineTo(this.X(b.tx + w, 0), this.Y(0));
+      ctx.lineTo(this.X(b.tx + w, b.z), this.Y(b.z));
+      ctx.lineTo(this.X(b.tx - w, b.z), this.Y(b.z));
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // Boss projectiles arcing from the boss to their target circles.
+  drawShotsInFlight() {
+    const g = this.g, ctx = this.ctx;
+    for (const sh of g.shots) {
+      if (!sh.alive || sh.kind === 'swipe') continue;
+      const k = Math.min(1, sh.t / sh.dur);
+      const z = sh.fromZ * (1 - k), x = sh.fromX + (sh.x - sh.fromX) * k;
+      const h = 140 * 4 * k * (1 - k) + 40 * (1 - k);
+      const U = this.U(z), X = this.X(x, z), Y = this.Y(z) - h * U;
+      const key = sh.kind === 'star' ? 'strike.star' : 'strike.ink';
+      if (this.sp.loaded && this.sp.draw(ctx, key, 'fly', sh.t, X, Y, U * SIZE.strike, this.opt(false, 1, 1, sh.kind === 'star' ? sh.t * 12 : 0, 1, 0))) continue;
+      if (sh.kind === 'star') star(ctx, X, Y, 14 * U, 6 * U, sh.t * 12, '#ffc94d');
+      else blob(ctx, X, Y, 14 * U, 12 * U, C.ink, 0.3);
+    }
+  }
+
+  // Everything that stands on the road, sorted far to near.
+  drawWorld() {
+    const g = this.g, list = this.draws;
+    let n = 0;
+    const add = (z, kind, ref, i) => {
+      let d = list[n];
+      if (!d) d = list[n] = { z: 0, kind: '', ref: null, i: 0 };
+      d.z = z;
+      d.kind = kind;
+      d.ref = ref;
+      d.i = i;
+      n++;
+    };
+    const a = this.a;
+    for (const o of g.things) if (o.alive) add(o.pz + (o.z - o.pz) * a, 'thing', o, 0);
+    for (const b of g.bullets) if (b.alive) add(b.pz + (b.z - b.pz) * a, 'bullet', b, 0);
+    if (g.phase !== 'title') {
+      const shown = Math.min(g.school.n, SCHOOL.shown);
+      for (let i = 0; i < shown; i++) add(SCHOOL_OFFSETS[i].z, 'fish', null, i);
+      for (let i = 0; i < g.school.buddies.length; i++) add(4, 'buddy', g.school.buddies[i], i);
+    }
+    // insertion sort by z, far first (the list is nearly sorted every frame)
+    for (let i = 1; i < n; i++) {
+      const d = list[i];
+      let j = i - 1;
+      while (j >= 0 && list[j].z < d.z) {
+        list[j + 1] = list[j];
+        j--;
+      }
+      list[j + 1] = d;
+    }
+    const sx = g.phase === 'play' ? g.school.px + (g.school.x - g.school.px) * a : g.school.x;
+    this.schoolX = sx;
+    for (let i = 0; i < n; i++) {
+      const d = list[i];
+      switch (d.kind) {
+        case 'thing': this.drawThing(d.ref, d.z); break;
+        case 'bullet': this.drawBullet(d.ref, d.z); break;
+        case 'fish': this.drawFish(d.i, sx); break;
+        case 'buddy': this.drawBuddy(d.ref, sx); break;
+      }
+    }
+  }
+
+  drawThing(o, z) {
+    const x = o.px + (o.x - o.px) * this.a;
+    switch (o.kind) {
+      case 'gate': this.drawGate(o, x, z); break;
+      case 'clam': this.drawClam(o, x, z); break;
+      case 'enemy': this.drawEnemy(o, x, z); break;
+      case 'boss': this.drawBoss(o, x, z); break;
+    }
+  }
+
+  drawGate(o, x, z) {
+    const ctx = this.ctx, U = this.U(z);
+    const x0 = this.X(x - o.w, z), x1 = this.X(x + o.w, z), yb = this.Y(z), h = GATE_H * U;
+    const e = o.gate;
+    const good = e.type !== 'add' || e.value > 0;
+    const rgb = good ? C.good : C.bad;
+    ctx.fillStyle = `rgba(${rgb},${o.hitT > 0 ? 0.62 : 0.4})`;
+    roundRect(ctx, x0, yb - h, x1 - x0, h, 6 * U);
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, 4 * U);
+    ctx.strokeStyle = `rgba(${rgb},0.95)`;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(x0 + 6 * U, yb - h + 6 * U, (x1 - x0) * 0.22, h - 12 * U);
+    const cx = (x0 + x1) / 2, cy = yb - h * 0.5;
+    if (e.type === 'buddy') {
+      const key = `tower.${e.buddy}.1`;
+      if (this.sp.loaded && this.sp.has(key)) this.sp.draw(ctx, key, 'idle', this.at, cx, yb - 8 * U, U * 0.4, null);
+      else bigText(ctx, BUDDY_ICONS[e.buddy] || '?', cx, cy, Math.max(10, 30 * U), '#fff');
+      bigText(ctx, '+' + (e.buddy || '').toUpperCase(), cx, yb - h + 13 * U, Math.max(8, 15 * U), '#fff');
+      return;
+    }
+    let lines;
+    if (e.type === 'add') lines = [(e.value > 0 ? '+' : '−') + Math.abs(e.value)];
+    else if (e.type === 'mul') lines = ['×' + e.value];
+    else if (e.type === 'rate') lines = ['FIRE', 'RATE'];
+    else lines = ['POWER', 'UP'];
+    const size = Math.max(9, (lines.length === 1 ? 42 : 19) * U);
+    lines.forEach((ln, i) => bigText(ctx, ln, cx, cy + (i - (lines.length - 1) / 2) * size * 1.05, size, '#fff'));
+  }
+
+  drawClam(o, x, z) {
+    const ctx = this.ctx, U = this.U(z), X = this.X(x, z), Y = this.Y(z);
+    shadow(ctx, X, Y, o.w * U, 10 * U);
+    const flash = o.hitT > 0 ? 0.6 : 0;
+    if (!(this.sp.loaded && this.sp.draw(ctx, 'pickup.shell', 'land', 0, X, Y + 4 * U, U * SIZE.clam, this.opt(false, 1, 1, 0, 1, flash)))) {
+      blob(ctx, X, Y - 18 * U, 36 * U, 24 * U, flash ? '#ffffff' : '#ffd9c0', 0.4);
+      ctx.strokeStyle = '#d98a6a';
+      ctx.lineWidth = 2 * U;
+      for (let k = -2; k <= 2; k++) {
+        ctx.beginPath();
+        ctx.moveTo(X, Y - 2 * U);
+        ctx.lineTo(X + k * 14 * U, Y - 38 * U);
+        ctx.stroke();
+      }
+    }
+    // HP to crack it, and the prize inside
+    const top = Y - 58 * U;
+    bigText(ctx, String(Math.ceil(o.hp)), X, top, Math.max(10, 26 * U), '#ffffff');
+    const p = o.gate;
+    const prize = p.type === 'add' ? `+${p.value} 🐟` : p.type === 'mul' ? `×${p.value}` : p.type === 'rate' ? '🔥 RATE' : p.type === 'dmg' ? '💪 POWER' : `${BUDDY_ICONS[p.buddy] || ''} ${(p.buddy || '').toUpperCase()}`;
+    bigText(ctx, prize, X, top - 24 * U, Math.max(8, 15 * U), '#ffe066');
+  }
+
+  drawEnemy(o, x, z) {
+    const ctx = this.ctx, U = this.U(z), X = this.X(x, z), Y = this.Y(z);
+    const def = ENEMIES[o.type];
+    shadow(ctx, X, Y, def.r * U, def.r * 0.4 * U);
+    const flip = this.schoolX < x;
+    const flash = o.hitT > 0 ? 0.7 : 0;
+    const bob = Math.abs(Math.sin(o.anim * 6)) * 4 * U;
+    if (!(this.sp.loaded && this.sp.draw(ctx, 'enemy.' + o.type, 'move', o.anim, X, Y - bob, U * SIZE.enemy, this.opt(flip, 1, 1, 0, 1, flash)))) {
+      blob(ctx, X, Y - def.r * U - bob, def.r * U, def.r * U, flash ? '#ffffff' : ENEMY_COLORS[o.type] || '#fff', 0.35);
+      googly(ctx, X, Y - def.r * 1.2 * U - bob, def.r * 0.4 * U);
+    }
+    if (o.hp < o.maxHp) bar(ctx, X, Y - (def.r * 2.6 + 6) * U, 30 * U, Math.max(2, 4 * U), o.hp / o.maxHp);
+  }
+
+  drawBoss(o, x, z) {
+    const ctx = this.ctx, U = this.U(z), X = this.X(x, z), Y = this.Y(z);
+    const def = BOSSES[o.type];
+    shadow(ctx, X, Y, def.r * 1.1 * U, def.r * 0.35 * U);
+    const key = 'boss.' + o.type;
+    const sp = this.sp, bf = this.bossFx;
+    if (sp.loaded && sp.has(key)) {
+      let anim, t = this.g.clock;
+      const once = (name, since) => sp.has(key, name) && since < sp.duration(key, name);
+      if (o.type === 'sharky') anim = sp.pick(key, o.state === 1 ? 'windup' : '', o.state === 2 ? 'charge' : '', o.state === 3 ? 'recover' : '', 'move');
+      else if (once('throw', bf.throwT)) (anim = 'throw'), (t = bf.throwT);
+      else if (once('swipe', bf.throwT)) (anim = 'swipe'), (t = bf.throwT);
+      else if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
+      else anim = sp.pick(key, o.hp < o.maxHp * 0.5 ? 'move2' : '', o.type === 'queen' ? 'open' : '', 'move');
+      sp.draw(ctx, key, anim, t, X, Y, U * SIZE.boss, this.opt(false, 1, 1, 0, 1, o.hitT > 0 ? 0.35 : 0));
+      if (o.type === 'chef') {
+        const ap = sp.attach(key, 'hat');
+        if (ap) sp.draw(ctx, 'boss.chef.hat', 'idle', t, X + ap.dx * U * SIZE.boss, Y + ap.dy * U * SIZE.boss, U * SIZE.boss, null);
+      }
+    } else {
+      blob(ctx, X, Y - def.r * U, def.r * U, def.r * 0.9 * U, o.hitT > 0 ? '#ffffff' : BOSS_COLORS[o.type], 0.35);
+      googly(ctx, X, Y - def.r * 1.25 * U, def.r * 0.3 * U);
+    }
+  }
+
+  drawBullet(b, z) {
+    const ctx = this.ctx, U = this.U(z);
+    const x = b.px + (b.x - b.px) * this.a;
+    const X = this.X(x, z), Y = this.Y(z) - 22 * U;
+    // a short streak so fast bubbles read as shots
+    if (!b.buddy) {
+      const z0 = Math.max(0, z - 60), U0 = this.U(z0);
+      ctx.strokeStyle = 'rgba(220,250,255,0.55)';
+      ctx.lineWidth = Math.max(1.5, 5 * U);
+      ctx.beginPath();
+      ctx.moveTo(this.X(x, z0), this.Y(z0) - 22 * U0);
+      ctx.lineTo(X, Y);
+      ctx.stroke();
+    }
+    const key = 'proj.' + b.kind;
+    const s = b.buddy ? SIZE.buddyShot : SIZE.bullet;
+    const rot = this.sp.flag(key, 'spin') ? b.t * 14 : this.sp.flag(key, 'orient') ? -Math.PI / 2 : 0;
+    if (this.sp.loaded && this.sp.draw(ctx, key, 'fly', b.t, X, Y, U * s, this.opt(false, 1, 1, rot, 1, 0))) return;
+    blob(ctx, X, Y, b.r * U, b.r * U, b.buddy ? '#ffd23f' : '#bdf4ff', 0.5);
+  }
+
+  drawFish(i, sx) {
+    const g = this.g, ctx = this.ctx, s = g.school;
+    const off = SCHOOL_OFFSETS[i];
+    const z = off.z, U = this.U(z);
+    const x = sx + off.x + Math.sin(this.time * 7 + i * 1.7) * 3;
+    const X = this.X(x, z), Y = this.Y(z) - Math.abs(Math.sin(this.time * 5 + i)) * 3 * U;
+    const hurt = s.hitT > 0;
+    const skin = 'player.' + (g.meta.skin || 'classic');
+    const key = this.sp.has(skin) ? skin : 'player.classic';
+    if (this.sp.loaded && this.sp.has(key)) {
+      shadow(ctx, X, Y, 11 * U, 3.5 * U);
+      this.sp.draw(ctx, key, this.sp.pick(key, 'swim', 'idle'), this.at + i * 0.13, X, Y, U * SIZE.fish,
+        this.opt(i % 5 === 3, 1, 1, 0, hurt && Math.floor(this.time * 20) % 2 ? 0.45 : 1, s.gainT > 0 ? 0.4 : 0));
+      return;
+    }
+    const sk = SKIN_COLORS[g.meta.skin] || SKIN_COLORS.classic;
+    shadow(ctx, X, Y, 12 * U, 4 * U);
+    blob(ctx, X, Y - 10 * U, 13 * U, 9 * U, hurt ? '#ff5d5d' : sk.body, 0.35);
+    ctx.fillStyle = sk.stripe;
+    ctx.fillRect(X - 2 * U, Y - 18 * U, 4 * U, 16 * U);
+    googly(ctx, X + 6 * U, Y - 12 * U, 3.5 * U);
+  }
+
+  drawBuddy(b, sx) {
+    const g = this.g, ctx = this.ctx;
+    const x = Math.max(-ROAD.half, Math.min(ROAD.half, sx + b.side * (g.schoolHalfW + 22)));
+    const z = 4, U = this.U(z), X = this.X(x, z), Y = this.Y(z);
+    shadow(ctx, X, Y, 20 * U, 7 * U);
+    for (let l = b.level; l >= 1; l--) {
+      const key = `tower.${b.type}.${l}`;
+      if (!this.sp.loaded || !this.sp.has(key)) continue;
+      const firing = this.sp.has(key, 'fire') && b.fireT < this.sp.duration(key, 'fire');
+      this.sp.draw(ctx, key, firing ? 'fire' : 'idle', firing ? b.fireT : this.at, X, Y, U * SIZE.buddy * (1 + (b.level - l) * 0.1), this.opt(b.side < 0, 1, 1, 0, 1, 0));
+      return;
+    }
+    blob(ctx, X, Y - 18 * U, 18 * U, 16 * U, BUDDY_COLORS[b.type] || '#fff', 0.35);
+    googly(ctx, X, Y - 22 * U, 5 * U);
+  }
+
+  // The fish counter above the school and the boss's HP.
+  drawLabels() {
+    const g = this.g, ctx = this.ctx;
+    if (g.phase === 'title') return;
+    const s = g.school;
+    const front = g.schoolFront;
+    const X = this.X(this.schoolX, front), Y = this.Y(front) - 46 * this.U(front);
+    const pop = 1 + Math.max(0, this.labelBump) * 0.9;
+    const col = s.hitT > 0 ? '#e5484d' : s.gainT > 0 ? '#2fb85a' : '#2d6cff';
+    badge(ctx, String(s.n), X, Y, 20 * pop, col);
+    const b = g.boss;
+    if (b && b.alive && b.z < ROAD.view) {
+      const def = BOSSES[b.type];
+      const z = b.pz + (b.z - b.pz) * this.a, U = this.U(z);
+      const bx = this.X(b.px + (b.x - b.px) * this.a, z);
+      const h = this.sp.loaded && this.sp.has('boss.' + b.type) ? this.sp.height('boss.' + b.type) * SIZE.boss : def.r * 2;
+      const size = Math.max(15, 30 * U);
+      const by = this.Y(z) - (h + 16) * U - size * 0.5;
+      badge(ctx, String(Math.ceil(b.hp)), bx, by, size, '#e5484d');
+      bar(ctx, bx, by + size * 0.85, Math.max(60, 120 * U), Math.max(4, 7 * U), b.hp / b.maxHp);
+    }
   }
 
   drawCorpses(dt) {
-    const list = this.corpses;
+    const list = this.corpses, scroll = this.running() ? ROAD.speed : 0;
     for (let i = list.length - 1; i >= 0; i--) {
       const c = list[i];
       c.t += dt;
+      c.z -= scroll * dt;
       if (c.t >= c.dur) {
         list.splice(i, 1);
         continue;
       }
-      this.spr(c.key, c.anim, c.t, c.x, c.y, c.z, this.opt(c.flip, c.scale, c.scale, 0, 1, 0));
+      this.sp.draw(this.ctx, c.key, c.anim, c.t, this.X(c.x, c.z), this.Y(c.z), this.U(c.z) * c.scale, null);
     }
-  }
-
-  drawDecals(dt) {
-    const ctx = this.ctx;
-    for (let i = this.decals.length - 1; i >= 0; i--) {
-      const d = this.decals[i];
-      d.life -= dt;
-      if (d.life <= 0) {
-        this.decals.splice(i, 1);
-        continue;
-      }
-      ctx.globalAlpha = Math.min(0.5, d.life / d.max);
-      blob(ctx, this.px(d.x), this.py(d.y), d.r * this.s, d.r * this.s * TILT, C.ink, 0);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // range rings + selection highlights during placement / build
-  drawSocketsOverlay() {
-    const g = this.g, v = this.view, ctx = this.ctx, s = this.s;
-    const building = g.phase === 'place' || g.phase === 'build';
-    if (building) {
-      for (const so of g.sockets) {
-        if (so.tower) continue;
-        const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);
-        if (g.phase === 'place') {
-          ctx.globalAlpha = 0.25 + 0.25 * pulse;
-          ring2(ctx, this.px(so.x), this.py(so.y), MAP.socketR * s * 1.25, MAP.socketR * s * 1.25 * TILT, C.white, 3 * s);
-          ctx.globalAlpha = 1;
-        }
-      }
-    }
-    const sel = v.focusSocket;
-    if (sel >= 0 && (building || v.showFocusInCombat)) {
-      const so = g.sockets[sel];
-      if (so) {
-        let range = 0;
-        if (so.tower) range = towerRange(g, so.tower);
-        else if (v.previewType) range = TOWERS[v.previewType].levels[0].range * (g.fork.rangeMul || 1);
-        if (range > 0) {
-          // only the part over the water matters: buddies shoot upward
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(this.px(0), this.py(-TOP_MARGIN), WORLD.W * s, this.py(so.y) - this.py(-TOP_MARGIN));
-          ctx.clip();
-          ctx.fillStyle = 'rgba(255,255,255,0.12)';
-          ctx.beginPath();
-          ctx.ellipse(this.px(so.x), this.py(so.y), range * s, range * s * TILT, 0, 0, TAU);
-          ctx.fill();
-          ring2(ctx, this.px(so.x), this.py(so.y), range * s, range * s * TILT, 'rgba(255,255,255,0.7)', 2 * s);
-          ctx.restore();
-        }
-        const bob = Math.sin(this.time * 6) * 4;
-        ring2(ctx, this.px(so.x), this.py(so.y), MAP.socketR * s * 1.35, MAP.socketR * s * 1.35 * TILT, C.socketHi, 4 * s);
-        // pointer arrow
-        ctx.fillStyle = C.socketHi;
-        const ax = this.px(so.x), ay = this.py(so.y, 70 + bob);
-        ctx.beginPath();
-        ctx.moveTo(ax - 10 * s, ay - 12 * s);
-        ctx.lineTo(ax + 10 * s, ay - 12 * s);
-        ctx.lineTo(ax, ay + 4 * s);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-    // Plus Power rings in combat
-    if (g.phase === 'combat') {
-      for (const t of g.towers) {
-        if (t.plusT <= 0) continue;
-        ctx.globalAlpha = 0.35 + 0.2 * Math.sin(this.time * 10);
-        const r = towerRange(g, t);
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(this.px(0), this.py(-TOP_MARGIN), WORLD.W * s, this.py(t.y) - this.py(-TOP_MARGIN));
-        ctx.clip();
-        ring2(ctx, this.px(t.x), this.py(t.y), r * s, r * s * TILT, C.plus, 2 * s);
-        ctx.restore();
-      }
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  drawStrikeTelegraphs() {
-    const g = this.g, ctx = this.ctx, s = this.s;
-    // Sharky's charge lane
-    const b = g.boss;
-    if (b && b.alive && b.bossId === 'sharky' && (b.state === 1 || b.state === 2)) {
-      const w = (b.r * 0.7 + 10) * s, x = this.px(b.tx);
-      const flash = b.state === 2 || Math.floor(this.time * 8) % 2 ? 0.22 : 0.12;
-      ctx.fillStyle = `rgba(255,60,60,${flash})`;
-      ctx.fillRect(x - w, this.py(b.y), w * 2, this.py(WORLD.RAIL_Y + 30) - this.py(b.y));
-    }
-    for (const st of g.strikes) {
-      if (!st.alive || st.bullet) continue;
-      const k = st.t / st.dur;
-      const col = st.kind === 'swipe' ? 'rgba(255,90,140,' : st.hitsPlayer ? 'rgba(255,60,60,' : 'rgba(40,30,70,';
-      ctx.fillStyle = col + (0.15 + 0.3 * k) + ')';
-      ctx.beginPath();
-      ctx.ellipse(this.px(st.tx), this.py(st.ty), st.r * s, st.r * s * TILT, 0, 0, TAU);
-      ctx.fill();
-      ring2(ctx, this.px(st.tx), this.py(st.ty), st.r * s * (1 - k * 0.6), st.r * s * TILT * (1 - k * 0.6), col + '0.9)', 2 * s);
-    }
-  }
-
-  drawPickups() {
-    const g = this.g, ctx = this.ctx, s = this.s;
-    for (const p of g.pickups) {
-      if (!p.alive) continue;
-      const fade = p.landed && p.t > 5 ? (Math.floor(p.t * 8) % 2 ? 0.3 : 1) : 1;
-      ctx.globalAlpha = fade;
-      const wx = this.ix(p), wy = this.iy(p), z = 4 + Math.sin(p.phase * 4) * 2;
-      if (this.sp.loaded && this.spr('pickup.shell', this.sp.pick('pickup.shell', p.landed ? 'land' : 'fall'), p.phase, wx, wy, z, this.opt(false, 1, 1, 0, 1, 0))) continue;
-      shellShape(ctx, this.px(wx), this.py(wy, z), 9 * s, '#fff1d0', '#e8a96a');
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  drawEnemies() {
-    const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
-    for (let i = 0; i < g.enemies.length; i++) {
-      const e = g.enemies[i];
-      if (!e.alive) continue;
-      const wx = this.ix(e), wy = this.iy(e);
-      const x = this.px(wx), y = this.py(wy, e.z);
-      const r = e.r * s;
-      // ground shadow
-      ctx.fillStyle = 'rgba(0,40,60,0.22)';
-      ctx.beginPath();
-      ctx.ellipse(x, this.py(wy) + r * 0.5, r * 0.9, r * 0.4, 0, 0, TAU);
-      ctx.fill();
-
-      if (e.bossId) {
-        this.drawBoss(e, x, y, r);
-        continue;
-      }
-      const key = 'enemy.' + e.type;
-      if (this.sp.loaded && this.sp.has(key)) {
-        const sp = this.sp;
-        const anim = sp.pick(key, e.stunT > 0 ? 'stun' : '', e.def.fuse && e.state === 1 ? 'inflate' : '', e.heldT > 0 ? 'held' : '',
-          e.busyT > 0 ? 'grab' : '', e.carry > 0 ? 'carry' : '', e.cracked ? 'cracked' : '', e.sad ? 'sad' : '', 'move');
-        const k = e.r / e.baseR, w = this.wob(key, e.anim);
-        const flip = Math.cos(e.angle) * e.dir < -0.1;
-        sp.draw(ctx, key, anim, g.clock + e.anim, x, y, s, this.opt(flip, k * (1 + w), k * (1 - w), 0, 1, e.hitT > 0 ? 0.6 : 0));
-        const h = sp.height(key) * k * s;
-        if (e.sad && !sp.has(key, 'sad') && !this.overlay('fx.sad', x, y - h)) blob(ctx, x + h * 0.25, y - h * 0.75, 3 * s, 4 * s, '#7fc8ff', 0.4);
-        this.drawEnemyStatus(e, x, y - h * 0.45, Math.max(r, h * 0.5));
-        continue;
-      }
-      const wob = Math.sin(at * 9 + e.anim) * 0.08;
-      let col = ENEMY_COLORS[e.type] || '#fff';
-      if (e.sad) col = mix(col, '#7fa8ff', 0.45);
-      if (e.hitT > 0) col = '#ffffff';
-      const rx = r * (1 + wob), ry = r * TILT * (1 - wob) * 1.1;
-      switch (e.type) {
-        case 'urchin':
-          if (!e.cracked) spikes(ctx, x, y, r * 1.45, 10, at * 0.5, '#3a2a5c', s);
-          break;
-        case 'puffer':
-          if (e.state === 1) spikes(ctx, x, y, r * 1.3, 12, 0, '#e0a800', s);
-          break;
-        case 'eel': {
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(e.angle + (e.dir < 0 ? Math.PI : 0));
-          ctx.scale(1, TILT);
-          blob(ctx, -r * 0.9, Math.sin(at * 12) * r * 0.3, r * 0.9, r * 0.5, mix(col, '#000', 0.15), 0);
-          ctx.restore();
-          break;
-        }
-        case 'kraken':
-        case 'octoMini':
-          for (let k = 0; k < 4; k++) {
-            const a = (k / 4) * TAU + Math.sin(at * 6 + k) * 0.3 + Math.PI / 4;
-            blob(ctx, x + Math.cos(a) * r * 0.9, y + Math.sin(a) * r * 0.7 + r * 0.3, r * 0.35, r * 0.28, mix(col, '#000', 0.15), 0);
-          }
-          break;
-        case 'crab':
-          blob(ctx, x - r * 1.05, y - r * 0.2, r * 0.45, r * 0.38, mix(col, '#000', 0.1), 0);
-          blob(ctx, x + r * 1.05, y - r * 0.2, r * 0.45, r * 0.38, mix(col, '#000', 0.1), 0);
-          break;
-      }
-      if (e.type === 'starMinion') star(ctx, x, y, r * 1.3, r * 0.6, at * 3, col);
-      else blob(ctx, x, y, rx, ry, col, 0.35);
-      if (e.type === 'jelly' || e.type === 'jellyMini') {
-        ctx.strokeStyle = mix(col, '#000', 0.2);
-        ctx.lineWidth = 2 * s;
-        for (let k = -1; k <= 1; k++) {
-          ctx.beginPath();
-          ctx.moveTo(x + k * r * 0.5, y + ry * 0.6);
-          ctx.quadraticCurveTo(x + k * r * 0.5 + Math.sin(at * 8 + k) * 4 * s, y + ry * 1.2, x + k * r * 0.5, y + ry * 1.7);
-          ctx.stroke();
-        }
-      }
-      if (e.type === 'urchin' && e.cracked) {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2 * s;
-        ctx.beginPath();
-        ctx.moveTo(x - r * 0.5, y - r * 0.4);
-        ctx.lineTo(x, y);
-        ctx.lineTo(x + r * 0.3, y - r * 0.6);
-        ctx.stroke();
-      }
-      googly(ctx, x, y - ry * 0.25, r * 0.36, e.angle, at + e.anim, e.sad);
-      if (e.carry > 0) shellShape(ctx, x, y - r * 1.3, 7 * s, '#fff1d0', '#e8a96a');
-      this.drawEnemyStatus(e, x, y, r);
-    }
-  }
-
-  drawEnemyStatus(e, x, y, r) {
-    const ctx = this.ctx, s = this.s;
-    if (e.shield > 0) {
-      ctx.fillStyle = 'rgba(140,235,255,0.25)';
-      ctx.beginPath();
-      ctx.ellipse(x, y, r * 1.45, r * 1.45 * TILT, 0, 0, TAU);
-      ctx.fill();
-      ring2(ctx, x, y, r * 1.45, r * 1.45 * TILT, C.shield, 2.5 * s);
-    }
-    if (e.minus > 0) {
-      ctx.fillStyle = C.minus;
-      for (let k = 0; k < e.minus; k++) {
-        ctx.beginPath();
-        ctx.arc(x - (e.minus - 1) * 4 * s + k * 8 * s, y + r * 1.15, 3 * s, 0, TAU);
-        ctx.fill();
-      }
-    }
-    if (e.stunT > 0) {
-      ctx.fillStyle = '#fff36b';
-      for (let k = 0; k < 3; k++) {
-        const a = this.time * 6 + (k / 3) * TAU;
-        star(ctx, x + Math.cos(a) * r, y - r * 1.2 + Math.sin(a) * r * 0.3, 5 * s, 2.2 * s, 0, '#fff36b');
-      }
-    }
-    if (e.heldT > 0) ring2(ctx, x, y, r * 1.1, r * 0.8, TOWER_COLORS.octopus, 4 * s);
-    if (e.slowT > 0 && e.slow > 0) {
-      ctx.fillStyle = 'rgba(40,30,70,0.6)';
-      ctx.beginPath();
-      ctx.arc(x + r * 0.6, y + r * 0.6, 3 * s, 0, TAU);
-      ctx.arc(x - r * 0.5, y + r * 0.7, 2.5 * s, 0, TAU);
-      ctx.fill();
-    }
-    if (e.hp < e.maxHp) bar(ctx, x, y - r * 1.25 - 6 * s, r * 2, 4 * s, e.hp / e.maxHp);
-  }
-
-  drawBoss(e, x, y, r) {
-    const ctx = this.ctx, s = this.s, at = this.at;
-    let col = BOSS_COLORS[e.bossId];
-    if (e.hitT > 0) col = mix(col, '#ffffff', 0.6);
-    const wob = Math.sin(at * 5) * 0.05;
-    const key = 'boss.' + e.bossId;
-    const art = this.sp.loaded && this.sp.has(key);
-    if (art) this.drawBossSprite(e, key, x, y, r);
-    else switch (e.bossId) {
-      case 'chef': {
-        for (let k = 0; k < 6; k++) {
-          const a = (k / 6) * TAU + Math.sin(at * 4 + k) * 0.25;
-          blob(ctx, x + Math.cos(a) * r * 0.95, y + Math.sin(a) * r * 0.6 + r * 0.35, r * 0.3, r * 0.22, mix(col, '#000', 0.2), 0);
-        }
-        blob(ctx, x, y, r * (1 + wob), r * TILT * (1 - wob) * 1.05, col, 0.35);
-        googly(ctx, x, y, r * 0.3, Math.PI / 2, at, false);
-        // the hat — Minus bubbles hitting it deal triple damage
-        const hx = this.px(chefHatX(e));
-        const hy = y - r * 0.95;
-        blob(ctx, hx, hy + r * 0.1, r * 0.42, r * 0.16, '#f2f2f2', 0);
-        blob(ctx, hx, hy - r * 0.25, r * 0.38, r * 0.32, '#ffffff', 0.4);
-        if (Math.floor(this.time * 3) % 2) ring2(ctx, hx, hy - r * 0.15, r * 0.5, r * 0.42, '#fff36b', 2 * s);
-        break;
-      }
-      case 'sharky': {
-        const charging = e.state === 2, winding = e.state === 1;
-        const stretch = charging ? 1.25 : winding ? 0.9 : 1;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(e.angle);
-        ctx.scale(stretch, TILT / stretch);
-        blob(ctx, -r * 1.1, 0, r * 0.45, r * 0.35, mix(col, '#000', 0.2), 0);
-        blob(ctx, 0, 0, r * 1.05, r * 0.8, winding && Math.floor(this.time * 10) % 2 ? '#ff8a8a' : col, 0.3);
-        blob(ctx, 0, -r * 0.7, r * 0.3, r * 0.25, mix(col, '#000', 0.2), 0);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(r * 0.55, -r * 0.3, r * 0.35, r * 0.6);
-        ctx.strokeStyle = '#9aa';
-        ctx.lineWidth = 2 * s;
-        ctx.strokeRect(r * 0.55, -r * 0.3, r * 0.35, r * 0.6);
-        ctx.restore();
-        googly(ctx, x, y - r * 0.2, r * 0.28, e.angle, at, false);
-        break;
-      }
-      case 'queen': {
-        const open = e.state === 1;
-        const inner = open ? r * 0.45 : r * 0.7;
-        const outer = open ? r * 1.35 : r * 1.0;
-        star(ctx, x, y, outer, inner, at * (open ? 0.5 : 2), col);
-        blob(ctx, x, y, inner * 0.8, inner * 0.7, mix(col, '#fff', 0.2), 0.3);
-        if (!open) ring2(ctx, x, y, r * 1.2, r * 1.2 * TILT, C.shield, 4 * s);
-        // crown
-        ctx.fillStyle = '#ffd23f';
-        ctx.beginPath();
-        ctx.moveTo(x - r * 0.35, y - inner * 0.6);
-        ctx.lineTo(x - r * 0.35, y - inner * 0.6 - r * 0.35);
-        ctx.lineTo(x - r * 0.12, y - inner * 0.6 - r * 0.18);
-        ctx.lineTo(x, y - inner * 0.6 - r * 0.42);
-        ctx.lineTo(x + r * 0.12, y - inner * 0.6 - r * 0.18);
-        ctx.lineTo(x + r * 0.35, y - inner * 0.6 - r * 0.35);
-        ctx.lineTo(x + r * 0.35, y - inner * 0.6);
-        ctx.closePath();
-        ctx.fill();
-        googly(ctx, x, y, r * 0.22, Math.PI / 2, at, false);
-        break;
-      }
-      case 'kitty': {
-        for (let k = 0; k < 8; k++) {
-          const a = (k / 8) * TAU + Math.sin(at * 3 + k) * 0.3;
-          blob(ctx, x + Math.cos(a) * r * 1.0, y + Math.sin(a) * r * 0.65 + r * 0.3, r * 0.28, r * 0.2, mix(col, '#000', 0.2), 0);
-        }
-        // ears
-        ctx.fillStyle = mix(col, '#000', 0.1);
-        for (const sgn of [-1, 1]) {
-          ctx.beginPath();
-          ctx.moveTo(x + sgn * r * 0.75, y - r * 0.35);
-          ctx.lineTo(x + sgn * r * 0.55, y - r * 1.1);
-          ctx.lineTo(x + sgn * r * 0.2, y - r * 0.6);
-          ctx.closePath();
-          ctx.fill();
-        }
-        blob(ctx, x, y, r * (1 + wob), r * TILT * (1 - wob), col, 0.35);
-        googly(ctx, x, y - r * 0.15, r * 0.25, Math.PI / 2, at, false);
-        if (e.shield > 0) {
-          ctx.fillStyle = 'rgba(140,235,255,0.2)';
-          ctx.beginPath();
-          ctx.ellipse(x, y, r * 1.4, r * 1.4 * TILT, 0, 0, TAU);
-          ctx.fill();
-          ring2(ctx, x, y, r * 1.4, r * 1.4 * TILT, C.shield, 4 * s);
-        }
-        if (e.exposedT > 0) ring2(ctx, x, y, r * 1.2, r * 1.2 * TILT, C.plus, 5 * s);
-        break;
-      }
-    }
-    if (e.stunT > 0) {
-      for (let k = 0; k < 4; k++) {
-        const a = this.time * 5 + (k / 4) * TAU;
-        star(ctx, x + Math.cos(a) * r, y - r * 1.2 + Math.sin(a) * r * 0.3, 7 * s, 3 * s, 0, '#fff36b');
-      }
-    }
-    if (e.minus > 0) {
-      ctx.fillStyle = C.minus;
-      for (let k = 0; k < e.minus; k++) {
-        ctx.beginPath();
-        ctx.arc(x - (e.minus - 1) * 5 * s + k * 10 * s, y + r * 1.05, 4 * s, 0, TAU);
-        ctx.fill();
-      }
-    }
-  }
-
-  drawBossSprite(e, key, x, y, r) {
-    const sp = this.sp, ctx = this.ctx, s = this.s, bf = this.bossFx, g = this.g;
-    const once = (name, since) => sp.has(key, name) && since < sp.duration(key, name);
-    let anim = 'move', t = g.clock;
-    switch (e.bossId) {
-      case 'chef':
-        if (once('throw', bf.throwT)) (anim = 'throw'), (t = bf.throwT);
-        else if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
-        else anim = sp.pick(key, e.phase ? 'move2' : '', 'move');
-        break;
-      case 'sharky':
-        anim = sp.pick(key, e.stunT > 0 ? 'stunned' : '', e.state === 1 ? 'windup' : '', e.state === 2 ? 'charge' : '', e.state === 3 ? 'recover' : '', 'move');
-        break;
-      case 'queen':
-        if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
-        else anim = sp.pick(key, e.state === 1 ? 'open' : 'closed', 'move');
-        break;
-      case 'kitty':
-        if (once('swipe', bf.swipeT)) (anim = 'swipe'), (t = bf.swipeT);
-        else if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
-        else anim = sp.pick(key, e.exposedT > 0 ? 'exposed' : '', e.phase ? 'move2' : '', 'move');
-        break;
-    }
-    anim = sp.pick(key, anim, 'move');
-    const w = this.wob(key, 0);
-    const flip = Math.cos(e.angle) * e.dir < -0.1;
-    sp.draw(ctx, key, anim, t, x, y, s, this.opt(flip, 1 + w, 1 - w, 0, 1, e.hitT > 0 ? 0.5 : 0));
-    const h = sp.height(key) * s;
-    const cy = y - h * 0.45;
-    // gameplay-critical tells are always drawn on top of the art
-    if (e.bossId === 'chef') {
-      // the hat is the weak point and sways in the simulation: draw it where the hitbox is
-      // x follows the simulation's hitbox; y comes from the art's "hat" attach point
-      const ap = sp.attach(key, 'hat');
-      const hx = x + (chefHatX(e) - e.x) * s, hy = ap ? y + ap.dy * s : y - h * 0.9;
-      if (!sp.draw(ctx, 'boss.chef.hat', sp.pick('boss.chef.hat', 'idle'), g.clock, hx, hy, s, this.opt(false, 1, 1, 0, 1, e.hitT > 0 ? 0.5 : 0))) {
-        blob(ctx, hx, hy, r * 0.42, r * 0.16, '#f2f2f2', 0);
-        blob(ctx, hx, hy - r * 0.35, r * 0.38, r * 0.32, '#ffffff', 0.4);
-      }
-      if (Math.floor(this.time * 3) % 2) ring2(ctx, hx, hy - r * 0.25, r * 0.5, r * 0.42, '#fff36b', 2 * s);
-    } else if (e.bossId === 'queen' && e.state === 0) {
-      ring2(ctx, x, cy, r * 1.2, r * 1.2 * TILT, C.shield, 4 * s);
-    } else if (e.bossId === 'kitty') {
-      if (e.shield > 0 && !this.overlay('fx.purr', x, y)) {
-        ctx.fillStyle = 'rgba(140,235,255,0.2)';
-        ctx.beginPath();
-        ctx.ellipse(x, cy, r * 1.4, r * 1.4 * TILT, 0, 0, TAU);
-        ctx.fill();
-        ring2(ctx, x, cy, r * 1.4, r * 1.4 * TILT, C.shield, 4 * s);
-      }
-      if (e.exposedT > 0) ring2(ctx, x, cy, r * 1.2, r * 1.2 * TILT, C.plus, 5 * s);
-    } else if (e.bossId === 'sharky' && e.state === 1 && Math.floor(this.time * 10) % 2) {
-      ring2(ctx, x, cy, r * 1.3, r * 1.3 * TILT, '#ff5d5d', 4 * s);
-    }
-  }
-
-  // Draws a looping overlay sprite (status effects) at a CSS-px point. False if absent.
-  overlay(key, x, y, scale = 1) {
-    if (!this.sp.loaded || !this.sp.has(key)) return false;
-    return this.sp.draw(this.ctx, key, this.sp.pick(key, 'loop'), this.g.clock, x, y, this.s, this.opt(false, scale, scale, 0, 1, 0));
-  }
-
-  towerKey(t) {
-    for (let l = t.level + 1; l >= 1; l--) {
-      const key = `tower.${t.type}.${l}`;
-      if (this.sp.has(key)) return key;
-    }
-    return '';
-  }
-
-  drawTowers() {
-    const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
-    for (const t of g.towers) {
-      if (!t.alive) continue;
-      const broken = t.hp <= 0;
-      let col = TOWER_COLORS[t.type];
-      if (broken) col = '#8b8b8b';
-      const homeX = this.px(t.x), homeY = this.py(t.y);
-      const away = t.sx !== t.x || t.sy !== t.y;
-      const bx = t.psx + (t.sx - t.psx) * this.a, by = t.psy + (t.sy - t.psy) * this.a;
-      const key = this.sp.loaded ? this.towerKey(t) : '';
-      if (key) {
-        this.drawTowerSprite(t, key, bx, by, homeX, homeY, away);
-        continue;
-      }
-      const x = this.px(bx), y = this.py(by, 14);
-      // squash on fire
-      const sq = t.fireT < 0.12 ? 1 - (0.12 - t.fireT) * 1.6 : 1;
-      const breathe = 1 + Math.sin(at * 4 + t.id) * 0.03;
-      const r = 22 * s * (1 + t.level * 0.08) * breathe;
-      if (away) {
-        ctx.globalAlpha = 0.35;
-        blob(ctx, homeX, homeY, 16 * s, 12 * s, col, 0);
-        ctx.globalAlpha = 1;
-      }
-      ctx.fillStyle = 'rgba(0,40,60,0.25)';
-      ctx.beginPath();
-      ctx.ellipse(x, this.py(by) + 6 * s, r, r * 0.45, 0, 0, TAU);
-      ctx.fill();
-      const infl = t.type === 'puffer' ? 1 + t.inflate * 0.6 : 1;
-      if (t.type === 'starfish' || (t.type === 'puffer' && t.inflate > 0)) {
-        if (t.type === 'starfish') star(ctx, x, y, r * 1.25, r * 0.6, at * 0.8, col);
-        else spikes(ctx, x, y, r * infl * 1.25, 12, 0, mix(col, '#000', 0.2), s);
-      }
-      if (t.type !== 'starfish') blob(ctx, x, y, r * infl * (2 - sq), r * infl * sq * TILT * 1.1, col, 0.35);
-      if (t.type === 'shark') {
-        ctx.fillStyle = mix(col, '#000', 0.25);
-        ctx.beginPath();
-        ctx.moveTo(x - r * 0.3, y - r * 0.5);
-        ctx.lineTo(x, y - r * 1.25);
-        ctx.lineTo(x + r * 0.3, y - r * 0.5);
-        ctx.fill();
-      }
-      if (t.type === 'octopus') {
-        for (let k = 0; k < 5; k++) {
-          const a = Math.PI * (0.15 + 0.175 * k);
-          blob(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.7, r * 0.25, r * 0.18, mix(col, '#000', 0.2), 0);
-        }
-      }
-      if (t.type === 'crab') {
-        blob(ctx, x - r * 1.0, y - r * 0.4, r * 0.4, r * 0.32, mix(col, '#000', 0.12), 0);
-        blob(ctx, x + r * 1.0, y - r * 0.4, r * 0.4, r * 0.32, mix(col, '#000', 0.12), 0);
-      }
-      if (!broken) googly(ctx, x, y - r * 0.2, r * 0.33, t.aim, at + t.id, false);
-      else {
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 3 * s;
-        ctx.beginPath();
-        ctx.moveTo(x - r * 0.4, y - r * 0.4);
-        ctx.lineTo(x + r * 0.4, y + r * 0.2);
-        ctx.moveTo(x + r * 0.4, y - r * 0.4);
-        ctx.lineTo(x - r * 0.4, y + r * 0.2);
-        ctx.stroke();
-      }
-      // level pips
-      ctx.fillStyle = t.level === 2 ? '#ffd23f' : '#ffffff';
-      for (let k = 0; k <= t.level; k++) {
-        ctx.beginPath();
-        ctx.arc(homeX - t.level * 5 * s + k * 10 * s, homeY + 26 * s, 3.5 * s, 0, TAU);
-        ctx.fill();
-      }
-      // status
-      if (t.grabT > 0) ring2(ctx, x, y, r * 1.15, r * 0.9, ENEMY_COLORS.kraken, 5 * s);
-      if (t.zapT > 0 && Math.floor(this.time * 20) % 2) ring2(ctx, x, y, r * 1.2, r * 1.0, '#fff36b', 3 * s);
-      if (t.blindT > 0) blob(ctx, x, y - r * 0.2, r * 0.8, r * 0.45, C.ink, 0);
-      if (t.plusT > 0) ring2(ctx, x, y, r * 1.3, r * 1.1, C.plus, 2 * s);
-      if (t.hp < t.maxHp) bar(ctx, homeX, homeY - 38 * s, 40 * s, 5 * s, t.hp / t.maxHp);
-    }
-  }
-
-  drawTowerSprite(t, key, bx, by, homeX, homeY, away) {
-    const sp = this.sp, ctx = this.ctx, s = this.s;
-    const disabled = t.covered || t.grabT > 0 || t.zapT > 0 || t.blindT > 0 || t.stunT > 0;
-    let anim, at = this.g.clock + t.id;
-    if (t.hp <= 0) anim = sp.pick(key, 'broken', 'disabled', 'idle');
-    else if (t.type === 'shark' && t.state !== 0) anim = sp.pick(key, 'charge', 'fire', 'idle');
-    else if (t.type === 'puffer' && t.inflate > 0) (anim = sp.pick(key, 'inflate', 'fire', 'idle')), (at = t.inflate);
-    else if (disabled) anim = sp.pick(key, 'disabled', 'idle');
-    else if (sp.has(key, 'fire') && t.fireT < sp.duration(key, 'fire')) (anim = 'fire'), (at = t.fireT);
-    else anim = sp.pick(key, 'idle');
-    // a lower-level sheet standing in for a higher level is scaled up a touch
-    const lvl = +key.slice(key.lastIndexOf('.') + 1);
-    const k = 1 + (t.level + 1 - lvl) * 0.08;
-    const w = this.wob(key, t.id);
-    const flip = Math.cos(t.aim) < -0.2;
-    if (away) {
-      ctx.globalAlpha = 0.35;
-      blob(ctx, homeX, homeY, 16 * s, 12 * s, TOWER_COLORS[t.type], 0);
-      ctx.globalAlpha = 1;
-    }
-    ctx.fillStyle = 'rgba(0,40,60,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(this.px(bx), this.py(by) + 4 * s, 24 * s, 10 * s, 0, 0, TAU);
-    ctx.fill();
-    this.spr(key, anim, at, bx, by, 0, this.opt(flip, k * (1 + w), k * (1 - w), 0, 1, 0));
-    const x = this.px(bx), y = this.py(by);
-    const h = sp.height(key) * k * s, cy = y - h * 0.45, r = Math.max(22 * s, h * 0.45);
-    ctx.fillStyle = t.level === 2 ? '#ffd23f' : '#ffffff';
-    for (let i = 0; i <= t.level; i++) {
-      ctx.beginPath();
-      ctx.arc(homeX - t.level * 5 * s + i * 10 * s, homeY + 26 * s, 3.5 * s, 0, TAU);
-      ctx.fill();
-    }
-    if (t.grabT > 0 && !this.overlay('fx.grab', x, y)) ring2(ctx, x, cy, r * 1.15, r * 0.9, ENEMY_COLORS.kraken, 5 * s);
-    if (t.zapT > 0 && !this.overlay('fx.zapped', x, y) && Math.floor(this.time * 20) % 2) ring2(ctx, x, cy, r * 1.2, r, '#fff36b', 3 * s);
-    if (t.blindT > 0 && !this.overlay('fx.blind', x, y)) blob(ctx, x, cy, r * 0.8, r * 0.45, C.ink, 0);
-    if (t.plusT > 0 && !this.overlay('fx.plus_power', x, y)) ring2(ctx, x, cy, r * 1.3, r * 1.1, C.plus, 2 * s);
-    if (t.hp < t.maxHp) bar(ctx, homeX, Math.min(homeY - 38 * s, y - h - 6 * s), 40 * s, 5 * s, t.hp / t.maxHp);
-  }
-
-  drawTentacles() {
-    const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
-    for (const tn of g.tentacles) {
-      if (!tn.alive) continue;
-      const x = this.px(tn.x), y = this.py(tn.y, 10);
-      if (this.sp.loaded && this.spr('boss.kitty.tentacle', this.sp.pick('boss.kitty.tentacle', 'grip'), tn.t, tn.x, tn.y, 0,
-        this.opt(false, 1, 1, 0, 1, tn.hitT > 0 ? 0.6 : 0))) {
-        bar(ctx, x, y - 44 * s, 40 * s, 5 * s, tn.hp / tn.maxHp, C.minus);
-        continue;
-      }
-      const col = tn.hitT > 0 ? '#ffffff' : BOSS_COLORS.kitty;
-      ctx.strokeStyle = col;
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 12 * s;
-      ctx.beginPath();
-      ctx.moveTo(x - 30 * s, y + 18 * s);
-      ctx.bezierCurveTo(x - 10 * s, y - 40 * s + Math.sin(at * 6) * 6 * s, x + 30 * s, y - 20 * s, x + 18 * s, y + 10 * s);
-      ctx.stroke();
-      ctx.lineWidth = 3 * s;
-      ctx.strokeStyle = mix(BOSS_COLORS.kitty, '#000', 0.3);
-      ctx.stroke();
-      bar(ctx, x, y - 44 * s, 40 * s, 5 * s, tn.hp / tn.maxHp, C.minus);
-    }
-  }
-
-  drawHeart() {
-    const g = this.g, h = g.heart, ctx = this.ctx, s = this.s;
-    const pulse = 1 + Math.sin(this.at * 3) * 0.04 + (h.hitT > 0 ? h.hitT * 0.3 : 0);
-    const x = this.px(h.x), y = this.py(h.y, 10);
-    const r = h.r * s * pulse;
-    if (this.sp.loaded && this.sp.has('heart')) {
-      const anim = this.sp.pick('heart', h.hitT > 0 ? 'hit' : '', h.hp < h.maxHp * 0.35 ? 'low' : '', 'idle');
-      const w = this.wob('heart', 0);
-      this.spr('heart', anim, g.clock, h.x, h.y, 0, this.opt(false, pulse * (1 + w), pulse * (1 - w), 0, 1, h.hitT > 0 ? 0.5 : 0));
-      return;
-    }
-    blob(ctx, x, this.py(h.y) + 10 * s, r * 1.1, r * 0.45, 'rgba(0,40,60,0.25)', 0);
-    for (let k = 0; k < 7; k++) {
-      const a = (k / 7) * TAU + 0.3;
-      blob(ctx, x + Math.cos(a) * r * 0.8, y + Math.sin(a) * r * 0.55, r * 0.42, r * 0.35, C.heartRim, 0);
-    }
-    blob(ctx, x, y, r, r * TILT, h.hitT > 0 ? '#ffffff' : C.heart, 0.4);
-    googly(ctx, x, y - r * 0.15, r * 0.3, Math.PI / 2, this.at, h.hp < h.maxHp * 0.35);
-  }
-
-  drawProjectiles() {
-    const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
-    for (const p of g.projectiles) {
-      if (!p.alive) continue;
-      const wx = this.ix(p), wy = this.iy(p), wz = p.pz + (p.z - p.pz) * this.a;
-      const x = this.px(wx), y = this.py(wy, wz);
-      if (this.sp.loaded) {
-        const key = 'proj.' + p.kind;
-        if (this.sp.has(key)) {
-          if (p.kind === 'plus') {
-            ctx.fillStyle = 'rgba(0,40,60,0.2)';
-            ctx.beginPath();
-            ctx.ellipse(x, this.py(wy), p.r * s, p.r * s * 0.4, 0, 0, TAU);
-            ctx.fill();
-          }
-          const rot = this.sp.flag(key, 'orient') ? Math.atan2(p.vy * TILT, p.vx) : this.sp.flag(key, 'spin') ? p.t * 14 : 0;
-          // tower shots fly at body height
-          const lift = p.kind === 'minus' || p.kind === 'plus' || p.kind === 'ink' ? wz : wz + 10;
-          this.spr(key, this.sp.pick(key, p.leg ? 'return' : '', 'fly'), p.t, wx, wy, lift, this.opt(false, 1, 1, rot, 1, 0));
-          continue;
-        }
-      }
-      switch (p.kind) {
-        case 'minus':
-          blob(ctx, x, y, p.r * s * 1.1, p.r * s * 1.1, C.minus, 0.45);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(x - 5 * s, y - 1.5 * s, 10 * s, 3 * s);
-          break;
-        case 'plus':
-          ctx.fillStyle = 'rgba(0,40,60,0.2)';
-          ctx.beginPath();
-          ctx.ellipse(x, this.py(wy), p.r * s, p.r * s * 0.4, 0, 0, TAU);
-          ctx.fill();
-          blob(ctx, x, y, p.r * s * 1.1, p.r * s * 1.1, C.plus, 0.45);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(x - 6 * s, y - 1.8 * s, 12 * s, 3.6 * s);
-          ctx.fillRect(x - 1.8 * s, y - 6 * s, 3.6 * s, 12 * s);
-          break;
-        case 'bubble':
-          blob(ctx, x, y - 10 * s, 6 * s, 6 * s, '#bdf4ff', 0.5);
-          break;
-        case 'dart':
-          ctx.strokeStyle = '#ff9fc6';
-          ctx.lineWidth = 4 * s;
-          ctx.beginPath();
-          ctx.moveTo(x, y - 10 * s);
-          ctx.lineTo(x - p.vx * 0.02 * s, y - 10 * s - p.vy * 0.02 * s * TILT);
-          ctx.stroke();
-          break;
-        case 'ink':
-          blob(ctx, x, y, 9 * s, 8 * s, C.ink, 0.2);
-          break;
-        case 'star':
-          star(ctx, x, y - 10 * s, 14 * s, 6 * s, at * 14, TOWER_COLORS.starfish);
-          break;
-        case 'ministar':
-          star(ctx, x, y - 10 * s, 8 * s, 3.5 * s, at * 14, '#ffb199');
-          break;
-      }
-    }
-  }
-
-  drawStrikes() {
-    const g = this.g, ctx = this.ctx, s = this.s, at = this.at;
-    for (const st of g.strikes) {
-      if (!st.alive || st.kind === 'swipe') continue;
-      const wx = this.ix(st), wy = this.iy(st), wz = st.pz + (st.z - st.pz) * this.a;
-      if (st.bullet) {
-        const key = 'strike.' + st.kind;
-        const rot = Math.atan2(st.vy * TILT, st.vx);
-        if (this.sp.loaded && this.spr(key, 'fly', st.t, wx, wy, 10, this.opt(false, 1, 1, this.sp.flag(key, 'orient') ? rot : 0, 1, 0))) continue;
-        const x = this.px(wx), y = this.py(wy, 10);
-        if (st.kind === 'spike') {
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(rot);
-          ctx.fillStyle = '#5b3f8c';
-          ctx.beginPath();
-          ctx.moveTo(14 * s, 0);
-          ctx.lineTo(-8 * s, -5 * s);
-          ctx.lineTo(-8 * s, 5 * s);
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-        } else {
-          blob(ctx, x, y, st.r * s, st.r * s, '#ff5fa2', 0.5);
-          ring2(ctx, x, y, st.r * s, st.r * s, '#7a1d4a', 2 * s);
-        }
-        continue;
-      }
-      if (this.sp.loaded && this.spr('strike.' + st.kind, 'fly', st.t, wx, wy, wz + 10, this.opt(false, 1, 1, this.sp.flag('strike.' + st.kind, 'spin') ? st.t * 14 : 0, 1, 0))) continue;
-      const x = this.px(wx), y = this.py(wy, wz + 10);
-      if (st.kind === 'ink') blob(ctx, x, y, 12 * s, 11 * s, C.ink, 0.25);
-      else if (st.kind === 'spark') star(ctx, x, y, 10 * s, 4 * s, at * 20, '#fff36b');
-      else star(ctx, x, y, 9 * s, 4 * s, at * 14, '#ffc94d');
-    }
-  }
-
-  drawPlayer() {
-    const g = this.g, p = g.player, ctx = this.ctx, s = this.s, at = this.at;
-    const inRun = g.phase !== 'title';
-    if (!inRun) return;
-    const px = g.phase === 'combat' ? p.px + (p.x - p.px) * this.a : p.x;
-    const x = this.px(px), y = this.py(p.y, 18);
-    if (p.vx < -1) this.playerFlip = true;
-    else if (p.vx > 1) this.playerFlip = false;
-    if (!p.alive && this.overlay('fx.respawn_bubble', x, this.py(p.y))) return;
-    if (!p.alive) {
-      // respawn bubble countdown
-      ctx.globalAlpha = 0.6;
-      ring2(ctx, x, y, 26 * s, 26 * s, '#ffffff', 3 * s);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.round(18 * s)}px system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(Math.ceil(p.deadT)), x, y);
-      return;
-    }
-    if (p.invulnT > 0 && Math.floor(this.time * 12) % 2) return;
-    if (this.sp.loaded) {
-      const sp = this.sp;
-      const key = sp.has('player.' + p.skin) ? 'player.' + p.skin : sp.has('player.classic') ? 'player.classic' : '';
-      if (key) {
-        let anim, t = g.clock;
-        if (sp.has(key, 'plus') && p.plusShootT < sp.duration(key, 'plus')) (anim = 'plus'), (t = p.plusShootT);
-        else if (sp.has(key, 'shoot') && p.shootT < sp.duration(key, 'shoot')) (anim = 'shoot'), (t = p.shootT);
-        else anim = sp.pick(key, Math.abs(p.vx) > 1 ? 'swim' : '', 'idle');
-        ctx.fillStyle = 'rgba(0,40,60,0.25)';
-        ctx.beginPath();
-        ctx.ellipse(x, this.py(p.y) + 8 * s, 26 * s, 9 * s, 0, 0, TAU);
-        ctx.fill();
-        const w = this.wob(key, 0);
-        this.spr(key, anim, t, px, p.y, 0, this.opt(this.playerFlip, 1 + w, 1 - w, 0, 1, 0));
-        return;
-      }
-    }
-    const skin = SKIN_COLORS[p.skin] || SKIN_COLORS.classic;
-    const facing = p.vx < -1 ? -1 : 1;
-    const shootSq = p.shootT < 0.08 || p.plusShootT < 0.1 ? 0.85 : 1;
-    const wig = Math.sin(at * 10) * 0.12;
-    ctx.fillStyle = 'rgba(0,40,60,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(x, this.py(p.y) + 8 * s, 26 * s, 9 * s, 0, 0, TAU);
-    ctx.fill();
-    // tail
-    ctx.fillStyle = skin.fin;
-    ctx.beginPath();
-    ctx.moveTo(x - facing * 20 * s, y);
-    ctx.lineTo(x - facing * 40 * s, y - (12 + wig * 20) * s);
-    ctx.lineTo(x - facing * 40 * s, y + (12 - wig * 20) * s);
-    ctx.closePath();
-    ctx.fill();
-    blob(ctx, x, y, 26 * s * (2 - shootSq), 18 * s * shootSq, skin.body, 0.35);
-    ctx.fillStyle = skin.stripe;
-    ctx.fillRect(x - 3 * s, y - 16 * s * shootSq, 7 * s, 32 * s * shootSq);
-    ctx.fillRect(x - facing * 13 * s - 2.5 * s, y - 13 * s * shootSq, 5 * s, 26 * s * shootSq);
-    googly(ctx, x + facing * 12 * s, y - 5 * s, 6 * s, -Math.PI / 2, at, false);
-    // bubble gun nozzle
-    blob(ctx, x, y - 20 * s * shootSq, 6 * s, 5 * s, '#ffffff', 0.4);
   }
 
   drawFx(dt) {
-    const ctx = this.ctx, s = this.s;
-    // particles
+    const ctx = this.ctx;
+    const scroll = this.running() ? ROAD.speed : 0;
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
@@ -1434,73 +745,54 @@ export class Renderer {
         continue;
       }
       p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vx *= 0.94;
-      p.vy *= 0.94;
-      p.vz -= 600 * dt;
-      p.z = Math.max(0, p.z + p.vz * dt);
-      ctx.globalAlpha = Math.min(1, p.life / p.max * 1.5);
+      p.z += p.vz * dt - scroll * dt;
+      p.vh -= 500 * dt;
+      p.h = Math.max(0, p.h + p.vh * dt);
+      const U = this.U(p.z), r = p.size * U;
+      ctx.globalAlpha = Math.min(1, (p.life / p.max) * 1.5);
       ctx.fillStyle = p.color;
-      const r = p.size * s;
-      ctx.fillRect(this.px(p.x) - r / 2, this.py(p.y, p.z) - r / 2, r, r);
+      ctx.fillRect(this.X(p.x, p.z) - r / 2, this.Y(p.z) - p.h * U - r / 2, r, r);
     }
     for (let i = this.rings.length - 1; i >= 0; i--) {
       const r = this.rings[i];
       r.life -= dt;
+      r.z -= scroll * dt;
       if (r.life <= 0) {
         this.rings.splice(i, 1);
         continue;
       }
       const k = 1 - r.life / r.max;
-      const rad = (r.r0 + (r.r1 - r.r0) * k) * s;
+      const rad = (r.r0 + (r.r1 - r.r0) * k) * this.U(r.z);
       ctx.globalAlpha = 1 - k;
-      ring2(ctx, this.px(r.x), this.py(r.y), rad, rad * TILT, r.color, 4 * s);
-    }
-    for (let i = this.lines.length - 1; i >= 0; i--) {
-      const l = this.lines[i];
-      l.life -= dt;
-      if (l.life <= 0) {
-        this.lines.splice(i, 1);
-        continue;
-      }
-      ctx.globalAlpha = l.life / l.max;
-      ctx.strokeStyle = l.color;
-      ctx.lineWidth = 4 * s;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      const x1 = this.px(l.x1), y1 = this.py(l.y1, 12), x2 = this.px(l.x2), y2 = this.py(l.y2, 12);
-      ctx.moveTo(x1, y1);
-      const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * 16 * s, my = (y1 + y2) / 2 + (Math.random() - 0.5) * 16 * s;
-      ctx.lineTo(mx, my);
-      ctx.lineTo(x2, y2);
+      ctx.ellipse(this.X(r.x, r.z), this.Y(r.z), rad, rad * 0.32, 0, 0, TAU);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
-    if (this.texts.length) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.lineWidth = 4 * s;
-      ctx.strokeStyle = 'rgba(40,20,60,0.8)';
-      for (let i = this.texts.length - 1; i >= 0; i--) {
-        const t = this.texts[i];
-        t.life -= dt;
-        if (t.life <= 0) {
-          this.texts.splice(i, 1);
-          continue;
-        }
-        const k = 1 - t.life / t.max;
-        ctx.globalAlpha = Math.min(1, t.life * 3);
-        ctx.font = `900 ${Math.round(16 * s * t.scale)}px system-ui, sans-serif`;
-        const x = this.px(t.x), y = this.py(t.y, 30 + k * 40);
-        ctx.strokeText(t.str, x, y);
-        ctx.fillStyle = t.color;
-        ctx.fillText(t.str, x, y);
+    const U0 = this.U(0);
+    for (let i = this.texts.length - 1; i >= 0; i--) {
+      const t = this.texts[i];
+      t.life -= dt;
+      if (t.life <= 0) {
+        this.texts.splice(i, 1);
+        continue;
       }
-      ctx.globalAlpha = 1;
+      const k = 1 - t.life / t.max;
+      ctx.globalAlpha = Math.min(1, t.life * 3);
+      bigText(ctx, t.str, this.X(t.x, 0), this.Y(0) - (t.h + 70 + k * 60) * U0, 22 * t.scale, t.color);
     }
+    ctx.globalAlpha = 1;
   }
 }
 
 // ------------------------------------------------------------ drawing helpers
+
+function hash(i) {
+  const s = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -1512,45 +804,35 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Glossy plasticine blob: body + soft highlight.
 function blob(ctx, x, y, rx, ry, color, gloss) {
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), 0, 0, TAU);
+  ctx.ellipse(x, y, Math.max(0.5, rx), Math.max(0.5, ry), 0, 0, TAU);
   ctx.fill();
   if (gloss > 0) {
     ctx.fillStyle = `rgba(255,255,255,${gloss})`;
     ctx.beginPath();
-    ctx.ellipse(x - rx * 0.35, y - ry * 0.4, rx * 0.3, ry * 0.22, -0.5, 0, TAU);
+    ctx.ellipse(x - rx * 0.3, y - ry * 0.35, Math.max(0.5, rx * 0.35), Math.max(0.5, ry * 0.22), -0.4, 0, TAU);
     ctx.fill();
   }
 }
 
-function ring2(ctx, x, y, rx, ry, color, w) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = w;
+function shadow(ctx, x, y, rx, ry) {
+  ctx.fillStyle = 'rgba(0,40,60,0.22)';
   ctx.beginPath();
-  ctx.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), 0, 0, TAU);
-  ctx.stroke();
+  ctx.ellipse(x, y, Math.max(0.5, rx), Math.max(0.5, ry), 0, 0, TAU);
+  ctx.fill();
 }
 
-function googly(ctx, x, y, r, look, t, sad) {
-  const off = r * 0.9;
-  const lx = Math.cos(look) * r * 0.35, ly = Math.sin(look) * r * 0.25 + Math.sin(t * 7) * r * 0.08;
-  for (const sgn of [-1, 1]) {
-    ctx.fillStyle = '#ffffff';
+function googly(ctx, x, y, r) {
+  for (const s of [-1, 1]) {
+    ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(x + sgn * off, y, r, 0, TAU);
+    ctx.arc(x + s * r * 1.1, y, Math.max(0.5, r), 0, TAU);
     ctx.fill();
-    ctx.fillStyle = '#1b1030';
+    ctx.fillStyle = '#111';
     ctx.beginPath();
-    ctx.arc(x + sgn * off + lx, y + ly + (sad ? r * 0.3 : 0), r * 0.5, 0, TAU);
-    ctx.fill();
-  }
-  if (sad) {
-    ctx.fillStyle = '#7fc8ff';
-    ctx.beginPath();
-    ctx.arc(x + off, y + r * 1.4, r * 0.3, 0, TAU);
+    ctx.arc(x + s * r * 1.1, y + r * 0.2, Math.max(0.3, r * 0.5), 0, TAU);
     ctx.fill();
   }
 }
@@ -1559,61 +841,48 @@ function star(ctx, x, y, ro, ri, rot, color) {
   ctx.fillStyle = color;
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
-    const a = rot + (i / 10) * TAU - Math.PI / 2;
-    const r = i % 2 ? ri : ro;
-    const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r * TILT;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
+    const a = rot + (i / 10) * TAU - Math.PI / 2, r = i % 2 ? ri : ro;
+    if (i) ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    else ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
   }
   ctx.closePath();
   ctx.fill();
 }
 
-function spikes(ctx, x, y, r, n, rot, color, s) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 3 * s;
-  ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    const a = rot + (i / n) * TAU;
-    ctx.moveTo(x + Math.cos(a) * r * 0.6, y + Math.sin(a) * r * 0.6 * TILT);
-    ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * TILT);
-  }
+function bigText(ctx, str, x, y, size, color) {
+  ctx.font = `900 ${Math.round(size)}px system-ui, -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(2, size * 0.18);
+  ctx.strokeStyle = 'rgba(30,15,50,0.85)';
+  ctx.strokeText(str, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(str, x, y);
+}
+
+// A rounded number plate (the school counter, the boss's HP).
+function badge(ctx, str, x, y, size, color) {
+  ctx.font = `900 ${Math.round(size)}px system-ui, -apple-system, sans-serif`;
+  const w = Math.max(size * 1.6, ctx.measureText(str).width + size * 0.9), h = size * 1.35;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  roundRect(ctx, x - w / 2, y - h / 2 + 3, w, h, h / 2.6);
+  ctx.fill();
+  ctx.fillStyle = color;
+  roundRect(ctx, x - w / 2, y - h / 2, w, h, h / 2.6);
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
   ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(str, x, y + 1);
 }
 
-function shellShape(ctx, x, y, r, fill, rim) {
-  ctx.fillStyle = rim;
-  ctx.beginPath();
-  ctx.moveTo(x, y + r * 0.6);
-  ctx.arc(x, y, r, Math.PI * 1.05, Math.PI * 1.95);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = fill;
-  ctx.beginPath();
-  ctx.moveTo(x, y + r * 0.45);
-  ctx.arc(x, y, r * 0.78, Math.PI * 1.1, Math.PI * 1.9);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function bar(ctx, x, y, w, h, frac, color) {
-  ctx.fillStyle = C.hpBack;
-  ctx.fillRect(x - w / 2 - 1, y - 1, w + 2, h + 2);
-  ctx.fillStyle = color || (frac > 0.6 ? C.hpGood : frac > 0.3 ? C.hpMid : C.hpBad);
-  ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, frac)), h);
-}
-
-const mixCache = new Map();
-function mix(a, b, t) {
-  if (a.charCodeAt(0) !== 35) return a; // already mixed (rgb()) — keep as is
-  const key = a + b + t;
-  let v = mixCache.get(key);
-  if (v) return v;
-  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
-  const r = Math.round(((pa >> 16) & 255) * (1 - t) + ((pb >> 16) & 255) * t);
-  const g = Math.round(((pa >> 8) & 255) * (1 - t) + ((pb >> 8) & 255) * t);
-  const bl = Math.round((pa & 255) * (1 - t) + (pb & 255) * t);
-  v = `rgb(${r},${g},${bl})`;
-  mixCache.set(key, v);
-  return v;
+function bar(ctx, x, y, w, h, frac) {
+  ctx.fillStyle = 'rgba(30,20,40,0.55)';
+  ctx.fillRect(x - w / 2, y, w, h);
+  ctx.fillStyle = frac > 0.5 ? '#7ee081' : frac > 0.25 ? '#ffd23f' : '#ff5d5d';
+  ctx.fillRect(x - w / 2, y, w * Math.max(0, frac), h);
 }

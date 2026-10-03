@@ -2,46 +2,39 @@
 // (Left/Right/Up/Down + Confirm/Back) and clickable / tappable.
 //
 // Menus are plain data ({ title, items: [{ label, sub, right, disabled, action }] })
-// rendered into #panel; styling lives in css/style.css so the art pass can
-// restyle everything (clay buttons, cardboard signs) without touching logic.
+// rendered into #panel; styling lives in css/style.css.
 
 import { PHASE } from '../core/game.js';
 import { haptic } from '../input.js';
-import { towerMaxHp } from '../core/towers.js';
-import { isBossWave, bossForWave } from '../core/waves.js';
-import {
-  TOWERS, UPGRADES, UNLOCKS, FORKS, SKINS, HOW_TO_PLAY, WAVES, PLAYER, BOSSES, SCORE, VERSION,
-} from '../config.js';
+import { bossForLevel } from '../core/level.js';
+import { UPGRADES, SKINS, HOW_TO_PLAY, BOSSES, VERSION } from '../config.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (id) => document.getElementById(id);
 
-const SHELL = '🐚';
-const PEARL = '⚪';
+const COIN = '🪙';
+const UPGRADE_ICONS = { fish: '🐟', dmg: '💪', rate: '🔥' };
 
 export class UI {
-  constructor({ game, view, audio, settings, storage, renderer, input, onSettings }) {
+  constructor({ game, audio, settings, input, onSettings }) {
     this.g = game;
-    this.view = view;
     this.audio = audio;
     this.settings = settings;
-    this.storage = storage;
-    this.renderer = renderer;
     this.input = input;
     this.onSettings = onSettings;
     this.app = $('app');
     this.panel = $('panel');
     this.toastEl = $('toast');
     this.bannerEl = $('banner');
+    this.hintEl = $('hint');
     this.stack = []; // overlay screens on top of the phase screen
     this.focus = 0;
     this.renderedKey = '';
-    this.buildFocus = 0;
-    this.placeFocus = -1;
     this.hudCache = Object.create(null);
     this.debug = false;
     this.toastT = 0;
     this.bannerT = 0;
+    this.hintT = 0;
     this.currentScreen = null;
 
     this.panel.addEventListener('pointerdown', (e) => {
@@ -71,14 +64,9 @@ export class UI {
     if (this.stack.length) return this.stack[this.stack.length - 1];
     switch (this.g.phase) {
       case PHASE.TITLE: return this.titleScreen();
-      case PHASE.FORK: return this.forkScreen();
-      case PHASE.DRAFT: return this.draftScreen();
-      case PHASE.PLACE: return this.placeScreen();
-      case PHASE.BUILD: return this.buildScreen();
-      case PHASE.WAVE_END: return this.waveEndScreen();
-      case PHASE.VICTORY: return this.victoryScreen();
-      case PHASE.DEFEAT: return this.defeatScreen();
-      default: return null; // combat
+      case PHASE.WON: return this.endScreen(true);
+      case PHASE.LOST: return this.endScreen(false);
+      default: return null; // playing
     }
   }
 
@@ -94,7 +82,6 @@ export class UI {
     this.renderedKey = '';
   }
 
-  // stack entries are factories so they re-evaluate (costs, levels) when redrawn
   resolve(s) {
     return typeof s === 'function' ? s() : s;
   }
@@ -116,70 +103,15 @@ export class UI {
         this.menuAction(scr, a);
         continue;
       }
-      // combat (no menu open)
       if (a === 'pause' || a === 'back') {
         if (backUsed) continue;
         backUsed = true;
         this.openPause();
-      } else if (a === 'wash') {
-        this.g.useReefWash();
-      } else if (a === 'speed') {
-        this.toggleSpeed();
       }
     }
-  }
-
-  handleTaps(taps) {
-    if (!taps.length) return;
-    this.audio.unlock();
-    const g = this.g;
-    if (this.stack.length) return;
-    for (const t of taps) {
-      const w = this.renderer.screenToWorld(t.x, t.y);
-      const so = this.socketAt(w.x, w.y);
-      if (!so) continue;
-      if (g.phase === PHASE.PLACE) {
-        if (this.placeable(so.i)) {
-          this.placeFocus = so.i;
-          g.placePending(so.i);
-        }
-      } else if (g.phase === PHASE.BUILD) {
-        this.buildFocus = so.i;
-        this.openSocket(so.i);
-      }
-    }
-  }
-
-  handleHover(x, y) {
-    const g = this.g;
-    if (x < 0 || this.stack.length) return;
-    if (g.phase !== PHASE.BUILD && g.phase !== PHASE.PLACE) return;
-    const w = this.renderer.screenToWorld(x, y);
-    const so = this.socketAt(w.x, w.y);
-    if (!so) return;
-    if (g.phase === PHASE.BUILD && this.buildFocus !== so.i) {
-      this.buildFocus = so.i;
-      this.renderedKey = '';
-    } else if (g.phase === PHASE.PLACE && this.placeable(so.i) && this.placeFocus !== so.i) {
-      this.placeFocus = so.i;
-      this.renderedKey = '';
-    }
-  }
-
-  socketAt(x, y) {
-    let best = null, bd = 48 * 48;
-    for (const so of this.g.sockets) {
-      const d = (so.x - x) ** 2 + (so.y - y) ** 2;
-      if (d < bd) {
-        bd = d;
-        best = so;
-      }
-    }
-    return best;
   }
 
   menuAction(scr, a) {
-    if (scr.onKey && scr.onKey(a)) return;
     const n = scr.items.length;
     if (a === 'left' || a === 'up') {
       if (n) {
@@ -201,8 +133,6 @@ export class UI {
         this.audio.ui('back');
         scr.onBack();
       }
-    } else if (a === 'pause' && !this.stack.length && this.g.phase !== PHASE.TITLE) {
-      this.openPause();
     }
   }
 
@@ -225,7 +155,7 @@ export class UI {
 
   update(dt) {
     const g = this.g;
-    const key = `${g.phase}|${g.uiVersion}|${this.stack.length}|${this.buildFocus}|${this.placeFocus}|${g.paused}`;
+    const key = `${g.phase}|${g.uiVersion}|${this.stack.length}|${g.paused}`;
     if (key !== this.renderedKey) {
       this.renderedKey = key;
       const scr = this.resolve(this.topScreen());
@@ -233,7 +163,10 @@ export class UI {
       this.renderPanel(scr);
     }
     const scr = this.currentScreen;
-    this.syncView(scr);
+    const playing = g.phase === PHASE.PLAY;
+    this.app.classList.toggle('playing', playing);
+    this.app.classList.toggle('in-run', g.phase !== PHASE.TITLE);
+    this.app.classList.toggle('menu-open', !!scr);
     this.updateHud();
     if (this.toastT > 0) {
       this.toastT -= dt;
@@ -243,50 +176,15 @@ export class UI {
       this.bannerT -= dt;
       if (this.bannerT <= 0) this.bannerEl.classList.remove('show');
     }
-  }
-
-  syncView(scr) {
-    const g = this.g, v = this.view;
-    v.previewType = '';
-    v.focusSocket = -1;
-    if (g.phase === PHASE.PLACE && !this.stack.length) {
-      if (this.placeFocus < 0 || !this.placeable(this.placeFocus)) this.placeFocus = this.firstEmpty();
-      v.focusSocket = this.placeFocus;
-      v.previewType = g.pendingTower;
-    } else if (g.phase === PHASE.BUILD) {
-      const sock = scr && scr.socket != null ? scr.socket : this.buildFocus < g.sockets.length ? this.buildFocus : -1;
-      v.focusSocket = sock;
-      if (scr && scr.previewTypes) v.previewType = scr.previewTypes[this.focus] || '';
-    }
-    const combat = g.phase === PHASE.COMBAT;
-    this.app.classList.toggle('in-combat', combat);
-    this.app.classList.toggle('in-run', g.phase !== PHASE.TITLE);
-    this.app.classList.toggle('menu-open', !!scr && !scr.bar);
-    this.app.classList.toggle('bar-open', !!scr && !!scr.bar);
-  }
-
-  // An empty socket, or a twin the pending capsule can level up.
-  placeable(i) {
-    const g = this.g, so = g.sockets[i];
-    return !!so && (!so.tower || g.canMerge(i, g.pendingTower));
-  }
-
-  firstEmpty() {
-    // a twin to level up first, otherwise the empty socket nearest the middle
-    const g = this.g;
-    for (const so of g.sockets) if (so.tower && g.canMerge(so.i, g.pendingTower)) return so.i;
-    let best = -1, bv = Infinity;
-    for (const so of g.sockets) {
-      const v = Math.abs(so.x - g.heart.x);
-      if (!so.tower && v < bv) {
-        bv = v;
-        best = so.i;
+    if (this.hintT > 0) {
+      this.hintT -= dt;
+      // the hint goes away as soon as the player steers
+      if (this.hintT <= 0 || g.input.targetX === g.input.targetX || g.input.left || g.input.right) {
+        this.hintT = 0;
+        this.hintEl.classList.remove('show');
       }
     }
-    return best;
   }
-
-  // ------------------------------------------------------------ rendering
 
   renderPanel(scr) {
     if (!scr) {
@@ -294,9 +192,8 @@ export class UI {
       this.panel.innerHTML = '';
       return;
     }
-    if (scr.focusOverride !== undefined) this.focus = scr.focusOverride;
-    else if (this.focus >= scr.items.length) this.focus = Math.max(0, scr.items.length - 1);
-    const layout = scr.layout || 'list';
+    if (this.focus >= scr.items.length) this.focus = Math.max(0, scr.items.length - 1);
+    if (scr.focusDefault !== undefined && this.focus === 0) this.focus = scr.focusDefault;
     const items = scr.items.map((it, i) => {
       const cls = ['item', it.cls || '', it.disabled ? 'disabled' : '', i === this.focus ? 'focus' : ''].join(' ');
       return `<button type="button" tabindex="-1" class="${cls}" data-i="${i}">
@@ -306,19 +203,17 @@ export class UI {
         ${it.right ? `<span class="right">${it.right}</span>` : ''}
       </button>`;
     }).join('');
-    this.panel.className = `panel ${scr.bar ? 'bar' : 'modal'} ${scr.cls || ''}`;
+    this.panel.className = `panel modal ${scr.cls || ''}`;
     this.panel.innerHTML = `<div class="sheet">
       ${scr.title ? `<h2>${esc(scr.title)}</h2>` : ''}
       ${scr.html || ''}
-      <div class="items ${layout}">${items}</div>
+      <div class="items list">${items}</div>
       ${scr.hint ? `<p class="hint">${scr.hint}</p>` : ''}</div>`;
   }
 
   paintFocus() {
     const btns = this.panel.querySelectorAll('[data-i]');
     btns.forEach((b) => b.classList.toggle('focus', +b.dataset.i === this.focus));
-    const scr = this.currentScreen;
-    if (scr && scr.onFocus) scr.onFocus(this.focus);
   }
 
   toast(msg, secs = 1.8) {
@@ -327,49 +222,40 @@ export class UI {
     this.toastT = secs;
   }
 
-  banner(title, sub, secs = 2.4) {
+  banner(title, sub, secs = 2.2) {
     this.bannerEl.innerHTML = `<div class="big">${esc(title)}</div>${sub ? `<div class="small">${esc(sub)}</div>` : ''}`;
     this.bannerEl.classList.add('show');
     this.bannerT = secs;
   }
 
   consume(q) {
-    const g = this.g;
     for (let i = 0; i < q.n; i++) {
       const e = q.items[i];
       switch (e.type) {
         case 'denied': this.toast(e.s); break;
-        case 'wave_start': {
-          const boss = e.b ? BOSSES[bossForWave(e.a).id].name : '';
-          this.banner(boss ? `Boss Wave ${e.a}` : `Wave ${e.a}`, boss || g.mods.name);
+        case 'level_start':
+          this.banner(`Level ${e.a}`, 'Swipe to pick a gate!', 1.8);
           this.audio.setMusic('combat');
+          if (e.a <= 3 || this.input.lastDevice === 'touch') {
+            this.hintEl.classList.add('show');
+            this.hintT = 4;
+          }
           break;
-        }
         case 'phase':
-          if (e.s !== PHASE.COMBAT) this.audio.setMusic('calm');
-          if (e.s === PHASE.PLACE) this.placeFocus = -1;
+          if (e.s !== PHASE.PLAY) {
+            this.audio.setMusic('calm');
+            this.bannerT = 0;
+            this.bannerEl.classList.remove('show');
+            this.hintT = 0;
+            this.hintEl.classList.remove('show');
+          }
           break;
-        case 'boss_spawn': this.banner(BOSSES[e.s].name, bossTip(e.s), 3); break;
-        case 'boss_defeat': this.banner(`${BOSSES[e.s].name} defeated!`, `+${e.a} pearls  +${e.b} shells`, 3); break;
-        case 'boss_phase': this.toast('The boss is getting serious!'); break;
-        case 'tower_unlocked': this.toast(`${TOWERS[e.s].name} buddy unlocked!`, 2.5); break;
-        case 'boss_slam_warn': this.toast('The boss is about to slam the reef!', 1.5); break;
-        case 'reef_wash': this.toast('Reef Wash! All debuffs cleared.'); break;
-        case 'meter_empty': this.flashMeter(); break;
-        case 'player_hit':
-          if (e.a <= 0) this.toast('Knocked out! Respawning…', 2);
-          break;
+        case 'boss_stage': this.banner(BOSSES[e.s].name, bossTip(e.s), 2.2); break;
+        case 'buddy_join': this.toast(`A ${e.s} buddy joined your school!`, 1.6); break;
         case 'pause':
         case 'resume': this.renderedKey = ''; break;
       }
     }
-  }
-
-  flashMeter() {
-    const m = $('meter');
-    m.classList.remove('flash');
-    void m.offsetWidth;
-    m.classList.add('flash');
   }
 
   setText(id, text) {
@@ -385,58 +271,23 @@ export class UI {
     $(id).style[prop] = val;
   }
 
-  setHidden(id, hidden) {
-    const key = id + 'hidden';
-    if (this.hudCache[key] === hidden) return;
-    this.hudCache[key] = hidden;
-    $(id).hidden = hidden;
-  }
-
   updateHud() {
-    const g = this.g, p = g.player, h = g.heart;
-    if (g.phase === PHASE.TITLE) return;
-    this.setText('hud-wave', g.endless && g.wave > WAVES.total ? `Wave ${g.wave} ∞` : `Wave ${g.wave}/${WAVES.total}`);
-    const comboMul = g.combo >= 3 ? Math.min(SCORE.comboMax, 1 + (g.combo - 1) * SCORE.comboStep) : 1;
-    this.setText('hud-score', comboMul > 1 ? `${g.score} ×${comboMul.toFixed(1)}` : String(g.score));
-    if (this.hudCache.combo !== comboMul > 1) {
-      this.hudCache.combo = comboMul > 1;
-      $('hud-score').classList.toggle('combo', comboMul > 1);
-    }
-    const mod = g.phase === PHASE.COMBAT ? g.mods : g.fork;
-    this.setText('hud-mod', mod && mod.id !== 'none' ? mod.name : 'Open Reef');
-    this.setText('hud-shells', `${SHELL} ${g.shells}`);
-    this.setText('hud-pearls', `${PEARL} ${g.pearls}`);
-    this.setStyle('heart-fill', 'transform', `scaleX(${(h.hp / h.maxHp).toFixed(3)})`);
-    this.setText('heart-txt', `Coral Heart ${Math.ceil(h.hp)}/${h.maxHp}`);
-    const combat = g.phase === PHASE.COMBAT;
-    if (combat) {
-      const meterMax = g.stats.meterMax;
-      this.setStyle('meter-fill', 'transform', `scaleX(${(p.meter / meterMax).toFixed(3)})`);
-      this.setStyle('meter-plus', 'left', `${((PLAYER.plusCost / meterMax) * 100).toFixed(1)}%`);
-      this.setText('hud-hearts', p.alive ? '♥'.repeat(Math.max(0, p.hearts)) + '♡'.repeat(Math.max(0, p.maxHearts - p.hearts)) : `respawn ${Math.ceil(p.deadT)}`);
-      this.setText('hud-wash', `Wash ×${g.reefWash}`);
-      this.setText('hud-speed', `${g.speed}×`);
-      this.setText('hud-left', `${g.enemiesRemaining} left`);
-    }
-    const b = g.boss;
-    this.setHidden('bossbar', !(combat && b && b.alive));
-    if (combat && b && b.alive) {
-      this.setText('boss-name', BOSSES[b.bossId].name + (b.laps ? ` (angry${b.laps > 1 ? ' ×' + b.laps : ''}!)` : ''));
-      this.setStyle('boss-fill', 'transform', `scaleX(${(b.hp / b.maxHp).toFixed(3)})`);
-      this.setStyle('boss-shield', 'transform', `scaleX(${b.maxShield ? (b.shield / b.maxShield).toFixed(3) : 0})`);
-    }
+    const g = this.g;
+    this.setText('hud-level', `Level ${g.phase === PHASE.PLAY ? g.level : g.meta.level}`);
+    this.setText('hud-coins', `${COIN} ${g.meta.coins + (g.phase === PHASE.PLAY ? g.coinsRun : 0)}`);
+    this.setStyle('hud-progress', 'transform', `scaleX(${g.phase === PHASE.PLAY ? g.progress.toFixed(3) : 0})`);
   }
 
   // ------------------------------------------------------------ actions
 
-  toggleSpeed() {
-    const g = this.g;
-    g.speed = g.speed === 1 ? 2 : 1;
-    this.toast(`Speed ${g.speed}×`, 0.8);
+  play() {
+    this.stack.length = 0;
+    this.audio.unlock();
+    this.g.startLevel();
   }
 
   openPause() {
-    if (this.g.phase === PHASE.TITLE) return;
+    if (this.g.phase !== PHASE.PLAY) return;
     this.g.setPaused(true);
     this.audio.suspend(false);
     this.push(() => this.pauseScreen());
@@ -448,372 +299,79 @@ export class UI {
     this.renderedKey = '';
   }
 
-  openSocket(i) {
-    this.audio.ui('confirm');
-    this.push(() => this.socketScreen(i));
+  upgradeItems() {
+    const g = this.g;
+    return Object.keys(UPGRADES).map((id) => {
+      const u = UPGRADES[id];
+      const cost = g.upgradeCost(id);
+      return {
+        label: `${u.name}`,
+        icon: UPGRADE_ICONS[id],
+        sub: `${esc(u.desc)} <small>(Lv ${g.meta.up[id]})</small>`,
+        right: cost == null ? 'MAX' : `${COIN} ${cost}`,
+        disabled: cost == null || g.meta.coins < cost,
+        why: cost == null ? 'Maxed out' : 'Not enough coins',
+        cls: 'upgrade',
+        action: () => g.buyUpgrade(id),
+      };
+    });
   }
 
   // ------------------------------------------------------------ screens
 
   titleScreen() {
-    const g = this.g;
-    const save = this.storage.loadRun();
-    const items = [];
-    if (save) items.push({ label: 'Continue', sub: `Wave ${save.wave}${save.endless ? ' (Endless)' : ''}`, icon: '▶', action: () => this.continueRun() });
-    items.push({ label: 'New Reef Run', sub: '20 waves, 4 bosses', icon: '🐠', action: () => this.newRun(false) });
-    if (g.meta.endlessUnlocked) items.push({ label: 'Endless Reef', sub: `Best: wave ${g.meta.bestEndless || 0}`, icon: '∞', action: () => this.newRun(true) });
-    items.push({ label: 'Fish Skins', icon: '🎨', action: () => this.push(() => this.skinsScreen()) });
-    items.push({ label: 'How to Play', icon: '?', action: () => this.push(() => this.howScreen()) });
-    items.push({ label: 'Settings', icon: '⚙', action: () => this.push(() => this.settingsScreen()) });
+    const g = this.g, m = g.meta;
+    const boss = BOSSES[bossForLevel(m.level).id].name;
     return {
       id: 'title', cls: 'title', title: '',
-      html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Clay Coral Defense</div></div>
+      html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Clay Coral Run</div></div>
         ${needsInstallHint() ? '<p class="install">📲 For full-screen play: tap <b>Share</b> → <b>Add to Home Screen</b></p>' : ''}
-        <p class="meta">High score ${g.meta.bestScore || 0} · Best wave ${g.meta.bestWave || 0} · Wins ${g.meta.wins || 0} · v${VERSION}</p>`,
-      items,
-    };
-  }
-
-  newRun(endless) {
-    this.storage.clearRun();
-    this.stack.length = 0;
-    this.g.newRun({ endless });
-    this.audio.unlock();
-    this.audio.setMusic('calm');
-  }
-
-  continueRun() {
-    const data = this.storage.loadRun();
-    const r = data ? this.g.deserialize(data) : { ok: false };
-    if (!r.ok) {
-      this.storage.clearRun();
-      this.toast('Save could not be loaded');
-      this.renderedKey = '';
-      return;
-    }
-    this.stack.length = 0;
-    this.audio.setMusic('calm');
-  }
-
-  forkScreen() {
-    const g = this.g;
-    const forks = g.forkOptions.map((id) => FORKS.find((f) => f.id === id));
-    const boss = isBossWave(g.wave) ? BOSSES[bossForWave(g.wave).id].name : '';
-    return {
-      id: 'fork', cls: 'fork', layout: 'row', title: `The reef forks — Wave ${g.wave}`,
-      html: boss ? `<p class="warn">⚠ Boss ahead: ${esc(boss)}</p>` : '<p class="sub">Choose a current. It changes the next wave.</p>',
-      items: forks.map((f, i) => ({
-        label: `${i === 0 ? '◀ Left' : 'Right ▶'}: ${f.name}`,
-        sub: esc(f.desc),
-        cls: 'card',
-        action: () => g.chooseFork(i),
-      })),
-      onKey: (a) => {
-        if (a === 'left' || a === 'right') {
-          const want = a === 'left' ? 0 : 1;
-          if (this.focus === want) return true;
-          this.focus = want;
-          this.audio.ui('move');
-          this.paintFocus();
-          return true;
-        }
-        if (a === 'back') {
-          this.openPause();
-          return true;
-        }
-        return false;
-      },
-    };
-  }
-
-  draftScreen() {
-    const g = this.g;
-    const skip = g.skipCapsuleValue();
-    const items = g.draftOptions.map((type, i) => {
-      const d = TOWERS[type];
-      return {
-        label: d.name,
-        icon: towerIcon(type),
-        sub: `${esc(d.desc)}<br><small>${statLine(type, 0)}</small>`,
-        right: `free (worth ${d.cost})`,
-        cls: 'card capsule',
-        action: () => g.chooseDraft(i),
-      };
-    });
-    const full = !g.hasEmptySocket();
-    items.forEach((it, i) => {
-      const type = g.draftOptions[i];
-      if (!g.canPlace(type)) it.right = `→ ${skip} shells`;
-      else if (g.towers.some((t) => g.canMerge(t.socket, type))) it.right = 'levels up your twin!';
-    });
-    items.push({ label: `Take ${skip} shells instead`, cls: 'small', action: () => g.chooseDraft(-1) });
-    return {
-      id: 'draft', cls: 'draft', layout: 'row', title: g.wave === 1 ? 'Pick your first buddy' : 'Pick a buddy capsule',
-      html: full ? '<p class="sub">Sockets are full — drop a capsule on a matching buddy to level it up.</p>' : '<p class="sub">Buddies sit on the reef and shoot what dives at it.</p>',
-      items,
-      onBack: () => this.openPause(),
-    };
-  }
-
-  placeScreen() {
-    const g = this.g;
-    const d = TOWERS[g.pendingTower];
-    if (!d) return null;
-    const so = g.sockets[this.placeFocus];
-    const merge = so && so.tower;
-    return {
-      id: 'place', bar: true, cls: 'place',
-      html: `<div class="barinfo"><b>${towerIcon(g.pendingTower)} Place your ${esc(d.name)}</b>
-        <span>◀ ▶ choose a coral socket · Confirm to place · or tap a socket</span>
-        ${so ? `<span class="dim">${merge ? `Socket ${so.i + 1}: levels your ${esc(so.tower.def.short)} up to Lv${so.tower.level + 2}` : `Socket ${so.i + 1}: empty`}</span>` : ''}</div>`,
-      items: [{ label: 'Place here', icon: '✔', cls: 'go', action: () => g.placePending(this.placeFocus) }],
-      onKey: (a) => {
-        if (a === 'left' || a === 'right' || a === 'up' || a === 'down') {
-          this.placeFocus = this.stepSocket(this.placeFocus, a === 'right' || a === 'down' ? 1 : -1, true);
-          this.audio.ui('move');
-          return true;
-        }
-        if (a === 'back') {
-          this.openPause();
-          return true;
-        }
-        return false;
-      },
-    };
-  }
-
-  stepSocket(from, dir, emptyOnly) {
-    const n = this.g.sockets.length;
-    let i = from < 0 ? (dir > 0 ? -1 : 0) : from;
-    for (let k = 0; k < n; k++) {
-      i = (i + dir + n) % n;
-      if (!emptyOnly || this.placeable(i)) return i;
-    }
-    return from;
-  }
-
-  buildScreen() {
-    const g = this.g;
-    const n = g.sockets.length;
-    if (this.buildFocus > n + 2) this.buildFocus = n + 2;
-    const onSocket = this.buildFocus < n;
-    const so = onSocket ? g.sockets[this.buildFocus] : null;
-    let info = '';
-    if (so && so.tower) {
-      const t = so.tower;
-      info = `<b>${towerIcon(t.type)} ${esc(t.stats.name || t.def.name)} · Lv${t.level + 1}</b><span>${statLine(t.type, t.level)} · kills ${t.kills}</span>`;
-    } else if (so) {
-      info = `<b>Empty coral socket ${so.i + 1}</b><span>Confirm to add a buddy here</span>`;
-    } else {
-      info = `<b>Ready for wave ${g.wave}${isBossWave(g.wave) ? ' — BOSS' : ''}</b><span>${esc(g.fork.name || '')}${g.fork.desc ? ' — ' + esc(g.fork.desc) : ''}</span>`;
-    }
-    const items = [
-      { label: 'Shop', icon: '🛒', action: () => this.push(() => this.shopScreen()) },
-      { label: 'Pearls', icon: PEARL, right: String(g.pearls), action: () => this.push(() => this.unlockScreen()) },
-      { label: 'Start Wave', icon: '▶', cls: 'go', action: () => g.startWave() },
-    ];
-    const self = this;
-    return {
-      id: 'build', bar: true, cls: 'build',
-      html: `<div class="barinfo">${info}<span class="dim">◀ ▶ select socket · ▲ buttons · Confirm</span></div>`,
-      items,
-      focusOverride: onSocket ? -1 : this.buildFocus - n,
-      onKey(a) {
-        const onSock = self.buildFocus < n;
-        if (a === 'left' || a === 'right') {
-          self.buildFocus = (self.buildFocus + (a === 'right' ? 1 : -1) + n + 3) % (n + 3);
-          if (self.buildFocus >= n) self.focus = self.buildFocus - n;
-          self.audio.ui('move');
-          self.renderedKey = '';
-          return true;
-        }
-        if (a === 'up' && onSock) {
-          self.buildFocus = n + 2;
-          self.focus = 2;
-          self.renderedKey = '';
-          return true;
-        }
-        if (a === 'down' && !onSock) {
-          self.buildFocus = 0;
-          self.renderedKey = '';
-          return true;
-        }
-        if (a === 'up' || a === 'down') return true;
-        if (a === 'confirm') {
-          if (onSock) self.openSocket(self.buildFocus);
-          else self.activate(self.buildFocus - n);
-          return true;
-        }
-        if (a === 'back') {
-          self.openPause();
-          return true;
-        }
-        return false;
-      },
-      onFocus(i) {
-        self.buildFocus = n + i;
-        self.renderedKey = '';
-      },
-    };
-  }
-
-  socketScreen(i) {
-    const g = this.g;
-    const so = g.sockets[i];
-    const back = () => this.pop();
-    if (!so.tower) {
-      const items = g.towerTypes.map((type) => {
-        const d = TOWERS[type];
-        const afford = g.shells >= d.cost;
-        return {
-          label: d.name, icon: towerIcon(type), sub: `${esc(d.desc)}<br><small>${statLine(type, 0)}</small>`,
-          right: `${SHELL} ${d.cost}`, disabled: !afford, why: 'Not enough shells',
-          action: () => {
-            if (g.buyTower(type, i).ok) this.pop();
-          },
-        };
-      });
-      items.push({ label: 'Back', cls: 'small', action: back });
-      return {
-        id: 'sock-empty-' + i, socket: i, title: `Add a buddy to socket ${i + 1}`, items, onBack: back,
-        previewTypes: g.towerTypes.slice(),
-      };
-    }
-    const t = so.tower;
-    const up = g.upgradeInfo(t);
-    const items = [];
-    if (up.max) items.push({ label: 'Fully evolved', disabled: true, why: 'Already at max level' });
-    else {
-      items.push({
-        label: up.locked ? `Evolve: ${up.name}` : `Upgrade to ${up.name}`,
-        icon: '⬆',
-        sub: up.locked ? `Unlock "${esc(UNLOCKS['evo_' + t.type].name)}" with pearls first` : statLine(t.type, t.level + 1) + ` · HP ${towerMaxHp(t.def, t.level + 1)}`,
-        right: `${SHELL} ${up.cost}`,
-        disabled: up.locked || g.shells < up.cost,
-        why: up.locked ? 'Unlock the evolution with pearls first' : 'Not enough shells',
-        action: () => g.upgradeTower(i),
-      });
-    }
-    items.push({ label: 'Sell', icon: '💰', right: `+${g.sellValue(t)}`, action: () => {
-      if (g.sellTower(i).ok) this.pop();
-    } });
-    items.push({ label: 'Back', cls: 'small', action: back });
-    return {
-      id: `sock-${i}-${t.level}`, socket: i,
-      title: `${t.stats.name || t.def.name} · Lv${t.level + 1}`,
-      html: `<p class="sub">${esc(t.def.desc)}<br>${statLine(t.type, t.level)} · HP ${Math.ceil(t.hp)}/${t.maxHp} · kills ${t.kills}</p>`,
-      items, onBack: back,
-    };
-  }
-
-  shopScreen() {
-    const g = this.g;
-    const items = Object.keys(UPGRADES).map((id) => {
-      const u = UPGRADES[id];
-      const cost = g.upgradeCost(id);
-      const lvl = u.consumable ? `${g.reefWash}/${u.max} held` : `Lv ${g.upgrades[id]}/${u.max}`;
-      return {
-        label: u.name, sub: `${esc(u.desc)} <small>(${lvl})</small>`,
-        right: cost == null ? 'MAX' : `${SHELL} ${cost}`,
-        disabled: cost == null || g.shells < cost,
-        why: cost == null ? 'Maxed out' : 'Not enough shells',
-        action: () => g.buyUpgrade(id),
-      };
-    });
-    items.push({ label: 'Back', cls: 'small', action: () => this.pop() });
-    return { id: 'shop', title: `Shell Shop · ${SHELL} ${g.shells}`, items, onBack: () => this.pop() };
-  }
-
-  unlockScreen() {
-    const g = this.g;
-    const items = Object.keys(UNLOCKS).map((id) => {
-      const u = UNLOCKS[id];
-      const have = !!g.unlocked[id];
-      return {
-        label: u.name, sub: esc(u.desc), right: have ? '✔' : `${PEARL} ${u.pearls}`,
-        disabled: have || g.pearls < u.pearls, why: have ? 'Already unlocked' : 'Not enough pearls',
-        cls: have ? 'owned' : '',
-        action: () => g.buyUnlock(id),
-      };
-    });
-    items.push({ label: 'Back', cls: 'small', action: () => this.pop() });
-    return {
-      id: 'unlocks', title: `Pearl Unlocks · ${PEARL} ${g.pearls}`, items, onBack: () => this.pop(),
-      html: '<p class="sub">Pearls come from bosses, some forks, and perfect waves (no heart damage).</p>',
-    };
-  }
-
-  waveEndScreen() {
-    const g = this.g, s = g.waveSummary || {};
-    const rows = [
-      ['Enemies popped', s.kills],
-      ['Score', `+${s.score} (wave bonus ${s.scoreBonus}) · total ${s.total}`],
-      ['Shells earned', `+${s.shells} (wave bonus ${s.clearBonus})`],
-    ];
-    if (s.leaks) rows.push(['Reef bites', `${s.leaks} (−${Math.round(s.heartDmg)} Coral Heart)`]);
-    if (s.playerHits) rows.push(['Times you got hit', s.playerHits]);
-    if (s.pearls) rows.push(['Pearls', `+${s.pearls}`]);
-    if (s.perfect) rows.push(['Perfect wave!', 'Coral Heart untouched']);
-    if (s.shellsStolen) rows.push(['Stolen by crabs', `-${s.shellsStolen}`]);
-    if (s.bossDefeated) rows.push(['Boss', `${BOSSES[s.bossDefeated].name} defeated`]);
-    if (s.unlockedTower) rows.push(['New buddy', TOWERS[s.unlockedTower].name]);
-    if (s.towersEaten) rows.push(['Swallowed (and spat out)', s.towersEaten]);
-    if (s.newSkin) rows.push(['New skin', SKINS[s.newSkin].name]);
-    return {
-      id: 'waveEnd', title: `Wave ${s.wave} cleared!`,
-      html: table(rows),
-      items: [{ label: 'Continue', icon: '▶', cls: 'go', action: () => g.continueAfterWave() }],
-      onBack: () => this.openPause(),
-    };
-  }
-
-  victoryScreen() {
-    const g = this.g;
-    return {
-      id: 'victory', cls: 'victory', title: 'Kraken Kitty is defeated!',
-      html: `<p class="sub">The reef is safe. Endless Reef mode and new fish skins are unlocked.</p>${table([
-        ['Score', `${g.score}${g.waveSummary && g.waveSummary.newBest ? ' — new high score!' : ''}`],
-        ['Total pops', g.runStats.kills], ['Shells earned', g.runStats.shells], ['Perfect waves', g.runStats.perfectWaves],
-      ])}`,
+        <p class="meta">${COIN} ${m.coins} · Best level ${m.best || 0} · v${VERSION}</p>`,
       items: [
-        { label: 'Keep going (Endless)', icon: '∞', cls: 'go', action: () => g.continueAfterWave() },
-        { label: 'Back to title', action: () => g.quitToTitle() },
+        { label: `Play level ${m.level}`, sub: `Boss: ${esc(boss)}`, icon: '▶', cls: 'go big', action: () => this.play() },
+        { label: 'Upgrades', icon: '⬆', right: `${COIN} ${m.coins}`, action: () => this.push(() => this.upgradeScreen()) },
+        { label: 'Fish Skins', icon: '🎨', action: () => this.push(() => this.skinsScreen()) },
+        { label: 'How to Play', icon: '?', action: () => this.push(() => this.howScreen()) },
+        { label: 'Settings', icon: '⚙', action: () => this.push(() => this.settingsScreen()) },
       ],
     };
   }
 
-  defeatScreen() {
-    const g = this.g;
+  upgradeScreen() {
+    const items = this.upgradeItems();
+    items.push({ label: 'Back', cls: 'small', action: () => this.pop() });
+    return { id: 'upgrades', title: `Upgrades · ${COIN} ${this.g.meta.coins}`, items, onBack: () => this.pop() };
+  }
+
+  endScreen(won) {
+    const g = this.g, r = g.result || { coins: 0, fish: 0, level: g.level };
+    const rows = [[`${COIN} Coins`, `+${r.coins}${won && r.bonus ? ` (clear bonus ${r.bonus})` : ''}`]];
+    if (won) rows.push(['🐟 Fish left', r.fish]);
+    if (r.newSkin) rows.push(['🎨 New skin', SKINS[r.newSkin].name]);
+    const next = won
+      ? { label: `Next: level ${g.meta.level}`, icon: '▶', cls: 'go big', action: () => this.play() }
+      : { label: `Try level ${g.meta.level} again`, icon: '↻', cls: 'go big', action: () => this.play() };
     return {
-      id: 'defeat', cls: 'defeat', title: 'The Coral Heart crumbled',
-      html: `<p class="sub">You reached wave ${g.wave}${g.endless ? ' (Endless)' : ''}.</p>${table([
-        ['Score', `${g.score}${g.waveSummary && g.waveSummary.newBest ? ' — new high score!' : ` (best ${g.meta.bestScore || 0})`}`],
-        ['Total pops', g.runStats.kills], ['Buddies placed', g.runStats.towersBuilt], ['Perfect waves', g.runStats.perfectWaves],
-      ])}`,
-      items: [
-        { label: 'Try again', icon: '↻', cls: 'go', action: () => this.newRun(g.endless) },
-        { label: 'Back to title', action: () => g.quitToTitle() },
-      ],
+      id: won ? 'won' : 'lost', cls: won ? 'victory' : 'defeat',
+      title: won ? `Level ${r.level} cleared!` : 'Your school got eaten!',
+      html: `${won ? '' : '<p class="sub">Pick the blue gates, shoot the critters before they reach you, and spend coins on upgrades.</p>'}
+        ${table(rows)}<p class="sub">Coins: ${COIN} ${g.meta.coins}</p>`,
+      items: [next, ...this.upgradeItems(), { label: 'Title screen', cls: 'small', action: () => g.quitToTitle() }],
     };
   }
 
   pauseScreen() {
     const g = this.g;
-    const inCombat = g.phase === PHASE.COMBAT;
     return {
       id: 'pause', title: 'Paused', pauseCloses: true,
       items: [
         { label: 'Resume', icon: '▶', cls: 'go', action: () => this.closePause() },
+        { label: 'Restart level', icon: '↻', action: () => {
+          this.closePause();
+          g.startLevel();
+        } },
         { label: 'How to Play', icon: '?', action: () => this.push(() => this.howScreen()) },
         { label: 'Settings', icon: '⚙', action: () => this.push(() => this.settingsScreen()) },
-        {
-          label: inCombat ? 'Restart from last save' : 'Restart run', icon: '↻',
-          action: () => {
-            this.closePause();
-            if (inCombat && this.storage.loadRun()) this.continueRun();
-            else this.newRun(g.endless);
-          },
-        },
         { label: 'Quit to title', icon: '⌂', action: () => {
           this.closePause();
           g.quitToTitle();
@@ -830,7 +388,6 @@ export class UI {
       this.onSettings();
     };
     const vols = [0, 0.25, 0.5, 0.75, 1];
-    const touchModes = ['auto', 'on', 'off'];
     return {
       id: 'settings', title: 'Settings',
       items: [
@@ -842,12 +399,7 @@ export class UI {
         } },
         { label: 'Screen shake', right: s.shake ? 'On' : 'Off', action: flip('shake') },
         { label: 'Stop-motion animation (12 fps)', right: s.stopMotion ? 'On' : 'Off', action: flip('stopMotion') },
-        { label: 'Tilt-shift blur', sub: 'Pretty, costs GPU', right: s.tiltShift ? 'On' : 'Off', action: flip('tiltShift') },
-        { label: 'Touch controls', right: s.touch, action: () => {
-          s.touch = touchModes[(touchModes.indexOf(s.touch) + 1) % touchModes.length];
-          this.onSettings();
-        } },
-        { label: 'Haptics', sub: 'Touch buttons tick (iPhone iOS 18+, Android)', right: s.haptics ? 'On' : 'Off', action: flip('haptics') },
+        { label: 'Haptics', sub: 'Buttons tick (iPhone iOS 18+, Android)', right: s.haptics ? 'On' : 'Off', action: flip('haptics') },
         { label: 'Show FPS', right: s.showFps ? 'On' : 'Off', action: flip('showFps') },
         { label: 'Back', cls: 'small', action: () => this.pop() },
       ],
@@ -858,8 +410,7 @@ export class UI {
   howScreen() {
     return {
       id: 'how', title: 'How to Play', cls: 'how',
-      html: table(HOW_TO_PLAY) + `<p class="sub">Gamepad: stick/d-pad move · A/RT Minus · X/LT Plus · Y Reef Wash · RB speed · Start pause.<br>
-        Touch: hold ◀ ▶ (or drag on the reef) and the − + buttons.</p>`,
+      html: table(HOW_TO_PLAY),
       items: [{ label: 'Got it', cls: 'go', action: () => this.pop() }],
       onBack: () => this.pop(),
     };
@@ -893,26 +444,12 @@ function table(rows) {
   return `<table class="stats">${rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table>`;
 }
 
-export function towerIcon(type) {
-  return { fish: '🐠', octopus: '🐙', shark: '🦈', starfish: '⭐', puffer: '🐡', seahorse: '🌊', crab: '🦀' }[type] || '•';
-}
-
-function statLine(type, level) {
-  const s = TOWERS[type].levels[level];
-  const parts = [`Range ${s.range}`];
-  if (type === 'puffer') parts.push(`Blast ${s.dmg}`, `every ${s.interval}s`);
-  else if (type === 'starfish') parts.push(`Dmg ${s.dmg}`, `heals ${s.heal}/s`);
-  else parts.push(`Dmg ${s.dmg}`, `${(1 / s.interval).toFixed(1)}/s`);
-  if (s.name) parts.unshift(s.name);
-  return parts.join(' · ');
-}
-
 function bossTip(id) {
   switch (id) {
-    case 'chef': return 'Line up Minus shots on the hat for triple damage!';
-    case 'sharky': return 'Dodge the red lane! Starfish stars stun him mid-charge.';
-    case 'queen': return 'Hit her when her arms open — or Plus her shut arms open.';
-    case 'kitty': return 'Minus breaks tentacles. Plus pops her purr shield.';
+    case 'chef': return 'Dodge the red ink circles!';
+    case 'sharky': return 'Get out of the red lane before he charges!';
+    case 'queen': return 'Stars rain down — find the gap!';
+    case 'kitty': return 'Paw swipes hit half the road — switch sides!';
     default: return '';
   }
 }

@@ -5,7 +5,7 @@
 // itself is network-first, and its "version" busts sprite URLs (?v=N), so new
 // artwork shows up on the next launch without bumping CACHE.
 
-const CACHE = 'reef-rumble-v2.0.0';
+const CACHE = 'reef-rumble-v3.0.0';
 
 // Same URLs SpriteBank requests: assets/art/<file>?v=<version>
 async function artUrls() {
@@ -42,17 +42,9 @@ const ASSETS = [
   './src/render/renderer.js',
   './src/render/sprites.js',
   './src/core/game.js',
+  './src/core/level.js',
   './src/core/util.js',
-  './src/core/grid.js',
   './src/core/events.js',
-  './src/core/entities.js',
-  './src/core/combat.js',
-  './src/core/enemies.js',
-  './src/core/bosses.js',
-  './src/core/towers.js',
-  './src/core/projectiles.js',
-  './src/core/player.js',
-  './src/core/waves.js',
 ];
 
 self.addEventListener('install', (e) => {

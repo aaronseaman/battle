@@ -2,8 +2,9 @@
 // blocked storage just means nothing is remembered.
 
 const KEYS = {
-  meta: 'reefrumble.meta.v1',
-  run: 'reefrumble.run.v1',
+  meta: 'reefrumble.meta.v3',
+  oldMeta: 'reefrumble.meta.v1', // the tower-defense / wave-shooter builds (skins carry over)
+  oldRun: 'reefrumble.run.v1',
   settings: 'reefrumble.settings.v1',
 };
 
@@ -38,32 +39,21 @@ export const DEFAULT_SETTINGS = {
   volume: 0.75,
   shake: true,
   stopMotion: true,
-  tiltShift: false,
-  touch: 'auto',
   showFps: false,
   haptics: true,
 };
 
 export const storage = {
+  // Raw saved progress (Game normalizes it).
   loadMeta() {
     const m = read(KEYS.meta);
-    const base = { endlessUnlocked: false, skins: ['classic'], skin: 'classic', bestWave: 0, bestEndless: 0, wins: 0, runs: 0 };
-    if (!m) return base;
-    const out = { ...base, ...m };
-    if (!Array.isArray(out.skins) || !out.skins.includes('classic')) out.skins = ['classic', ...(Array.isArray(out.skins) ? out.skins : [])];
-    return out;
+    if (m) return m;
+    const old = read(KEYS.oldMeta);
+    remove(KEYS.oldRun);
+    return old && Array.isArray(old.skins) ? { skins: old.skins, skin: old.skin } : null;
   },
   saveMeta(m) {
     write(KEYS.meta, m);
-  },
-  loadRun() {
-    return read(KEYS.run);
-  },
-  saveRun(r) {
-    write(KEYS.run, r);
-  },
-  clearRun() {
-    remove(KEYS.run);
   },
   loadSettings() {
     return { ...DEFAULT_SETTINGS, ...(read(KEYS.settings) || {}) };
