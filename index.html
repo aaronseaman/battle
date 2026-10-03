@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Reef Rumble</title>
-  <meta name="description" content="Swipe your clay fish school through the reef: pick gates, crack clams, beat the boss.">
+  <meta name="description" content="Swipe your glossy fish school through the reef: pick gates, crack clams, beat the boss.">
   <meta name="theme-color" content="#0d5d73">
   <meta name="color-scheme" content="only light">
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
@@ -32,11 +32,11 @@
     <div id="hud">
       <div class="hud-top">
         <div class="chip" id="hud-level">Level 1</div>
-        <div class="progress" aria-label="Level progress"><div class="fill" id="hud-progress"></div><span class="goal">👑</span></div>
+        <div class="progress" aria-label="Level progress"><div class="fill" id="hud-progress"></div><span class="goal"><svg viewBox="0 0 48 42" aria-hidden="true"><defs><linearGradient id="crown-gold" x2="0" y2="1"><stop stop-color="#fffaa4"/><stop offset=".5" stop-color="#ffd52d"/><stop offset="1" stop-color="#ef9a04"/></linearGradient></defs><path d="M6 12 14 23 24 5 34 23 42 12 38 34H10Z" fill="url(#crown-gold)" stroke="#e69511" stroke-width="2"/><path d="M11 34h26v5H11Z" fill="#ffe16b" stroke="#e69511"/><g fill="#fff3a0" stroke="#edac16"><circle cx="6" cy="10" r="3"/><circle cx="24" cy="4" r="3"/><circle cx="42" cy="10" r="3"/></g></svg></span></div>
         <div class="chip coins" id="hud-coins">🪙 0</div>
         <button type="button" tabindex="-1" class="chip btn" id="hud-pause" data-tap="pause" aria-label="Pause">❚❚</button>
       </div>
-      <div id="hint"><span class="hand">👆</span> Swipe left / right to steer</div>
+      <div id="hint"><span class="hand" aria-hidden="true">↔</span> Swipe left / right to steer</div>
     </div>
 
     <div id="panel" class="hidden"></div>

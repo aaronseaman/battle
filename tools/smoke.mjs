@@ -19,7 +19,7 @@ async function run(viewport, label, touch) {
   });
   page.on('pageerror', (e) => errors.push(`[${label}] ${e.message}`));
   await page.goto(url);
-  await page.waitForFunction(() => window.reef && window.reef.game && window.reef.sprites.ready, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.reef && window.reef.game && window.reef.sprites.ready && window.reef.renderer.scene.naturalWidth && window.reef.renderer.gloss.naturalWidth, null, { timeout: 30000 });
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${out}/${label}-1-title.png` });
 
@@ -103,10 +103,17 @@ async function run(viewport, label, touch) {
   });
   await ctx.setOffline(true);
   await page.reload();
-  await page.waitForFunction(() => window.reef && window.reef.sprites.ready, null, { timeout: 15000 });
-  const off = await page.evaluate(() => ({ phase: window.reef.game.phase, sprites: window.reef.sprites.loaded, failed: window.reef.sprites.failed.length }));
+  await page.waitForFunction(() => window.reef && window.reef.sprites.ready && window.reef.renderer.scene.naturalWidth && window.reef.renderer.gloss.naturalWidth, null, { timeout: 15000 });
+  await page.evaluate(() => document.fonts.ready);
+  const off = await page.evaluate(() => ({
+    phase: window.reef.game.phase, sprites: window.reef.sprites.loaded,
+    failed: window.reef.sprites.failed.length,
+    scene: window.reef.renderer.scene.naturalWidth > 0,
+    atlas: window.reef.renderer.gloss.naturalWidth > 0,
+    font: document.fonts.check('700 16px Fredoka'),
+  }));
   console.log(label, 'offline boot', JSON.stringify(off), 'expected sprites', delivered);
-  if (off.phase !== 'title' || off.sprites !== delivered || off.failed) throw new Error(`${label}: offline boot incomplete`);
+  if (off.phase !== 'title' || off.sprites !== delivered || off.failed || !off.scene || !off.atlas || !off.font) throw new Error(`${label}: offline boot incomplete`);
   await ctx.setOffline(false);
   await ctx.close();
 }

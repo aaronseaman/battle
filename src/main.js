@@ -61,6 +61,7 @@ function applySettings() {
 
 applySettings();
 renderer.resize();
+document.fonts?.ready.then(() => { renderer.dirty = true; });
 if (window.ResizeObserver) new ResizeObserver(() => {
   layout();
   renderer.resize();

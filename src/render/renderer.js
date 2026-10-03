@@ -18,14 +18,14 @@ import { SCHOOL_OFFSETS, STAGE } from '../core/game.js';
 import { SpriteBank } from './sprites.js';
 
 const TAU = Math.PI * 2;
-const PERSP = 2400; // perspective distance: scale(z) = PERSP / (PERSP + z) — large = nearly top-down
+const PERSP = 1850; // perspective distance: scale(z) = PERSP / (PERSP + z) — large = nearly top-down
 const GATE_H = 110; // gate panel height (world units)
 
 // how big each kind of sprite is drawn (relative to its sheet at pxPerUnit 2)
 const SIZE = { fish: 0.5, enemy: 1.25, boss: 1.25, buddy: 0.7, clam: 4.0, bullet: 1.2, buddyShot: 1.4, strike: 1.5 };
 
 const C = {
-  bedDark: '#2f8f77',
+  bedDark: '#147fce',
   road: '#f7e2a8',
   roadDark: '#e8c98a',
   rim: '#ff8fa3',
@@ -59,6 +59,14 @@ export class Renderer {
     this.settings = settings;
     this.sp = sprites;
     this.bg = document.createElement('canvas');
+    // The environment is painted once per resize; live objects retain projection,
+    // depth sorting, animation and hit feedback rather than becoming a screenshot.
+    this.scene = new Image();
+    this.scene.onload = () => { this.buildBackground(); this.dirty = true; };
+    this.scene.src = 'assets/art/gloss/reef-lane.webp';
+    this.gloss = new Image();
+    this.gloss.onload = () => { this.dirty = true; };
+    this.gloss.src = 'assets/art/gloss/atlas.webp';
     this.dpr = 1;
     this.cssW = 1;
     this.cssH = 1;
@@ -170,11 +178,27 @@ export class Renderer {
     this.horizon = -1e9; // the camera looks down at the reef: no horizon on screen
     // seabed, a little deeper (darker) toward the top
     const bed = ctx.createLinearGradient(0, 0, 0, H);
-    bed.addColorStop(0, '#2f8f8a');
-    bed.addColorStop(0.5, '#4fb79c');
+    bed.addColorStop(0, '#087cce');
+    bed.addColorStop(0.5, '#28d5ef');
     bed.addColorStop(1, C.bedDark);
     ctx.fillStyle = bed;
     ctx.fillRect(0, 0, W, H);
+    if (this.scene.complete && this.scene.naturalWidth) {
+      // Match the authored lane's rails to the actual gameplay projection at every
+      // height, including short phones and wide desktop screens.
+      const iw = this.scene.naturalWidth, ih = this.scene.naturalHeight;
+      for (let y = 0; y < H; y += 2) {
+        const t = y / H;
+        const sourceHalf = iw * (0.22 + 0.23 * t);
+        const scale = (y - this.hy) / (this.gy - this.hy);
+        const destHalf = ROAD.half * this.k * scale;
+        const ratio = destHalf / sourceHalf;
+        const width = Math.max(W, iw * ratio);
+        ctx.drawImage(this.scene, 0, t * ih, iw, Math.min(ih - t * ih, 2 * ih / H + 1),
+          this.cx - width / 2, y, width, 3);
+      }
+      return;
+    }
     // dappled light from the surface
     let seed = 11;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -201,10 +225,10 @@ export class Renderer {
         case 'prize': {
           const good = e.b === 1;
           const s = g.school;
-          if (e.s === 'add' || e.s === 'mul') this.text(s.x, 30, `${e.a >= 0 ? '+' : '−'}${Math.abs(e.a)}`, good ? '#7dff9a' : '#ff6b6b', 2);
+          if (e.s === 'add' || e.s === 'mul') this.text(s.x, 30, `${e.a >= 0 ? '+' : '−'}${Math.abs(e.a)}`, good ? '#7eeaff' : '#ff6b6b', 2);
           else if (e.s === 'rate') this.text(s.x, 30, 'FIRE RATE UP!', '#ffe066', 1.4);
           else if (e.s === 'dmg') this.text(s.x, 30, 'POWER UP!', '#ffe066', 1.4);
-          this.ring(s.x, 0, 20, 140, 0.45, good ? '#7dff9a' : '#ff6b6b');
+          this.ring(s.x, 0, 20, 140, 0.45, good ? '#7eeaff' : '#ff6b6b');
           if (!good) this.shake(6);
           this.labelBump = 0.35;
           break;
@@ -358,6 +382,10 @@ export class Renderer {
   }
 
   drawRoad(d) {
+    if (this.scene.complete && this.scene.naturalWidth) {
+      this.drawCaustics(d);
+      return;
+    }
     const ctx = this.ctx, H = ROAD.half;
     const zf = ROAD.view * 1.6, zn = -PERSP * 0.69;
     const quad = (x0, x1, z0, z1, color) => {
@@ -389,32 +417,45 @@ export class Renderer {
     quad(H, H + 10, zn, zf, C.rim);
   }
 
-  // Kelp, coral and rocks along the roadside, scrolling with the road.
+  // Low-opacity moving light patterns communicate forward motion without
+  // obscuring the authored sand and the readable center of the lane.
+  drawCaustics(d) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,225,0.16)';
+    const step = 95;
+    for (let z = -120 - d % step; z < ROAD.view; z += step) {
+      const y = this.Y(z), half = ROAD.half * this.U(z);
+      ctx.beginPath();
+      ctx.moveTo(this.cx - half, y);
+      ctx.bezierCurveTo(this.cx - half * .5, y - 8, this.cx + half * .4, y + 9, this.cx + half, y - 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  glossCell(index, x, y, w, h = w) {
+    if (!this.gloss.complete || !this.gloss.naturalWidth) return false;
+    const fw = this.gloss.naturalWidth / 4, fh = this.gloss.naturalHeight / 3;
+    this.ctx.drawImage(this.gloss, (index % 4) * fw, Math.floor(index / 4) * fh, fw, fh, x, y, w, h);
+    return true;
+  }
+
+  // A few live 3D props move with the level, outside collision space.
   drawDecor(d) {
-    const ctx = this.ctx, step = 110;
-    const first = Math.floor((d - PERSP * 0.6) / step);
-    const last = Math.floor((d + ROAD.view * 1.3) / step);
+    const ctx = this.ctx, step = 340;
+    const first = Math.floor((d - 170) / step), last = Math.floor((d + ROAD.view) / step);
     for (let i = last; i >= first; i--) {
       const z = i * step - d;
+      if (z < -180) continue;
       for (const side of [-1, 1]) {
-        const h = hash(i * 2 + (side > 0 ? 1 : 0));
-        const x = side * (ROAD.half + 40 + h * 120);
-        const U = this.U(z), X = this.X(x, z), Y = this.Y(z);
-        if (Y < this.horizon - 4) continue;
-        const kind = Math.floor(h * 97) % 3;
-        if (kind === 0) {
-          const tall = 4 + Math.floor(h * 5);
-          for (let k = 0; k < tall; k++) {
-            const sway = Math.sin(this.time * 1.6 + i + k * 0.6) * k * U * 1.2;
-            blob(ctx, X + sway, Y - k * 16 * U, 8 * U, 11 * U, k % 2 ? '#2a8a52' : '#3fae6a', 0.2);
-          }
-        } else if (kind === 1) {
-          const col = ['#ff9fb2', '#ffd36e', '#c9a6ff', '#7fd4ff'][Math.floor(h * 13) % 4];
-          blob(ctx, X, Y - 10 * U, 22 * U, 16 * U, col, 0.3);
-          blob(ctx, X - 14 * U, Y - 22 * U, 10 * U, 12 * U, col, 0.3);
-          blob(ctx, X + 12 * U, Y - 26 * U, 9 * U, 13 * U, col, 0.3);
-        } else {
-          blob(ctx, X, Y - 6 * U, 18 * U, 10 * U, '#8a7f72', 0.25);
+        const n = hash(i * 2 + (side > 0 ? 1 : 0));
+        const U = this.U(z), x = side * (ROAD.half + 32 + n * 30);
+        const X = this.X(x, z), Y = this.Y(z), size = (46 + n * 16) * U;
+        if (Y < this.insets.top + 42 || Y > this.cssH + size) continue;
+        if (!this.glossCell(6 + Math.floor(n * 4), X - size / 2, Y - size * .8, size)) {
+          blob(ctx, X, Y - 10 * U, 20 * U, 15 * U, ['#f361db', '#9c60ef', '#ffe05c', '#6195e5'][Math.floor(n * 4)], .5);
         }
       }
     }
@@ -528,14 +569,29 @@ export class Renderer {
     const e = o.gate;
     const good = e.type !== 'add' || e.value > 0;
     const rgb = good ? C.good : C.bad;
-    ctx.fillStyle = `rgba(${rgb},${o.hitT > 0 ? 0.62 : 0.4})`;
-    roundRect(ctx, x0, yb - h, x1 - x0, h, 6 * U);
-    ctx.fill();
-    ctx.lineWidth = Math.max(2, 4 * U);
-    ctx.strokeStyle = `rgba(${rgb},0.95)`;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fillRect(x0 + 6 * U, yb - h + 6 * U, (x1 - x0) * 0.22, h - 12 * U);
+    const w = x1 - x0;
+    shadow(ctx, (x0 + x1) / 2 + 5 * U, yb + 4 * U, w * .52, 9 * U);
+    // Authored glossy frames are stretched to the same collision-panel bounds.
+    if (!this.glossCell(good ? 10 : 11, x0 - 12 * U, yb - h - 12 * U, w + 24 * U, h + 24 * U)) {
+      const fill = ctx.createLinearGradient(0, yb - h, 0, yb);
+      fill.addColorStop(0, `rgba(${rgb},0.65)`);
+      fill.addColorStop(.5, `rgba(${rgb},0.22)`);
+      fill.addColorStop(1, `rgba(${rgb},0.6)`);
+      ctx.fillStyle = fill;
+      roundRect(ctx, x0, yb - h, w, h, 12 * U);
+      ctx.fill();
+      ctx.lineWidth = Math.max(3, 7 * U);
+      ctx.strokeStyle = good ? '#17caff' : '#ff5e91';
+      ctx.stroke();
+      ctx.lineWidth = Math.max(1, 2 * U);
+      ctx.strokeStyle = '#e3fbff';
+      ctx.stroke();
+    }
+    if (o.hitT > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      roundRect(ctx, x0 + 8 * U, yb - h + 8 * U, w - 16 * U, h - 16 * U, 8 * U);
+      ctx.fill();
+    }
     const cx = (x0 + x1) / 2, cy = yb - h * 0.5;
     if (e.type === 'buddy') {
       const key = `tower.${e.buddy}.1`;
@@ -629,6 +685,20 @@ export class Renderer {
       ctx.lineTo(X, Y);
       ctx.stroke();
     }
+    if (!b.buddy) {
+      const r = Math.max(2.5, 6 * U);
+      const glaze = ctx.createRadialGradient(X - r * .35, Y - r * .4, r * .05, X, Y, r);
+      glaze.addColorStop(0, '#ffffff');
+      glaze.addColorStop(.24, '#b9f7ff');
+      glaze.addColorStop(.6, '#27c7f5');
+      glaze.addColorStop(.86, '#1582d7');
+      glaze.addColorStop(1, '#a7f3ff');
+      ctx.fillStyle = glaze;
+      ctx.beginPath();
+      ctx.arc(X, Y, r, 0, TAU);
+      ctx.fill();
+      return;
+    }
     const key = 'proj.' + b.kind;
     const s = b.buddy ? SIZE.buddyShot : SIZE.bullet;
     const rot = this.sp.flag(key, 'spin') ? b.t * 14 : this.sp.flag(key, 'orient') ? -Math.PI / 2 : 0;
@@ -648,7 +718,7 @@ export class Renderer {
     if (this.sp.loaded && this.sp.has(key)) {
       shadow(ctx, X, Y, 11 * U, 3.5 * U);
       this.sp.draw(ctx, key, this.sp.pick(key, 'swim', 'idle'), this.at + i * 0.13, X, Y, U * SIZE.fish,
-        this.opt(i % 5 === 3, 1, 1, 0, hurt && Math.floor(this.time * 20) % 2 ? 0.45 : 1, s.gainT > 0 ? 0.4 : 0));
+        this.opt(i % 5 === 3, 1 + Math.sin(this.time * 7 + i) * .025, 1 - Math.sin(this.time * 7 + i) * .025, Math.sin(this.time * 5 + i) * .035, hurt && Math.floor(this.time * 20) % 2 ? 0.45 : 1, s.gainT > 0 ? 0.4 : 0));
       return;
     }
     const sk = SKIN_COLORS[g.meta.skin] || SKIN_COLORS.classic;
@@ -683,7 +753,7 @@ export class Renderer {
     const front = g.schoolFront;
     const X = this.X(this.schoolX, front), Y = this.Y(front) - 46 * this.U(front);
     const pop = 1 + Math.max(0, this.labelBump) * 0.9;
-    const col = s.hitT > 0 ? '#e5484d' : s.gainT > 0 ? '#2fb85a' : '#2d6cff';
+    const col = s.hitT > 0 ? '#f84c82' : s.gainT > 0 ? '#15caff' : '#167dff';
     badge(ctx, String(s.n), X, Y, 20 * pop, col);
     const b = g.boss;
     if (b && b.alive && b.z < ROAD.view) {
@@ -798,10 +868,18 @@ function blob(ctx, x, y, rx, ry, color, gloss) {
 }
 
 function shadow(ctx, x, y, rx, ry) {
-  ctx.fillStyle = 'rgba(0,40,60,0.22)';
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(Math.max(.5, rx), Math.max(.5, ry));
+  const falloff = ctx.createRadialGradient(0, 0, .1, 0, 0, 1);
+  falloff.addColorStop(0, 'rgba(30,56,96,0.24)');
+  falloff.addColorStop(.6, 'rgba(30,56,96,0.12)');
+  falloff.addColorStop(1, 'rgba(30,56,96,0)');
+  ctx.fillStyle = falloff;
   ctx.beginPath();
-  ctx.ellipse(x, y, Math.max(0.5, rx), Math.max(0.5, ry), 0, 0, TAU);
+  ctx.arc(0, 0, 1, 0, TAU);
   ctx.fill();
+  ctx.restore();
 }
 
 function googly(ctx, x, y, r) {
@@ -830,12 +908,12 @@ function star(ctx, x, y, ro, ri, rot, color) {
 }
 
 function bigText(ctx, str, x, y, size, color) {
-  ctx.font = `900 ${Math.round(size)}px system-ui, -apple-system, sans-serif`;
+  ctx.font = `900 ${Math.round(size)}px Fredoka, ui-rounded, system-ui, -apple-system, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
   ctx.lineWidth = Math.max(2, size * 0.18);
-  ctx.strokeStyle = 'rgba(30,15,50,0.85)';
+  ctx.strokeStyle = '#163391';
   ctx.strokeText(str, x, y);
   ctx.fillStyle = color;
   ctx.fillText(str, x, y);
@@ -843,12 +921,16 @@ function bigText(ctx, str, x, y, size, color) {
 
 // A rounded number plate (the school counter, the boss's HP).
 function badge(ctx, str, x, y, size, color) {
-  ctx.font = `900 ${Math.round(size)}px system-ui, -apple-system, sans-serif`;
+  ctx.font = `900 ${Math.round(size)}px Fredoka, ui-rounded, system-ui, -apple-system, sans-serif`;
   const w = Math.max(size * 1.6, ctx.measureText(str).width + size * 0.9), h = size * 1.35;
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   roundRect(ctx, x - w / 2, y - h / 2 + 3, w, h, h / 2.6);
   ctx.fill();
-  ctx.fillStyle = color;
+  const glaze = ctx.createLinearGradient(0, y - h / 2, 0, y + h / 2);
+  glaze.addColorStop(0, '#80e9ff');
+  glaze.addColorStop(.25, color);
+  glaze.addColorStop(1, '#264fe0');
+  ctx.fillStyle = glaze;
   roundRect(ctx, x - w / 2, y - h / 2, w, h, h / 2.6);
   ctx.fill();
   ctx.lineWidth = 2;
@@ -863,6 +945,6 @@ function badge(ctx, str, x, y, size, color) {
 function bar(ctx, x, y, w, h, frac) {
   ctx.fillStyle = 'rgba(30,20,40,0.55)';
   ctx.fillRect(x - w / 2, y, w, h);
-  ctx.fillStyle = frac > 0.5 ? '#7ee081' : frac > 0.25 ? '#ffd23f' : '#ff5d5d';
+  ctx.fillStyle = frac > 0.5 ? '#27caff' : frac > 0.25 ? '#ffd23f' : '#ff5d5d';
   ctx.fillRect(x - w / 2, y, w * Math.max(0, frac), h);
 }

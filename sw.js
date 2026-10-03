@@ -5,7 +5,7 @@
 // itself is network-first, and its "version" busts sprite URLs (?v=N), so new
 // artwork shows up on the next launch without bumping CACHE.
 
-const CACHE = 'reef-rumble-v3.0.0';
+const CACHE = 'reef-rumble-gloss-v3.1.0';
 
 // Same URLs SpriteBank requests: assets/art/<file>?v=<version>
 async function artUrls() {
@@ -29,10 +29,18 @@ const ASSETS = [
   './index.html',
   './manifest.webmanifest',
   './css/style.css',
+  './assets/fonts/fredoka-latin.ttf',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+  './assets/art/gloss/reef-lane.webp',
+  './assets/art/gloss/atlas.webp',
+  './assets/art/gloss/school.webp',
+  './assets/art/gloss/bubbles.webp',
+  './assets/art/gloss/fire.webp',
+  './assets/art/gloss/pearl.webp',
+  './assets/art/gloss/sad-fish.webp',
   './src/main.js',
   './src/config.js',
   './src/input.js',

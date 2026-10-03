@@ -13,7 +13,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const $ = (id) => document.getElementById(id);
 
 const COIN = '🪙';
-const UPGRADE_ICONS = { fish: '🐟', dmg: '💪', rate: '🔥' };
+const artIcon = (name, alt = '') => `<img src="assets/art/gloss/${name}.webp" alt="${alt}" draggable="false">`;
+const UPGRADE_ICONS = { fish: artIcon('school'), dmg: artIcon('bubbles'), rate: artIcon('fire') };
 
 export class UI {
   constructor({ game, audio, settings, input, onSettings }) {
@@ -205,7 +206,7 @@ export class UI {
     }).join('');
     this.panel.className = `panel modal ${scr.cls || ''}`;
     this.panel.innerHTML = `<div class="sheet">
-      ${scr.title ? `<h2>${esc(scr.title)}</h2>` : ''}
+      ${scr.title ? `<h2>${scr.cls === 'defeat' ? '<span>Your school</span><span>got eaten!</span>' : esc(scr.title)}</h2>` : ''}
       ${scr.html || ''}
       <div class="items list">${items}</div>
       ${scr.hint ? `<p class="hint">${scr.hint}</p>` : ''}</div>`;
@@ -274,7 +275,7 @@ export class UI {
   updateHud() {
     const g = this.g;
     this.setText('hud-level', `Level ${g.phase === PHASE.PLAY ? g.level : g.meta.level}`);
-    this.setText('hud-coins', `${COIN} ${g.meta.coins + (g.phase === PHASE.PLAY ? g.coinsRun : 0)}`);
+    this.setText('hud-coins', String(g.meta.coins + (g.phase === PHASE.PLAY ? g.coinsRun : 0)));
     this.setStyle('hud-progress', 'transform', `scaleX(${g.phase === PHASE.PLAY ? g.progress.toFixed(3) : 0})`);
   }
 
@@ -308,7 +309,7 @@ export class UI {
         label: `${u.name}`,
         icon: UPGRADE_ICONS[id],
         sub: `${esc(u.desc)} <small>(Lv ${g.meta.up[id]})</small>`,
-        right: cost == null ? 'MAX' : `${COIN} ${cost}`,
+        right: cost == null ? 'MAX' : `${artIcon('pearl')} ${cost}`,
         disabled: cost == null || g.meta.coins < cost,
         why: cost == null ? 'Maxed out' : 'Not enough coins',
         cls: 'upgrade',
@@ -324,7 +325,7 @@ export class UI {
     const boss = BOSSES[bossForLevel(m.level).id].name;
     return {
       id: 'title', cls: 'title', title: '',
-      html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Clay Coral Run</div></div>
+      html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Coral Run</div></div>
         ${needsInstallHint() ? '<p class="install">📲 For full-screen play: tap <b>Share</b> → <b>Add to Home Screen</b></p>' : ''}
         <p class="meta">${COIN} ${m.coins} · Best level ${m.best || 0} · v${VERSION}</p>`,
       items: [
@@ -345,7 +346,7 @@ export class UI {
 
   endScreen(won) {
     const g = this.g, r = g.result || { coins: 0, fish: 0, level: g.level };
-    const rows = [[`${COIN} Coins`, `+${r.coins}${won && r.bonus ? ` (clear bonus ${r.bonus})` : ''}`]];
+    const rows = [['Coins', `+${r.coins}${won && r.bonus ? ` (clear bonus ${r.bonus})` : ''}`]];
     if (won) rows.push(['🐟 Fish left', r.fish]);
     if (r.newSkin) rows.push(['🎨 New skin', SKINS[r.newSkin].name]);
     const next = won
@@ -354,8 +355,8 @@ export class UI {
     return {
       id: won ? 'won' : 'lost', cls: won ? 'victory' : 'defeat',
       title: won ? `Level ${r.level} cleared!` : 'Your school got eaten!',
-      html: `${won ? '' : '<p class="sub">Pick the blue gates, shoot the critters before they reach you, and spend coins on upgrades.</p>'}
-        ${table(rows)}<p class="sub">Coins: ${COIN} ${g.meta.coins}</p>`,
+      html: `${won ? '' : '<p class="sub">Pick the blue gates, shoot the critters,<br>and upgrade your school.</p>'}
+        ${table(rows)}<p class="sub balance">Coins: ${artIcon('pearl')} <b>${g.meta.coins}</b></p>`,
       items: [next, ...this.upgradeItems(), { label: 'Title screen', cls: 'small', action: () => g.quitToTitle() }],
     };
   }

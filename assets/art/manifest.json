@@ -1,10 +1,10 @@
 {
-  "version": 14,
+  "version": 15,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
     "player.classic": {
-      "file": "player/player-classic.webp",
+      "file": "gloss/player-classic.webp",
       "priority": "P0",
       "frame": [
         192,
@@ -12,37 +12,41 @@
       ],
       "anchor": [
         0.5,
-        0.8
+        0.9
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
+          "frames": 1,
           "fps": 12,
-          "loop": true
+          "loop": true,
+          "col": 0
         },
         "swim": {
-          "row": 1,
-          "frames": 4,
+          "row": 0,
+          "frames": 1,
           "fps": 12,
-          "loop": true
+          "loop": true,
+          "col": 0
         },
         "shoot": {
-          "row": 2,
-          "frames": 3,
+          "row": 0,
+          "frames": 1,
           "fps": 24,
-          "loop": false
+          "loop": false,
+          "col": 0
         },
         "plus": {
-          "row": 3,
-          "frames": 3,
+          "row": 0,
+          "frames": 1,
           "fps": 18,
-          "loop": false
+          "loop": false,
+          "col": 0
         }
       },
-      "notes": "Tiny clay clownfish riding the rail, side view facing RIGHT (renderer mirrors it). Bubble-gun nozzle on top: Minus/Plus bubbles leave from the top center of the frame. shoot = quick squash (Minus), plus = bigger squash + happy face."
+      "notes": "Glossy toy clownfish matched to October 3 reference. Swim bob, pitch and breathing are continuous in the renderer; original hit/gain feedback preserved."
     },
     "player.golden": {
       "file": null,
