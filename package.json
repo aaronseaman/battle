@@ -1,0 +1,13 @@
+{
+  "name": "reef-rumble",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reef Rumble: Clay Coral Defense — tower defense shooter PWA",
+  "scripts": {
+    "start": "npx --yes http-server . -p 8080 -c-1",
+    "test": "node tools/test.mjs",
+    "sim": "node tools/sim.mjs",
+    "icons": "node tools/make-icons.mjs"
+  }
+}

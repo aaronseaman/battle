@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Reef Rumble: Clay Coral Defense</title>
+  <meta name="description" content="A claymation tower defense shooter on a bright tropical reef.">
+  <meta name="theme-color" content="#0d5d73">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Reef Rumble">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="modulepreload" href="src/main.js">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Reef Rumble game board"></canvas>
+    <div id="tiltshift" aria-hidden="true"></div>
+
+    <div id="hud">
+      <div class="hud-top">
+        <div class="chip" id="hud-wave">Wave 1/20</div>
+        <div class="chip mod" id="hud-mod">Open Reef</div>
+        <div class="spacer"></div>
+        <div class="chip" id="hud-shells">🐚 0</div>
+        <div class="chip" id="hud-pearls">⚪ 0</div>
+        <button type="button" tabindex="-1" class="chip btn" id="hud-pause" data-tap="pause" aria-label="Pause">❚❚</button>
+      </div>
+      <div class="heartbar"><div class="fill" id="heart-fill"></div><span id="heart-txt">Coral Heart</span></div>
+      <div id="bossbar" hidden>
+        <span id="boss-name"></span>
+        <div class="track"><div class="fill" id="boss-fill"></div><div class="shield" id="boss-shield"></div></div>
+      </div>
+      <div class="hud-bottom">
+        <div class="chip hearts" id="hud-hearts">♥♥♥</div>
+        <div class="meter" id="meter" title="Bubble meter">
+          <div class="fill" id="meter-fill"></div>
+          <div class="tick" id="meter-plus" title="Plus cost"></div>
+        </div>
+        <button type="button" tabindex="-1" class="chip btn" id="hud-wash" data-tap="wash">Wash ×0</button>
+        <button type="button" tabindex="-1" class="chip btn" id="hud-speed" data-tap="speed">1×</button>
+        <div class="chip dim" id="hud-left"></div>
+      </div>
+    </div>
+
+    <div id="touch" aria-hidden="true">
+      <div class="cluster move">
+        <button type="button" tabindex="-1" data-hold="left">◀</button>
+        <button type="button" tabindex="-1" data-hold="right">▶</button>
+      </div>
+      <div class="cluster fire">
+        <button type="button" tabindex="-1" class="minus" data-hold="minus">−</button>
+        <button type="button" tabindex="-1" class="plus" data-hold="plus">+</button>
+      </div>
+    </div>
+
+    <div id="panel" class="hidden"></div>
+    <div id="banner"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="debug" hidden></div>
+    <noscript><p class="noscript">Reef Rumble needs JavaScript.</p></noscript>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
