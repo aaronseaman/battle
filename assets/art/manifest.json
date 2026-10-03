@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
@@ -26,7 +26,7 @@
       "notes": "The whole painted diorama, seen from the tilted camera. Paint over docs/art/board-template.png at exactly this size: water, sandy floor, the winding path, all 14 coral socket cups, the spawn cave at top-left, decorative clay coral/pebbles in the free space, the wooden/clay rail at the bottom. Do NOT paint towers, enemies, the Coral Heart or the fish (they are separate sprites). Keep the path and sockets exactly where the template puts them."
     },
     "player.classic": {
-      "file": "player/player-classic.webp",
+      "file": "player/player-classic.png",
       "priority": "P0",
       "frame": [
         192,
@@ -274,11 +274,11 @@
       "scale": 1.15
     },
     "tower.fish.3": {
-      "file": null,
+      "file": "towers/tower-fish-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -295,13 +295,13 @@
         },
         "fire": {
           "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "frames": 1,
+          "fps": 7,
           "loop": false
         },
         "disabled": {
           "row": 2,
-          "frames": 2,
+          "frames": 1,
           "fps": 12,
           "loop": true
         },
@@ -313,7 +313,7 @@
         }
       },
       "notes": "Level 3: Fish School: a little school of 3 fish around a coral stub. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "tower.octopus.1": {
       "file": "towers/tower-octopus-1.webp",
@@ -400,11 +400,11 @@
       "scale": 1.15
     },
     "tower.octopus.3": {
-      "file": null,
+      "file": "towers/tower-octopus-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -421,13 +421,13 @@
         },
         "fire": {
           "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "frames": 1,
+          "fps": 7,
           "loop": false
         },
         "disabled": {
           "row": 2,
-          "frames": 2,
+          "frames": 1,
           "fps": 12,
           "loop": true
         },
@@ -439,7 +439,7 @@
         }
       },
       "notes": "Level 3: DJ Octopus: headphones + tiny turntable, bobbing to the beat. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "tower.shark.1": {
       "file": "towers/tower-shark-1.webp",
@@ -539,11 +539,11 @@
       "scale": 1.15
     },
     "tower.shark.3": {
-      "file": null,
+      "file": "towers/tower-shark-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -584,7 +584,7 @@
         }
       },
       "notes": "Level 3: Hammerhead: hammer-shaped head. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. charge = swimming dash pose (the body moves along the path during charges). charge frames: body only, NO coral base (the body dashes along the path).",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "tower.starfish.1": {
       "file": "towers/tower-starfish-1.webp",
@@ -671,11 +671,11 @@
       "scale": 1.15
     },
     "tower.starfish.3": {
-      "file": null,
+      "file": "towers/tower-starfish-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -710,7 +710,7 @@
         }
       },
       "notes": "Level 3: Five-Point Star: glowing golden star with sparkles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "tower.puffer.1": {
       "file": "towers/tower-puffer-1.webp",
@@ -809,11 +809,11 @@
       "scale": 1.15
     },
     "tower.puffer.3": {
-      "file": null,
+      "file": "towers/tower-puffer-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -854,7 +854,7 @@
         }
       },
       "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0\u2192full puff over the fuse (plays once per explosion).",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "tower.seahorse.1": {
       "file": "towers/tower-seahorse-1.webp",
@@ -941,11 +941,11 @@
       "scale": 1.15
     },
     "tower.seahorse.3": {
-      "file": null,
+      "file": "towers/tower-seahorse-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -980,7 +980,7 @@
         }
       },
       "notes": "Level 3: Sea Dragon: leafy sea dragon, regal. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "tower.crab.1": {
       "file": "towers/tower-crab-1.webp",
@@ -1067,11 +1067,11 @@
       "scale": 1.15
     },
     "tower.crab.3": {
-      "file": null,
+      "file": "towers/tower-crab-3.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -1088,8 +1088,8 @@
         },
         "fire": {
           "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "frames": 1,
+          "fps": 7,
           "loop": false
         },
         "disabled": {
@@ -1106,7 +1106,7 @@
         }
       },
       "notes": "Level 3: King Crab: crown and royal cape. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "enemy.jelly": {
       "file": "enemies/enemy-jelly.webp",
@@ -1150,7 +1150,7 @@
       "notes": "Jellybean Jellyfish: pink translucent jelly-bean bell, wiggly sausage tentacles, bouncy. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). sad = droopy, teary (3 Minus stacks)."
     },
     "enemy.jellyMini": {
-      "file": null,
+      "file": "enemies/enemy-jellymini.png",
       "priority": "P1",
       "frame": [
         64,
@@ -1329,7 +1329,7 @@
         },
         "cracked": {
           "row": 1,
-          "frames": 4,
+          "frames": 1,
           "fps": 12,
           "loop": true
         },
@@ -1370,9 +1370,10 @@
         },
         "stun": {
           "row": 1,
-          "frames": 4,
+          "frames": 1,
           "fps": 12,
-          "loop": true
+          "loop": true,
+          "col": 3
         },
         "die": {
           "row": 2,
@@ -1384,7 +1385,7 @@
       "notes": "Electric Eel: green/yellow eel with lightning-bolt pattern, slithering. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.octoMini": {
-      "file": null,
+      "file": "enemies/enemy-octomini.png",
       "priority": "P1",
       "frame": [
         64,
@@ -1425,7 +1426,7 @@
       "notes": "Mini Octopus (Chef Octopus minion): tiny octopus with a mini chef hat. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "enemy.starMinion": {
-      "file": null,
+      "file": "enemies/enemy-starminion.png",
       "priority": "P1",
       "frame": [
         64,
@@ -1795,7 +1796,7 @@
       "notes": "Yellow Plus bubble with a white \"+\". Anchor = center."
     },
     "proj.bubble": {
-      "file": null,
+      "file": "projectiles/proj-bubble.png",
       "priority": "P1",
       "frame": [
         32,
@@ -1817,7 +1818,7 @@
       "notes": "Small light-blue fish bubble. Anchor = center."
     },
     "proj.dart": {
-      "file": null,
+      "file": "projectiles/proj-dart.png",
       "priority": "P1",
       "frame": [
         64,
@@ -1840,7 +1841,7 @@
       "notes": "Seahorse dart (points RIGHT; rotated to its flight direction). Anchor = center."
     },
     "proj.ink": {
-      "file": null,
+      "file": "projectiles/proj-ink.png",
       "priority": "P1",
       "frame": [
         48,
@@ -1862,7 +1863,7 @@
       "notes": "Octopus ink blob. Anchor = center."
     },
     "proj.star": {
-      "file": null,
+      "file": "projectiles/proj-star.png",
       "priority": "P1",
       "frame": [
         64,
@@ -1885,7 +1886,7 @@
       "notes": "Starfish boomerang star (spun by the renderer). Anchor = center. Optional \"return\" anim for the way back."
     },
     "proj.ministar": {
-      "file": null,
+      "file": "projectiles/proj-ministar.png",
       "priority": "P1",
       "frame": [
         40,
@@ -1908,7 +1909,7 @@
       "notes": "Small split star (spun by the renderer). Anchor = center."
     },
     "strike.ink": {
-      "file": null,
+      "file": "projectiles/strike-ink.png",
       "priority": "P1",
       "frame": [
         64,
@@ -1930,7 +1931,7 @@
       "notes": "Chef ink bomb in flight. Landing telegraph circles stay procedural (gameplay readability)."
     },
     "strike.spark": {
-      "file": null,
+      "file": "projectiles/strike-spark.png",
       "priority": "P1",
       "frame": [
         48,
@@ -1952,7 +1953,7 @@
       "notes": "Eel spark falling toward the rail. Landing telegraph circles stay procedural (gameplay readability)."
     },
     "strike.star": {
-      "file": null,
+      "file": "projectiles/strike-star.png",
       "priority": "P1",
       "frame": [
         48,
@@ -1975,7 +1976,7 @@
       "notes": "Star thrown by a Star Minion. Landing telegraph circles stay procedural (gameplay readability)."
     },
     "pickup.shell": {
-      "file": null,
+      "file": "projectiles/pickup-shell.png",
       "priority": "P1",
       "frame": [
         48,
@@ -1989,7 +1990,7 @@
       "anims": {
         "fall": {
           "row": 0,
-          "frames": 4,
+          "frames": 3,
           "fps": 12,
           "loop": true
         },
@@ -2003,11 +2004,11 @@
       "notes": "Sinking seashell pickup. fall = tumbling, land = resting + glint."
     },
     "fx.pop": {
-      "file": null,
+      "file": "fx/fx-pop.png",
       "priority": "P1",
       "frame": [
-        128,
-        128
+        96,
+        96
       ],
       "anchor": [
         0.5,
@@ -2022,14 +2023,15 @@
           "loop": false
         }
       },
-      "notes": "Generic enemy pop (fallback when an enemy has no die anim): clay crumbs + bubbles. One-shot at 12 fps unless it says loop."
+      "notes": "Generic enemy pop (fallback when an enemy has no die anim): clay crumbs + bubbles. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.explode": {
-      "file": null,
+      "file": "fx/fx-explode.png",
       "priority": "P1",
       "frame": [
-        256,
-        256
+        179,
+        179
       ],
       "anchor": [
         0.5,
@@ -2044,14 +2046,15 @@
           "loop": false
         }
       },
-      "notes": "Puffer explosion: spiky clay burst. One-shot at 12 fps unless it says loop."
+      "notes": "Puffer explosion: spiky clay burst. One-shot at 12 fps unless it says loop.",
+      "scale": 1.4286
     },
     "fx.ink": {
-      "file": null,
+      "file": "fx/fx-ink.png",
       "priority": "P1",
       "frame": [
-        160,
-        128
+        120,
+        96
       ],
       "anchor": [
         0.5,
@@ -2066,14 +2069,15 @@
           "loop": false
         }
       },
-      "notes": "Ink splat on the floor. One-shot at 12 fps unless it says loop."
+      "notes": "Ink splat on the floor. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.heal": {
-      "file": null,
+      "file": "fx/fx-heal.png",
       "priority": "P1",
       "frame": [
-        128,
-        128
+        96,
+        96
       ],
       "anchor": [
         0.5,
@@ -2088,14 +2092,15 @@
           "loop": false
         }
       },
-      "notes": "Plus heal: yellow sparkles and + signs rising. One-shot at 12 fps unless it says loop."
+      "notes": "Plus heal: yellow sparkles and + signs rising. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.shield_pop": {
-      "file": null,
+      "file": "fx/fx-shield_pop.png",
       "priority": "P1",
       "frame": [
-        128,
-        128
+        96,
+        96
       ],
       "anchor": [
         0.5,
@@ -2110,120 +2115,11 @@
           "loop": false
         }
       },
-      "notes": "Bubble shield popping. One-shot at 12 fps unless it says loop."
+      "notes": "Bubble shield popping. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.chomp": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        128,
-        128
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Shark chomp: big teeth snap. One-shot at 12 fps unless it says loop."
-    },
-    "fx.crack": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        128,
-        128
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 5,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Urchin shell cracking: spike shards fly. One-shot at 12 fps unless it says loop."
-    },
-    "fx.poof": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        160,
-        160
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Tower placed/upgraded/sold: clay dust poof. One-shot at 12 fps unless it says loop."
-    },
-    "fx.pulse": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        320,
-        256
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "DJ Octopus stun pulse: music notes ring. One-shot at 12 fps unless it says loop."
-    },
-    "fx.wave": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        512,
-        512
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 8,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Reef Wash: big clean wave sweeping the reef. One-shot at 12 fps unless it says loop."
-    },
-    "fx.hat_hit": {
-      "file": null,
+      "file": "fx/fx-chomp.png",
       "priority": "P1",
       "frame": [
         96,
@@ -2242,10 +2138,126 @@
           "loop": false
         }
       },
-      "notes": "Chef hat hit: star flash. One-shot at 12 fps unless it says loop."
+      "notes": "Shark chomp: big teeth snap. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
+    },
+    "fx.crack": {
+      "file": "fx/fx-crack.png",
+      "priority": "P1",
+      "frame": [
+        96,
+        96
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 5,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "Urchin shell cracking: spike shards fly. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
+    },
+    "fx.poof": {
+      "file": "fx/fx-poof.png",
+      "priority": "P1",
+      "frame": [
+        120,
+        120
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 6,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "Tower placed/upgraded/sold: clay dust poof. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
+    },
+    "fx.pulse": {
+      "file": "fx/fx-pulse.png",
+      "priority": "P1",
+      "frame": [
+        224,
+        179
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 6,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "DJ Octopus stun pulse: music notes ring. One-shot at 12 fps unless it says loop.",
+      "scale": 1.4286
+    },
+    "fx.wave": {
+      "file": "fx/fx-wave.png",
+      "priority": "P1",
+      "frame": [
+        358,
+        358
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "Reef Wash: big clean wave sweeping the reef. One-shot at 12 fps unless it says loop.",
+      "scale": 1.4286
+    },
+    "fx.hat_hit": {
+      "file": "fx/fx-hat_hit.png",
+      "priority": "P1",
+      "frame": [
+        72,
+        72
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 4,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "Chef hat hit: star flash. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.minus_pop": {
-      "file": null,
+      "file": "fx/fx-minus_pop.png",
       "priority": "P1",
       "frame": [
         64,
@@ -2267,11 +2279,11 @@
       "notes": "Minus bubble popping on impact. One-shot at 12 fps unless it says loop."
     },
     "fx.heart_hit": {
-      "file": null,
+      "file": "fx/fx-heart_hit.png",
       "priority": "P1",
       "frame": [
-        192,
-        192
+        144,
+        144
       ],
       "anchor": [
         0.5,
@@ -2286,14 +2298,15 @@
           "loop": false
         }
       },
-      "notes": "Coral Heart takes damage: red clay flecks. One-shot at 12 fps unless it says loop."
+      "notes": "Coral Heart takes damage: red clay flecks. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.player_hit": {
-      "file": null,
+      "file": "fx/fx-player_hit.png",
       "priority": "P1",
       "frame": [
-        160,
-        160
+        120,
+        120
       ],
       "anchor": [
         0.5,
@@ -2308,10 +2321,11 @@
           "loop": false
         }
       },
-      "notes": "Player fish hit: dizzy burst. One-shot at 12 fps unless it says loop."
+      "notes": "Player fish hit: dizzy burst. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.sparkle": {
-      "file": null,
+      "file": "fx/fx-sparkle.png",
       "priority": "P1",
       "frame": [
         64,
@@ -2333,7 +2347,7 @@
       "notes": "Shell picked up: glint. One-shot at 12 fps unless it says loop."
     },
     "fx.sad": {
-      "file": null,
+      "file": "fx/fx-sad.png",
       "priority": "P1",
       "frame": [
         48,
@@ -2355,51 +2369,7 @@
       "notes": "Little rain cloud / tear over a Sad enemy (loop). One-shot at 12 fps unless it says loop."
     },
     "fx.zap": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        128,
-        128
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Eel zap hitting a tower: lightning burst. One-shot at 12 fps (drawn at the struck tower)."
-    },
-    "fx.confetti": {
-      "file": null,
-      "priority": "P1",
-      "frame": [
-        384,
-        384
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 10,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Boss defeated: confetti + bubbles. One-shot at 12 fps unless it says loop."
-    },
-    "fx.spark": {
-      "file": null,
+      "file": "fx/fx-zap.png",
       "priority": "P1",
       "frame": [
         96,
@@ -2418,10 +2388,57 @@
           "loop": false
         }
       },
-      "notes": "Spark/star landing burst. One-shot at 12 fps unless it says loop."
+      "notes": "Eel zap hitting a tower: lightning burst. One-shot at 12 fps (drawn at the struck tower).",
+      "scale": 1.3333
+    },
+    "fx.confetti": {
+      "file": "fx/fx-confetti.png",
+      "priority": "P1",
+      "frame": [
+        269,
+        269
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 10,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "Boss defeated: confetti + bubbles. One-shot at 12 fps unless it says loop.",
+      "scale": 1.4286
+    },
+    "fx.spark": {
+      "file": "fx/fx-spark.png",
+      "priority": "P1",
+      "frame": [
+        72,
+        72
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "frames": 4,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "notes": "Spark/star landing burst. One-shot at 12 fps unless it says loop.",
+      "scale": 1.3333
     },
     "fx.minus_muzzle": {
-      "file": null,
+      "file": "fx/fx-minus_muzzle.png",
       "priority": "P1",
       "frame": [
         64,
@@ -2443,7 +2460,7 @@
       "notes": "Minus shot muzzle puff. One-shot at 12 fps unless it says loop."
     },
     "fx.plus_muzzle": {
-      "file": null,
+      "file": "fx/fx-plus_muzzle.png",
       "priority": "P1",
       "frame": [
         64,
@@ -2465,11 +2482,11 @@
       "notes": "Plus shot muzzle puff. One-shot at 12 fps unless it says loop."
     },
     "fx.grab": {
-      "file": null,
+      "file": "fx/fx-grab.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -2485,14 +2502,14 @@
         }
       },
       "notes": "Kraken tentacles wrapped around a tower (tower disabled). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "fx.blind": {
-      "file": null,
+      "file": "fx/fx-blind.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -2508,14 +2525,14 @@
         }
       },
       "notes": "Ink splattered over a tower's face (blinded). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "fx.plus_power": {
-      "file": null,
+      "file": "fx/fx-plus_power.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -2531,14 +2548,14 @@
         }
       },
       "notes": "Yellow Plus Power glow/aura around a buffed tower. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.15
+      "scale": 1.5333
     },
     "fx.purr": {
-      "file": null,
+      "file": "fx/fx-purr.png",
       "priority": "P1",
       "frame": [
-        352,
-        352
+        246,
+        246
       ],
       "anchor": [
         0.5,
@@ -2553,7 +2570,8 @@
           "loop": true
         }
       },
-      "notes": "Kraken Kitty purr shield bubble (same frame/anchor as boss.kitty). Loops while the shield is up."
+      "notes": "Kraken Kitty purr shield bubble (same frame/anchor as boss.kitty). Loops while the shield is up.",
+      "scale": 1.4286
     },
     "fx.respawn_bubble": {
       "file": null,
@@ -2578,11 +2596,11 @@
       "notes": "Bubble the knocked-out fish waits in before respawning (loop)."
     },
     "fx.zapped": {
-      "file": null,
+      "file": "fx/fx-zapped.png",
       "priority": "P1",
       "frame": [
-        160,
-        176
+        120,
+        132
       ],
       "anchor": [
         0.5,
@@ -2598,7 +2616,7 @@
         }
       },
       "notes": "Electric crackle around a tower shut down by an Eel. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.15
+      "scale": 1.5333
     }
   }
 }
