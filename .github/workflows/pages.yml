@@ -1,0 +1,45 @@
+# Publishes the game to GitHub Pages (gh-pages branch) on every push to main.
+# Live at https://<owner>.github.io/<repo>/ once Pages is set to "Deploy from a
+# branch: gh-pages / (root)" in the repository settings.
+name: Publish to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Simulation tests
+        run: node tools/test.mjs
+
+      - name: Art manifest check
+        run: node tools/check-art.mjs
+
+      - name: Build site
+        run: node tools/build-site.mjs "${GITHUB_SHA::7}"
+
+      - name: Push to gh-pages
+        working-directory: _site
+        run: |
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

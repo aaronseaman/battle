@@ -34,6 +34,18 @@ The game must be served over HTTP(S) for the service worker and ES modules; open
 `index.html` from disk won't work. Deploys anywhere static (GitHub Pages, Netlify, …),
 and all paths are relative so subfolders work.
 
+## Play / publish
+
+**Live:** https://aaronseaman.github.io/battle/. On iPhone, open it in Safari, tap
+**Share → Add to Home Screen**, and launch it from the icon for full-screen, offline play.
+
+- Every push to `main` runs `.github/workflows/pages.yml`. It runs the tests and the art
+  check, builds `_site/` with `node tools/build-site.mjs`, and publishes it to the
+  `gh-pages` branch. The build stamps the service-worker cache name with the commit, so
+  installed copies update on their next launch.
+- One-time repository setting: **Settings → Pages → Build and deployment → Deploy from a
+  branch → `gh-pages` / (root)**.
+
 ## Controls
 
 | Action | Keyboard | Gamepad | Touch |
