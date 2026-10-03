@@ -149,7 +149,7 @@ test('a bad gate can wipe out the school and lose the level', () => {
 
 test('shooting a number gate raises it, a little at a time', () => {
   const g = emptyRoad(1, 20);
-  const [l] = gates(g, { type: 'add', value: -5 }, { type: 'add', value: 2 }, 900);
+  const [l] = gates(g, { type: 'add', value: -5 }, { type: 'add', value: 2 }, 650);
   g.input.targetX = -75;
   step(g, 0.8);
   assert(l.gate.value > -5, `bumped to ${l.gate.value}`);

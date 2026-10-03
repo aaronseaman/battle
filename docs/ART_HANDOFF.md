@@ -24,9 +24,17 @@ pick one of two gates, dodge, and aim. All the existing character art carries ov
     `fx.pop`, `fx.poof`, `fx.ink`, `fx.spark`, `fx.confetti`.
   - Not used by the runner (kept for later): `heart`, `boss.kitty.tentacle`, the tower status
     overlays, most other `fx.*`.
-- **Camera.** A pseudo-3D road seen from behind and above: things far up the road are drawn
-  small near the horizon and grow as they come closer. Sprites are never rotated; enemies are
-  mirrored to face the school. They must read at ~20 pt far away and ~60 pt close up.
+- **Camera.** Mostly top-down, from behind the school, with mild perspective: the road
+  narrows a little toward the top of the screen and things up the road are drawn at about 60%
+  of their near size. Sprites are never rotated; enemies are mirrored to face the school. They
+  must read at ~25 pt far away and ~45 pt close up.
+- **Layout & mechanics references (not art references).** The game's layout and mechanics
+  follow two mobile runner ads the owner shared: "Strengthen Team" (a squad at the bottom of a
+  road shooting upward, numbered barrels to shoot open, two weapon panels side by side to
+  choose from) and Top War's runner mode (a nearly top-down road between scenery, an enemy
+  army at the top, friendly units on numbered pedestals). Use them only for where things sit
+  and how big they read. **Every visual stays Reef Rumble's own claymation reef style**; don't
+  copy anything from those games' art.
 - **Road and scenery are procedural** for now (sand road, coral rims, kelp/coral/rocks along
   the sides). Ideas for a later round, not requested yet: a tileable clay road texture, side
   props (kelp, coral, rocks) as sprites, clay gate frames, a proper clam with an opening anim.

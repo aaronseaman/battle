@@ -1,6 +1,7 @@
-// Canvas2D renderer for the lane runner: a pseudo-3D reef road that narrows
-// toward the horizon. Everything on the road is drawn far-to-near and scaled by
-// depth. Sprite art comes from assets/art/manifest.json (see docs/ART_HANDOFF.md);
+// Canvas2D renderer for the lane runner: a reef road seen from above and behind,
+// mostly top-down with mild perspective (the road narrows a little toward the top
+// and things up the road stay big enough to read, like the genre's reference
+// layouts). Everything on the road is drawn far-to-near and scaled by depth. Sprite art comes from assets/art/manifest.json (see docs/ART_HANDOFF.md);
 // anything not delivered falls back to placeholder clay shapes.
 //
 // Contract used by main.js:
@@ -17,15 +18,13 @@ import { SCHOOL_OFFSETS, STAGE } from '../core/game.js';
 import { SpriteBank } from './sprites.js';
 
 const TAU = Math.PI * 2;
-const PERSP = 560; // perspective distance: scale(z) = PERSP / (PERSP + z)
-const GATE_H = 86; // gate panel height (world units)
+const PERSP = 2400; // perspective distance: scale(z) = PERSP / (PERSP + z) — large = nearly top-down
+const GATE_H = 110; // gate panel height (world units)
 
 // how big each kind of sprite is drawn (relative to its sheet at pxPerUnit 2)
-const SIZE = { fish: 0.4, enemy: 0.95, boss: 1.0, buddy: 0.6, clam: 3.1, bullet: 1.1, buddyShot: 1.3, strike: 1.3 };
+const SIZE = { fish: 0.5, enemy: 1.25, boss: 1.25, buddy: 0.7, clam: 4.0, bullet: 1.2, buddyShot: 1.4, strike: 1.5 };
 
 const C = {
-  water1: '#0b4f73',
-  water2: '#1689a8',
   bedDark: '#2f8f77',
   road: '#f7e2a8',
   roadDark: '#e8c98a',
@@ -114,12 +113,15 @@ export class Renderer {
     c.height = Math.round(cssH * dpr);
     const top = this.insets.top, bottom = cssH - this.insets.bottom;
     const h = Math.max(100, bottom - top);
-    // the road's half-width at the school's line fills ~47% of the width (capped on wide screens)
-    const halfPx = Math.min(cssW * 0.47, h * 0.42);
+    // the road is ~80% of the width at the school's line (capped on wide screens)
+    const halfPx = Math.min(cssW * 0.4, h * 0.36);
     this.cx = cssW / 2;
     this.k = halfPx / ROAD.half;
-    this.hy = top - h * 0.1;
-    this.gy = top + h * 0.82;
+    // the school's line sits low; the top of the play area shows the road ~0.9 view ahead,
+    // so new things slide in from just above the top edge
+    this.gy = top + h * 0.8;
+    const sTop = this.sc(ROAD.view * 0.97), yTop = top + h * 0.01;
+    this.hy = this.gy - (this.gy - yTop) / (1 - sTop);
     this.pxPerUnit = this.k;
     this.dirty = true;
     this.buildBackground();
@@ -165,45 +167,23 @@ export class Renderer {
     const ctx = b.getContext('2d');
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     const W = this.cssW, H = this.cssH;
-    const horizon = this.Y(ROAD.view * 1.6);
-    this.horizon = horizon;
-    const grad = ctx.createLinearGradient(0, 0, 0, horizon);
-    grad.addColorStop(0, C.water1);
-    grad.addColorStop(1, C.water2);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, horizon + 2);
-    // light shafts
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    for (const [x, w] of [[0.12, 0.08], [0.38, 0.12], [0.66, 0.07], [0.84, 0.1]]) {
-      ctx.beginPath();
-      ctx.moveTo(W * x, 0);
-      ctx.lineTo(W * (x + w), 0);
-      ctx.lineTo(W * (x + w - 0.1), horizon);
-      ctx.lineTo(W * (x - 0.16), horizon);
-      ctx.closePath();
-      ctx.fill();
-    }
-    // distant reef silhouette on the horizon
-    ctx.fillStyle = 'rgba(20,90,110,0.85)';
-    ctx.beginPath();
-    ctx.moveTo(0, horizon);
-    for (let x = 0; x <= W; x += 12) ctx.lineTo(x, horizon - 8 - Math.abs(Math.sin(x * 0.031) * 14 + Math.sin(x * 0.11) * 5));
-    ctx.lineTo(W, horizon);
-    ctx.closePath();
-    ctx.fill();
-    // seabed below the horizon
-    const bed = ctx.createLinearGradient(0, horizon, 0, H);
-    bed.addColorStop(0, '#5cc2a5');
+    this.horizon = -1e9; // the camera looks down at the reef: no horizon on screen
+    // seabed, a little deeper (darker) toward the top
+    const bed = ctx.createLinearGradient(0, 0, 0, H);
+    bed.addColorStop(0, '#2f8f8a');
+    bed.addColorStop(0.5, '#4fb79c');
     bed.addColorStop(1, C.bedDark);
     ctx.fillStyle = bed;
-    ctx.fillRect(0, horizon, W, H - horizon);
-    // haze where the road meets the horizon
-    const hz = ctx.createLinearGradient(0, horizon - 30, 0, horizon + 60);
-    hz.addColorStop(0, 'rgba(127,227,224,0)');
-    hz.addColorStop(0.5, 'rgba(127,227,224,0.55)');
-    hz.addColorStop(1, 'rgba(127,227,224,0)');
-    ctx.fillStyle = hz;
-    ctx.fillRect(0, horizon - 30, W, 90);
+    ctx.fillRect(0, 0, W, H);
+    // dappled light from the surface
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 40; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${0.03 + rnd() * 0.05})`;
+      ctx.beginPath();
+      ctx.ellipse(rnd() * W, rnd() * H, 20 + rnd() * 60, 8 + rnd() * 20, rnd() * 3, 0, TAU);
+      ctx.fill();
+    }
   }
 
   // ------------------------------------------------------------ VFX from events

@@ -18,6 +18,10 @@ Your school of clay clownfish swims up a reef road and shoots bubbles on its own
 Levels are endless and get tougher; each one is seeded by its number, so a retry plays
 the same road.
 
+The layout and mechanics follow the genre's "pick a gate" runner ads (a squad at the
+bottom of a nearly top-down road, numbered things to shoot, two choices side by side);
+those are layout references only, and all art is Reef Rumble's own claymation.
+
 - Vanilla ES modules, **no build step, no dependencies**.
 - Deterministic fixed-step simulation (60 Hz) that also runs headless in Node.
 - A few µs of simulation per tick; the renderer interpolates for 120 Hz ProMotion.
@@ -70,7 +74,7 @@ src/
   audio.js            procedural WebAudio SFX + music (event driven)
   storage.js          localStorage (progress, settings)
   ui/ui.js            HUD + menus (title, level cleared / lost with upgrades, pause, settings)
-  render/renderer.js  Canvas2D pseudo-3D road; sprites scaled by depth, placeholder shapes otherwise
+  render/renderer.js  Canvas2D road, mostly top-down with mild perspective; sprites scaled by depth
   render/sprites.js   SpriteBank: loads assets/art/manifest.json, draws animated sheet frames
   core/game.js        the simulation: phases, steering, shooting, gates, clams, critters, boss
   core/level.js       seeded level generator
@@ -93,8 +97,8 @@ of a level never punishes hard. Bots in `tools/bot.mjs`:
 
 - **idle** (never steers) can't clear level 1.
 - **sloppy** (≈ a casual player: re-reads the road every few frames, picks the worse gate
-  one time in five, dodges half the time) clears about 85% of attempts; fails show up
-  from level ~13.
+  one time in five, dodges half the time) clears about 90% of attempts; fails show up
+  from level ~18.
 - **good** clears every level tried (1–25).
 
 Change numbers in `src/config.js`, then re-run `npm run sim` and `npm test`.

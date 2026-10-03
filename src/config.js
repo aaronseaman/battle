@@ -16,7 +16,7 @@ export const SIM = {
 export const ROAD = {
   half: 150, // road half-width
   edge: 18, // the school's centre stays this far inside the edges
-  view: 950, // how far ahead things become visible
+  view: 700, // how far ahead things appear (the top of the screen)
   behind: 90, // things are removed once this far behind the school
   speed: 230, // run speed (z units / s)
 };
@@ -42,7 +42,7 @@ export const GATES = {
 };
 
 // Treasure clams: shoot them open before they reach you.
-export const CLAM = { w: 72, crush: 0.25 }; // crush: fraction of its remaining HP that becomes lost fish
+export const CLAM = { w: 90, crush: 0.25 }; // crush: fraction of its remaining HP that becomes lost fish
 
 // Sea critters that swim at the school. speed is extra on top of the run speed.
 // bite = fish lost when it reaches the school.
@@ -70,10 +70,10 @@ export const ENEMY_POOL = [
 // Bosses wait at the end of each level. They stop at `stopZ` and attack; if one
 // reaches the school (it creeps forward at `creep`) the level is lost.
 export const BOSSES = {
-  chef: { name: 'Chef Octopus', hp: 1400, r: 60, stopZ: 420, creep: 9, attackEvery: 2.6, attack: 'ink', minion: 'octoMini' },
-  sharky: { name: 'Sharky', hp: 1700, r: 64, stopZ: 460, creep: 10, attackEvery: 3.2, attack: 'charge' },
-  queen: { name: 'Starfish Queen', hp: 2000, r: 68, stopZ: 440, creep: 9, attackEvery: 2.4, attack: 'stars', minion: 'starMinion' },
-  kitty: { name: 'Kraken Kitty', hp: 2400, r: 78, stopZ: 460, creep: 8, attackEvery: 2.2, attack: 'swipe', minion: 'jelly' },
+  chef: { name: 'Chef Octopus', hp: 1400, r: 60, stopZ: 350, creep: 9, attackEvery: 2.6, attack: 'ink', minion: 'octoMini' },
+  sharky: { name: 'Sharky', hp: 1700, r: 64, stopZ: 380, creep: 10, attackEvery: 3.2, attack: 'charge' },
+  queen: { name: 'Starfish Queen', hp: 2000, r: 68, stopZ: 360, creep: 9, attackEvery: 2.4, attack: 'stars', minion: 'starMinion' },
+  kitty: { name: 'Kraken Kitty', hp: 2400, r: 78, stopZ: 380, creep: 8, attackEvery: 2.2, attack: 'swipe', minion: 'jelly' },
 };
 export const BOSS_ORDER = ['chef', 'sharky', 'queen', 'kitty'];
 
@@ -88,15 +88,15 @@ export const BOSS_ATTACK = {
 
 // Level difficulty. Everything scales with the level number L.
 export const LEVELS = {
-  segments: 7, // + 1 per level, capped
-  segmentsMax: 14,
-  gap: 700, // road distance between segments
+  segments: 8, // + 1 per level, capped
+  segmentsMax: 16,
+  gap: 560, // road distance between segments (about one screen holds two)
   startGap: 520,
   // Enemy & clam HP = base × (1 + hpPerLevel·(L−1)) × (1 + hpPerSegment·s): every
   // level starts gentle (a small school) and gets tougher toward its boss.
   hpBase: 0.8, // level 1 is gentle
-  hpPerLevel: 0.16,
-  hpPerSegment: 0.3,
+  hpPerLevel: 0.15,
+  hpPerSegment: 0.22,
   bossHpPerLevel: 0.55,
   mulGates: 1, // ×2 gates per level (2 from level 6)
   crowdBase: 3,
