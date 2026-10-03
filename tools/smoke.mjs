@@ -50,8 +50,8 @@ async function run(viewport, label, touch) {
   await press('Enter');
   if ((await phase()) !== 'combat') throw new Error(`${label}: expected combat, got ${await phase()}`);
 
-  // play: hold minus, nudge right then left, and keep firing until the first
-  // jellies cross the fish's column on the top run
+  // play: hold minus, nudge right then left, and keep firing until something
+  // in the incoming squadrons or the formation pops
   await page.keyboard.down('ArrowDown');
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(400);

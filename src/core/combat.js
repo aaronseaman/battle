@@ -2,8 +2,10 @@
 // through these so modifiers (armor, shields, Minus stacks, boss phases) are
 // applied consistently.
 
-import { ENEMIES, PLAYER, ECONOMY, WORLD, WAVES } from '../config.js';
+import { ENEMIES, PLAYER, ECONOMY, WORLD, WAVES, SCORE } from '../config.js';
+import { MODE } from './entities.js';
 import { bossDamageMul, onBossDeath } from './bosses.js';
+import { startDive } from './enemies.js';
 import { clamp } from './util.js';
 
 export const SRC_TOWER = 0;
@@ -14,7 +16,9 @@ export const SRC_STAR = 4;
 export const SRC_HELD = 5;
 export const SRC_BLAST = 6;
 
-export function spawnEnemy(g, type, dist, shield = false) {
+// Creates an enemy at (x, y). The caller decides how it moves (formation entry,
+// or startDive for free divers such as split jellies and boss minions).
+export function spawnEnemy(g, type, x, y, shield = false) {
   const def = ENEMIES[type];
   const e = g.pools.enemy.get();
   e.reset();
@@ -22,7 +26,8 @@ export function spawnEnemy(g, type, dist, shield = false) {
   e.alive = true;
   e.type = type;
   e.def = def;
-  e.dist = dist;
+  e.x = e.px = x;
+  e.y = e.py = y;
   e.hp = e.maxHp = def.hp * g.waveHpMul;
   e.r = e.baseR = def.r;
   e.baseSpeed = def.speed * g.waveSpeedMul;
@@ -38,10 +43,15 @@ export function spawnEnemy(g, type, dist, shield = false) {
     e.t2 = g.rng.range(1.5, 3);
   }
   if (def.throwCd) e.t1 = g.rng.range(1, 2);
-  e.seg = g.path.sample(dist, e, 0);
-  e.px = e.x;
-  e.py = e.y;
+  if (def.shotCd) e.shotT = def.shotCd * g.rng.range(0.4, 1.2);
   g.enemies.push(e);
+  return e;
+}
+
+// A free diver (no formation slot) that starts diving right away.
+export function spawnDiver(g, type, x, y, shield = false) {
+  const e = spawnEnemy(g, type, x, y, shield);
+  startDive(g, e, -1);
   return e;
 }
 
@@ -125,23 +135,52 @@ export function killEnemy(g, e, tower = null) {
     onBossDeath(g, e);
     return;
   }
+  const def = e.def;
   const shells = Math.max(1, Math.round(e.shells * (e.sad ? PLAYER.sadShellMul : 1)));
   addShells(g, shells);
+  const diving = e.mode === MODE.DIVE || e.mode === MODE.FLEE;
+  const pts = addScore(g, def.score * (diving ? SCORE.diveMul : 1));
   g.events.emit('kill', e.x, e.y, shells, e.sad ? 1 : 0, e.type, e);
+  g.events.emit('score', e.x, e.y, pts, g.combo, diving ? 'dive' : '');
   if (e.carry > 0) {
     addShells(g, e.carry);
     g.events.emit('recover', e.x, e.y, e.carry, 0, e.type, e);
     e.carry = 0;
   }
   if (e.sad || g.rng.chance(ECONOMY.pickupChance)) spawnPickup(g, e.x, e.y, e.sad ? 3 : 2);
-  const def = e.def;
   if (def.split) {
     for (let k = 0; k < def.splitN; k++) {
-      const m = spawnEnemy(g, def.split, Math.max(0, e.dist + (k - (def.splitN - 1) / 2) * 16));
-      m.dir = e.dir;
+      const off = k - (def.splitN - 1) / 2;
+      const m = spawnDiver(g, def.split, e.x + off * 24, e.y);
+      m.vx = off * 240;
+      m.vy = -80;
     }
     g.events.emit('split', e.x, e.y, def.splitN, 0, e.type, e);
   }
+}
+
+// Every pop extends the combo; quick chains multiply the score (up to SCORE.comboMax).
+export function addScore(g, base) {
+  g.combo++;
+  g.comboT = SCORE.comboWindow;
+  const mul = Math.min(SCORE.comboMax, 1 + (g.combo - 1) * SCORE.comboStep);
+  const pts = Math.round((base * mul) / 10) * 10;
+  g.score += pts;
+  g.waveStats.score += pts;
+  return pts;
+}
+
+// A diver rammed the fish: it breaks apart without paying out (stolen shells drop back).
+export function crashEnemy(g, e) {
+  if (!e.alive) return;
+  e.alive = false;
+  e.hp = 0;
+  if (e.carry > 0) {
+    addShells(g, e.carry);
+    g.events.emit('recover', e.x, e.y, e.carry, 0, e.type, e);
+    e.carry = 0;
+  }
+  g.events.emit('crash', e.x, e.y, 0, 0, e.type, e);
 }
 
 export function addShells(g, n) {
@@ -202,7 +241,7 @@ export function spawnPickup(g, x, y, value) {
   p.alive = true;
   p.x = p.px = clamp(x, WORLD.RAIL_MIN, WORLD.RAIL_MAX);
   p.y = p.py = y;
-  p.vy = 70 + g.rng.next() * 50;
+  p.vy = 140 + g.rng.next() * 60;
   p.vx = 0;
   p.value = value;
   p.phase = g.rng.next() * 6.28;

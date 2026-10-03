@@ -1,5 +1,9 @@
 # P0 generation prompt set
 
+> Written for the tower-defense prototype. Since v2.0 the game is an arcade wave shooter: read
+> "walking along the path" as "swooping into formation and diving at the reef", and the shark's
+> `charge` as a lunge up at the enemies. The material/camera seed below is unchanged; keep using it.
+
 Tool: built-in image generation.
 
 Shared material/camera seed:

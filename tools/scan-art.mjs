@@ -18,7 +18,7 @@ function load(file) {
 }
 const report = [];
 for (const [key, d] of Object.entries(m.sprites)) {
-  if (!d.file || key === 'board') continue;
+  if (!d.file || key === 'arena') continue;
   const [fw, fh] = d.frame;
   for (const [name, an] of Object.entries(d.anims)) {
     const img = load(an.file || d.file);

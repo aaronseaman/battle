@@ -4,6 +4,15 @@
 //
 // Renderers may read any field; the most useful ones are documented in README.md.
 
+// Enemy.mode — how an enemy is moving.
+export const MODE = {
+  ENTER: 0, // swooping in along a curve to its formation slot
+  FORM: 1, // holding its slot in the swaying formation
+  DIVE: 2, // peeled off and diving at the reef
+  RETURN: 3, // bit the reef, came back in from the top, flying home to its slot
+  FLEE: 4, // Clown Crab escaping upward with stolen shells
+};
+
 export class Enemy {
   constructor() {
     this.reset();
@@ -19,10 +28,24 @@ export class Enemy {
     this.z = 0; // bounce height
     this.px = 0; // position at the previous sim tick (render interpolation)
     this.py = 0;
-    this.angle = 0; // heading along the path (radians)
-    this.dist = 0; // arc length travelled along the path
-    this.seg = 0;
-    this.dir = 1; // 1 = toward heart, -1 = returning to spawn (Clown Crab)
+    this.angle = 0; // heading (radians, from the last tick's movement)
+    this.vx = 0; // velocity (px/s) — steering while diving, measured otherwise
+    this.vy = 0;
+    this.mode = 0; // MODE in enemies.js: enter | form | dive | return | flee
+    this.moveT = 0; // time in the current mode
+    this.slot = -1; // formation slot (-1: free diver, e.g. split jellies and boss minions)
+    this.ax = 0; // entry curve: start, control 1, control 2 (the slot is the end point)
+    this.ay = 0;
+    this.bx = 0;
+    this.by = 0;
+    this.cx = 0;
+    this.cy = 0;
+    this.tx = 0; // dive aim x (Sharky: charge lane)
+    this.target = null; // buddy a grabber is diving at
+    this.targetId = 0;
+    this.shotT = 0; // enemy shot cooldown
+    this.dist = 0; // boss sway phase (px travelled)
+    this.dir = 1; // facing multiplier for renderers (always 1 in the arcade build)
     this.hp = 0;
     this.maxHp = 0;
     this.r = 0;
@@ -57,7 +80,8 @@ export class Enemy {
     this.phase = 0; // boss phase (0-based)
     this.exposedT = 0; // Kraken Kitty exposed window
     this.variant = 0; // endless boss cycle
-    this.laps = 0; // boss laps completed (each one enrages it)
+    this.laps = 0; // boss reef slams so far (each one enrages it)
+    this.enrageT = 0; // boss time since the last slam
     this.leak = 0;
     this.shells = 0;
   }
@@ -92,14 +116,13 @@ export class Tower {
     this.blindT = 0; // inked by Chef Octopus
     this.stunT = 0;
     this.covered = false; // Kraken Kitty tentacle on this socket
-    this.state = 0; // shark: 0 home, 1 dash, 2 sweep, 3 return | puffer: 0 ready, 1 inflating
+    this.state = 0; // shark: 0 home, 1 lunge, 3 return | puffer: 0 ready, 1 inflating
     this.sx = 0; // body position (moves for shark charges)
     this.sy = 0;
     this.psx = 0; // body position at the previous tick
     this.psy = 0;
-    this.sweepD = 0;
-    this.sweepEnd = 0;
-    this.seg = 0;
+    this.tx = 0; // shark lunge end point
+    this.ty = 0;
     this.hitN = 0;
     this.inflate = 0; // pufferfish 0..1
     this.kills = 0;
@@ -147,14 +170,19 @@ export class Projectile {
   }
 }
 
-// Enemy attacks that travel and land: ink bombs, sparks, thrown stars, paw swipes.
+// Enemy attacks. Lobbed ones (ink bombs, sparks, thrown stars, paw swipes) fly to a
+// marked spot and land; bullets (drop, spike) fall in a straight line and hit
+// whatever they touch on the way (the fish, buddies).
 export class Strike {
   constructor() {
     this.reset();
   }
   reset() {
     this.alive = false;
-    this.kind = ''; // ink | spark | star | swipe
+    this.kind = ''; // ink | spark | star | swipe | drop | spike
+    this.bullet = false;
+    this.vx = 0;
+    this.vy = 0;
     this.sx = 0;
     this.sy = 0;
     this.tx = 0;

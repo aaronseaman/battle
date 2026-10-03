@@ -2,24 +2,25 @@
 // runs identically in the browser and headless in Node (tools/sim.mjs).
 //
 // Loop:  fork (left/right) -> draft (pick capsule) -> place -> build (shop) -> combat -> waveEnd -> ...
+// Combat is an arcade wave shooter: enemies swoop into a formation and dive at
+// the reef; the fish shoots from the bottom rail while buddies help from the reef.
 // UI and bots drive it only through the command methods (chooseFork, placePending, ...),
 // which return { ok, reason }.
 
 import {
-  WORLD, MAP, PLAYER, HEART, ECONOMY, TOWERS, STARTER_TOWERS, FORKS, UPGRADES, UNLOCKS, WAVES, VERSION,
+  WORLD, MAP, PLAYER, HEART, ECONOMY, TOWERS, STARTER_TOWERS, FORKS, UPGRADES, UNLOCKS, WAVES, SCORE, VERSION,
 } from '../config.js';
 import { RNG, Pool, compact } from './util.js';
-import { Path } from './path.js';
 import { SpatialGrid } from './grid.js';
 import { EventQueue } from './events.js';
 import { Enemy, Tower, Projectile, Strike, Pickup, Tentacle } from './entities.js';
-import { spawnEnemy, clearTowerDebuffs, removeTower } from './combat.js';
+import { clearTowerDebuffs, removeTower } from './combat.js';
 import { spawnBoss, updateTentacles, retractTentacles } from './bosses.js';
-import { updateEnemies, updateStrikes } from './enemies.js';
+import { updateEnemies, updateStrikes, updateFormation, resetFormation, spawnFormation } from './enemies.js';
 import { updateTowers, createTower, towerMaxHp } from './towers.js';
 import { updateProjectiles } from './projectiles.js';
 import { updatePlayer, updatePickups, resetPlayer, collectPickup } from './player.js';
-import { buildWave, hpMul, speedMul, isBossWave, rollForks } from './waves.js';
+import { buildWave, hpMul, speedMul, isBossWave, rollForks, updateDives, shotCap } from './waves.js';
 
 export const PHASE = {
   TITLE: 'title',
@@ -41,12 +42,9 @@ const NEUTRAL_MODS = Object.freeze({ id: 'none', name: 'Open Reef' });
 export class Game {
   constructor(opts = {}) {
     this.events = new EventQueue(2048);
-    this.path = new Path(MAP.path, MAP.corner);
     this.grid = new SpatialGrid(WORLD.W, WORLD.H, WORLD.CELL);
-    this.sockets = MAP.sockets.map(([x, y], i) => ({
-      i, x, y, tower: null, tentacle: null,
-      coverage: Math.round(this.path.coverage(x, y, 150)),
-    }));
+    this.sockets = MAP.sockets.map(([x, y], i) => ({ i, x, y, tower: null, tentacle: null }));
+    this.formation = { x: 0, y: 0, t: 0, descend: 0 };
     this.heart = { x: MAP.heart.x, y: MAP.heart.y, r: MAP.heart.r, hp: HEART.hp, maxHp: HEART.hp, regen: 0, hitT: 0 };
     this.player = {
       x: WORLD.W / 2, y: WORLD.RAIL_Y, px: WORLD.W / 2, r: PLAYER.r, vx: 0,
@@ -56,7 +54,7 @@ export class Game {
     this.pools = {
       enemy: new Pool(() => new Enemy(), 128),
       proj: new Pool(() => new Projectile(), 256),
-      strike: new Pool(() => new Strike(), 16),
+      strike: new Pool(() => new Strike(), 48),
       pickup: new Pool(() => new Pickup(), 32),
       tentacle: new Pool(() => new Tentacle(), 8),
       tower: new Pool(() => new Tower(), 0),
@@ -71,7 +69,7 @@ export class Game {
     // Written by input (browser) or a bot (headless). Read by updatePlayer.
     this.input = { left: false, right: false, plus: false, minus: false, plusPressed: false, minusPressed: false, moveX: -1 };
 
-    this.meta = opts.meta || { endlessUnlocked: false, skins: ['classic'], skin: 'classic', bestWave: 0, bestEndless: 0, wins: 0, runs: 0 };
+    this.meta = opts.meta || { endlessUnlocked: false, skins: ['classic'], skin: 'classic', bestWave: 0, bestEndless: 0, bestScore: 0, wins: 0, runs: 0 };
     this.phase = PHASE.TITLE;
     this.paused = false;
     this.clock = 0; // always advancing (animations in menus)
@@ -108,6 +106,9 @@ export class Game {
     this.bossesDefeated = 0;
     this.boss = null;
     this.waveSummary = null;
+    this.score = 0;
+    this.combo = 0;
+    this.comboT = 0;
     this.runStats = { kills: 0, shells: 0, towersBuilt: 0, perfectWaves: 0 };
     this.clearCombat();
     for (const t of this.towers) t.alive = false;
@@ -137,8 +138,8 @@ export class Game {
 
   freshWaveStats() {
     return {
-      kills: 0, shells: 0, pearls: 0, leaks: 0, heartDmg: 0, playerHits: 0, shellsStolen: 0,
-      towersEaten: 0, unlockedTower: '', bossDefeated: '', perfect: false, clearBonus: 0,
+      kills: 0, shells: 0, pearls: 0, leaks: 0, heartDmg: 0, playerHits: 0, shellsStolen: 0, score: 0,
+      towersEaten: 0, unlockedTower: '', bossDefeated: '', perfect: false, clearBonus: 0, scoreBonus: 0,
     };
   }
 
@@ -161,6 +162,10 @@ export class Game {
     this.spawns = [];
     this.spawnIdx = 0;
     this.waveTime = 0;
+    this.diveT = 0;
+    this.combo = 0;
+    this.comboT = 0;
+    resetFormation(this);
   }
 
   recalcStats() {
@@ -226,10 +231,10 @@ export class Game {
     return Math.round(min * ECONOMY.skipCapsuleFrac);
   }
 
-  // i = -1 takes shells instead of a tower.
+  // i = -1 takes shells instead of a buddy.
   chooseDraft(i) {
     if (this.phase !== PHASE.DRAFT) return fail('Not drafting');
-    if (i === -1 || !this.hasEmptySocket()) {
+    if (i === -1 || !this.canPlace(this.draftOptions[i])) {
       const v = this.skipCapsuleValue();
       this.shells += v;
       this.events.emit('capsule_skip', 0, 0, v);
@@ -249,13 +254,38 @@ export class Game {
     return this.sockets.some((s) => !s.tower);
   }
 
+  // A capsule can go in an empty socket, or onto a twin of the same type to level it up.
+  canMerge(socketIdx, type) {
+    const t = this.sockets[socketIdx]?.tower;
+    if (!t || t.type !== type) return false;
+    const info = this.upgradeInfo(t);
+    return !info.max && !info.locked;
+  }
+
+  canPlace(type) {
+    if (!type) return false;
+    return this.sockets.some((s) => !s.tower || this.canMerge(s.i, type));
+  }
+
   placePending(socketIdx) {
     if (this.phase !== PHASE.PLACE || !this.pendingTower) return fail('Nothing to place');
     const so = this.sockets[socketIdx];
     if (!so) return fail('No such socket');
-    if (so.tower) return fail('Socket is taken');
     const type = this.pendingTower;
-    const t = createTower(this, type, socketIdx, Math.round(TOWERS[type].cost * ECONOMY.capsuleValue));
+    const value = Math.round(TOWERS[type].cost * ECONOMY.capsuleValue);
+    if (so.tower) {
+      if (!this.canMerge(socketIdx, type)) return fail('Socket is taken');
+      const t = so.tower;
+      t.level++;
+      t.stats = t.def.levels[t.level];
+      t.maxHp = t.hp = towerMaxHp(t.def, t.level);
+      t.invested += value;
+      this.pendingTower = '';
+      this.events.emit('tower_upgrade', t.x, t.y, t.level, 1, t.type, t);
+      this.setPhase(PHASE.BUILD);
+      return OK;
+    }
+    const t = createTower(this, type, socketIdx, value);
     this.pendingTower = '';
     this.runStats.towersBuilt++;
     this.events.emit('tower_place', t.x, t.y, 0, 0, type, t);
@@ -387,6 +417,8 @@ export class Game {
     this.spawns = buildWave(this.rng, w, this.mods);
     this.spawnIdx = 0;
     this.waveTime = 0;
+    this.diveT = WAVES.diveStart;
+    this.shotCap = shotCap(w);
     this.waveStats = this.freshWaveStats();
     this.isBossWave = isBossWave(w);
     resetPlayer(this);
@@ -400,6 +432,7 @@ export class Game {
       t.inflate = 0;
       t.sx = t.psx = t.x;
       t.sy = t.psy = t.y;
+      t.aim = -Math.PI / 2;
       t.cd = this.rng.range(0.1, 0.6);
       t.cd2 = 1;
       t.cd3 = 2;
@@ -416,7 +449,7 @@ export class Game {
     if (this.reefWash <= 0) return this.denied('No Reef Wash — buy one in the shop');
     this.reefWash--;
     for (const t of this.towers) clearTowerDebuffs(t);
-    for (const s of this.strikes) if (!s.hitsPlayer) s.alive = false; // wash away incoming ink
+    for (const s of this.strikes) s.alive = false; // wash away every incoming shot
     this.events.emit('reef_wash', WORLD.W / 2, WORLD.H / 2);
     this.uiVersion++;
     return OK;
@@ -467,8 +500,14 @@ export class Game {
     if (this.phase !== PHASE.COMBAT) return;
 
     this.waveTime += dt;
+    if (this.comboT > 0) {
+      this.comboT -= dt;
+      if (this.comboT <= 0) this.combo = 0;
+    }
     this.snapshot();
     this.spawnTick();
+    updateFormation(this, dt);
+    updateDives(this, dt);
     updatePlayer(this, dt);
     updateEnemies(this, dt);
 
@@ -529,7 +568,7 @@ export class Game {
     while (this.spawnIdx < list.length && list[this.spawnIdx].t <= this.waveTime) {
       const s = list[this.spawnIdx++];
       if (s.type === 'boss') spawnBoss(this, s.boss, s.cycle);
-      else spawnEnemy(this, s.type, 0, s.shield);
+      else spawnFormation(this, s);
     }
   }
 
@@ -545,12 +584,16 @@ export class Game {
     ws.clearBonus = bonus;
     this.shells += bonus;
     ws.shells += bonus;
+    ws.scoreBonus = SCORE.waveClear * this.wave;
     if (ws.heartDmg <= 0) {
       ws.perfect = true;
       this.pearls += ECONOMY.perfectPearls;
       ws.pearls += ECONOMY.perfectPearls;
       this.runStats.perfectWaves++;
+      ws.scoreBonus += SCORE.perfect;
     }
+    this.score += ws.scoreBonus;
+    ws.score += ws.scoreBonus;
     retractTentacles(this);
     this.restoreSwallowed();
     this.clearCombat();
@@ -563,9 +606,10 @@ export class Game {
       t.inflate = 0;
       t.sx = t.psx = t.x;
       t.sy = t.psy = t.y;
+      t.aim = -Math.PI / 2;
     }
     resetPlayer(this);
-    this.waveSummary = { wave: this.wave, ...ws };
+    this.waveSummary = { wave: this.wave, ...ws, total: this.score };
     const m = this.meta;
     if (this.endless) {
       if (this.wave > m.bestEndless) m.bestEndless = this.wave;
@@ -575,7 +619,7 @@ export class Game {
       }
     }
     if (this.wave > m.bestWave) m.bestWave = this.wave;
-    this.metaDirty = true;
+    this.recordScore();
     this.events.emit('wave_end', 0, 0, this.wave, bonus);
     if (this.wave === WAVES.total && !this.endless) {
       m.wins++;
@@ -602,12 +646,21 @@ export class Game {
 
   onDefeat() {
     this.heart.hp = 0;
-    this.waveSummary = { wave: this.wave, ...this.waveStats };
+    this.waveSummary = { wave: this.wave, ...this.waveStats, total: this.score };
     const m = this.meta;
     if (this.wave - 1 > m.bestWave) m.bestWave = this.wave - 1;
-    this.metaDirty = true;
+    this.recordScore();
     this.events.emit('defeat', this.heart.x, this.heart.y, this.wave);
     this.setPhase(PHASE.DEFEAT);
+  }
+
+  recordScore() {
+    const m = this.meta;
+    if (this.score > (m.bestScore || 0)) {
+      m.bestScore = this.score;
+      if (this.waveSummary) this.waveSummary.newBest = true;
+    }
+    this.metaDirty = true;
   }
 
   // ---------------------------------------------------------------- save / load
@@ -623,6 +676,7 @@ export class Game {
       phase: this.phase,
       shells: this.shells,
       pearls: this.pearls,
+      score: this.score,
       upgrades: { ...this.upgrades },
       unlocked: { ...this.unlocked },
       towerTypes: this.towerTypes.slice(),
@@ -640,6 +694,7 @@ export class Game {
 
   deserialize(d) {
     if (!d || !d.towers) return fail('Bad save');
+    if (parseInt(d.v, 10) < 2) return fail('Save is from the tower-defense version');
     const resumable = [PHASE.FORK, PHASE.DRAFT, PHASE.PLACE, PHASE.BUILD];
     if (!resumable.includes(d.phase)) return fail('Save not resumable');
     this.newRun({ seed: d.seed, endless: d.endless, dryRun: true });
@@ -647,6 +702,7 @@ export class Game {
     this.wave = d.wave;
     this.shells = d.shells;
     this.pearls = d.pearls;
+    this.score = d.score | 0;
     Object.assign(this.upgrades, d.upgrades);
     this.unlocked = { ...d.unlocked };
     this.towerTypes = d.towerTypes.filter((t) => TOWERS[t]);

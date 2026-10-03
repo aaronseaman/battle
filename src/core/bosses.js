@@ -1,19 +1,25 @@
-// Boss behaviours. Bosses are regular Enemy objects with `bossId` set; their
-// per-boss state lives in the generic fields:
+// Boss behaviours. Bosses are regular Enemy objects with `bossId` set. They fly
+// in from the top (MODE.ENTER), then hover above the formation and sway
+// (MODE.FORM). Their per-boss state lives in the generic fields:
 //   state / stateT  current behaviour + countdown
 //   t1..t4          ability cooldowns
 //   phase           0-based phase (changes at HP thresholds)
+//   enrageT / laps  time since the last reef slam / slams so far
 //
 // chef   — t1 ink bombs, t2 minions. Weak point: the hat (see chefHatX).
-// sharky — state 0 walk, 1 wind-up, 2 charge, 3 recover. t1 charge cooldown.
+// sharky — state 0 sway, 1 wind-up over a lane, 2 charge down it, 3 rise back. t1 charge cooldown.
 // queen  — state 0 arms closed (armored), 1 arms open (vulnerable). t1 summons.
 // kitty  — t1 tentacles, t2 paw swipes, t3 minions, t4 purr-shield reform.
 
-import { BOSSES, WORLD, WAVES } from '../config.js';
-import { spawnEnemy, addShells, damageTower, towerActive, removeTower, SRC_MINUS } from './combat.js';
+import { BOSSES, BOSS_HOVER, WORLD, WAVES, SCORE } from '../config.js';
+import { MODE } from './entities.js';
+import {
+  spawnDiver, addShells, addScore, damageHeart, damageTower, towerActive, removeTower, hitPlayer, SRC_MINUS,
+} from './combat.js';
+import { clamp } from './util.js';
 
 function speedUp(e) {
-  return Math.max(0.6, 1 - 0.1 * e.variant);
+  return Math.max(0.5, 1 - 0.1 * e.variant - 0.08 * e.laps);
 }
 
 export function spawnBoss(g, id, cycle = 0) {
@@ -34,6 +40,9 @@ export function spawnBoss(g, id, cycle = 0) {
   e.shells = 0;
   e.dist = 0;
   e.anim = 0;
+  e.mode = MODE.ENTER;
+  e.moveT = 0;
+  e.enrageT = 0;
   switch (id) {
     case 'chef':
       e.t1 = 2.5;
@@ -53,9 +62,8 @@ export function spawnBoss(g, id, cycle = 0) {
       e.t3 = def.minionCd;
       break;
   }
-  e.seg = g.path.sample(0, e, 0);
-  e.px = e.x;
-  e.py = e.y;
+  e.x = e.px = WORLD.W / 2;
+  e.y = e.py = -120;
   g.enemies.push(e);
   g.boss = e;
   g.events.emit('boss_spawn', e.x, e.y, e.maxHp, cycle, id, e);
@@ -93,16 +101,53 @@ export function onBossPlusHit(g, e, hadShield) {
   }
 }
 
-// Called when a Starfish star hits a boss.
+// Called when a Starfish star hits a boss: stuns Sharky out of a charge.
 export function onBossStarHit(g, e) {
   if (e.bossId !== 'sharky') return;
   if (e.state === 1 || e.state === 2) {
     const def = e.def;
-    e.state = 0;
-    e.t1 = def.chargeCd[e.phase] * speedUp(e);
+    e.state = 3;
     if (e.stunT < def.starStun) e.stunT = def.starStun;
     g.events.emit('boss_stunned', e.x, e.y, def.starStun, 0, e.bossId, e);
   }
+}
+
+// Default hover: sway across the top of the reef. Sharky positions himself
+// while charging (state != 0).
+export function moveBoss(g, e, dt, m) {
+  const H = BOSS_HOVER;
+  if (e.mode === MODE.ENTER) {
+    e.moveT += dt;
+    const k = Math.min(1, e.moveT / H.enter);
+    e.y = -120 + (H.y + 120) * (1 - (1 - k) * (1 - k));
+    if (k >= 1) e.mode = MODE.FORM;
+    return;
+  }
+  if (e.bossId === 'sharky' && e.state !== 0) return;
+  e.dist += e.baseSpeed * m * dt;
+  const wantX = WORLD.W / 2 + Math.sin(e.dist / H.sway) * H.sway;
+  const wantY = H.y + Math.sin(e.anim * 1.3) * 12;
+  const step = Math.max(60, e.baseSpeed) * 2.5 * dt; // catch up smoothly after a charge
+  e.x += clamp(wantX - e.x, -step, step);
+  e.y += clamp(wantY - e.y, -step, step);
+}
+
+// Long fights cost reef: every bossSlamEvery seconds the boss slams it, and
+// each slam makes it faster and the next slam harder.
+function updateSlam(g, e, dt) {
+  const W = WAVES;
+  const before = e.enrageT;
+  e.enrageT += dt;
+  const warn = W.bossSlamEvery - W.bossSlamWarn;
+  if (before < warn && e.enrageT >= warn) g.events.emit('boss_slam_warn', e.x, e.y, W.bossSlamWarn, 0, e.bossId, e);
+  if (e.enrageT < W.bossSlamEvery) return;
+  e.enrageT = 0;
+  e.laps++;
+  damageHeart(g, e.leak);
+  g.waveStats.leaks++;
+  g.events.emit('boss_lap', e.x, e.y, e.leak, e.laps, e.bossId, e);
+  e.baseSpeed *= W.bossLapSpeedMul;
+  e.leak = Math.round(e.leak * W.bossLapLeakMul);
 }
 
 function setPhase(g, e, phase) {
@@ -112,6 +157,8 @@ function setPhase(g, e, phase) {
 
 // Returns a movement multiplier for this tick.
 export function updateBoss(g, e, dt) {
+  if (e.mode === MODE.ENTER) return 1; // abilities wait until it has arrived
+  updateSlam(g, e, dt);
   const def = e.def;
   const sp = speedUp(e);
   const frac = e.hp / e.maxHp;
@@ -127,7 +174,7 @@ export function updateBoss(g, e, dt) {
       if (e.t2 <= 0) {
         e.t2 = def.minionCd[e.phase] * sp;
         const n = def.minions[e.phase];
-        for (let k = 0; k < n; k++) spawnEnemy(g, 'octoMini', Math.max(0, e.dist - 30 - k * 20));
+        for (let k = 0; k < n; k++) spawnDiver(g, 'octoMini', e.x + (k - (n - 1) / 2) * 40, e.y + 30);
         g.events.emit('boss_summon', e.x, e.y, n, 0, e.bossId, e);
       }
       return 1;
@@ -141,47 +188,50 @@ export function updateBoss(g, e, dt) {
           if (e.t1 <= 0) {
             e.state = 1;
             e.stateT = def.windup[e.phase] * sp;
-            g.events.emit('boss_windup', e.x, e.y, e.stateT, 0, e.bossId, e);
+            e.tx = sharkyLane(g);
+            g.events.emit('boss_windup', e.x, e.y, e.stateT, e.tx, e.bossId, e);
           }
           return 1;
-        case 1:
+        case 1: // line up over the lane (the tell), then hold still
           e.stateT -= dt;
+          e.x += clamp(e.tx - e.x, -def.aimSpeed * dt, def.aimSpeed * dt);
           if (e.stateT <= 0) {
             e.state = 2;
-            e.stateT = def.chargeDur;
-            g.events.emit('boss_charge', e.x, e.y, 0, 0, e.bossId, e);
+            g.events.emit('boss_charge', e.x, e.y, e.tx, 0, e.bossId, e);
           }
           return 0;
         case 2: {
-          e.stateT -= dt;
-          const reach = e.r + def.eatR;
+          e.y += def.chargeSpeed * dt;
           for (let i = 0; i < g.towers.length; i++) {
             const t = g.towers[i];
             if (!t.alive) continue;
             const dx = t.x - e.x, dy = t.y - e.y;
-            if (dx * dx + dy * dy <= reach * reach) {
+            if (dx * dx + dy * dy <= def.eatR * def.eatR) {
               g.events.emit('eaten', t.x, t.y, 0, 0, t.type, t);
               g.swallowed.push({ socket: t.socket, type: t.type, level: t.level, invested: t.invested, kills: t.kills });
               removeTower(g, t);
               g.waveStats.towersEaten++;
               e.state = 3;
-              e.stateT = def.recover;
-              return 0.4;
+              return 0;
             }
           }
-          if (e.stateT <= 0) {
+          const p = g.player, rr = e.r * 0.7 + p.r;
+          if (p.alive && (p.x - e.x) ** 2 + (p.y - e.y) ** 2 <= rr * rr) hitPlayer(g);
+          if (e.y >= WORLD.REEF_Y - 30) {
+            damageHeart(g, def.chargeLeak);
+            g.events.emit('leak', e.x, WORLD.REEF_Y, def.chargeLeak, 0, e.type, e);
             e.state = 3;
-            e.stateT = def.recover;
           }
-          return def.chargeSpeedMul;
+          return 0;
         }
-        default:
-          e.stateT -= dt;
-          if (e.stateT <= 0) {
+        default: // swim back up to hover height
+          e.y -= def.riseSpeed * dt;
+          if (e.y <= BOSS_HOVER.y) {
+            e.y = BOSS_HOVER.y;
             e.state = 0;
             e.t1 = def.chargeCd[e.phase] * sp;
           }
-          return 0.4;
+          return 0;
       }
     }
     case 'queen': {
@@ -202,7 +252,7 @@ export function updateBoss(g, e, dt) {
       if (e.t1 <= 0) {
         e.t1 = def.summonCd[e.phase] * sp;
         const n = def.summons[e.phase];
-        for (let k = 0; k < n; k++) spawnEnemy(g, 'starMinion', Math.max(0, e.dist + (k - (n - 1) / 2) * 24));
+        for (let k = 0; k < n; k++) spawnDiver(g, 'starMinion', e.x + (k - (n - 1) / 2) * 44, e.y + 30);
         g.events.emit('boss_summon', e.x, e.y, n, 0, e.bossId, e);
       }
       return e.state === 0 ? 1 : 0.6;
@@ -253,11 +303,9 @@ export function updateBoss(g, e, dt) {
         e.t3 -= dt;
         if (e.t3 <= 0) {
           e.t3 = def.minionCd * sp;
-          const d = Math.max(0, e.dist - 40);
-          spawnEnemy(g, 'jelly', d);
-          spawnEnemy(g, 'jelly', Math.max(0, d - 22));
-          spawnEnemy(g, 'eel', Math.max(0, d - 44));
-          g.events.emit('boss_summon', e.x, e.y, 3, 0, e.bossId, e);
+          spawnDiver(g, 'jelly', e.x - 60, e.y + 30);
+          spawnDiver(g, 'eel', e.x + 60, e.y + 40);
+          g.events.emit('boss_summon', e.x, e.y, 2, 0, e.bossId, e);
         }
       }
       return 1;
@@ -266,16 +314,22 @@ export function updateBoss(g, e, dt) {
   return 1;
 }
 
+// Sharky's charge lane: usually the fish, sometimes a buddy he fancies eating.
+function sharkyLane(g) {
+  const p = g.player;
+  let x = p.alive ? p.x : WORLD.W / 2;
+  if (g.towers.length && g.rng.chance(0.4)) x = g.rng.pick(g.towers).x;
+  return clamp(x, 60, WORLD.W - 60);
+}
+
 function chefInk(g, e, def) {
   let tgt = null;
   if (g.rng.chance(def.inkTowerChance)) {
-    // reservoir-sample a random active tower within reach
+    // reservoir-sample a random active buddy
     let seen = 0;
     for (let i = 0; i < g.towers.length; i++) {
       const t = g.towers[i];
       if (!towerActive(t)) continue;
-      const dx = t.x - e.x, dy = t.y - e.y;
-      if (dx * dx + dy * dy > 380 * 380) continue;
       seen++;
       if (g.rng.next() * seen < 1) tgt = t;
     }
@@ -383,6 +437,8 @@ export function onBossDeath(g, e) {
   g.pearls += def.pearls;
   g.waveStats.pearls += def.pearls;
   addShells(g, def.shells);
+  const pts = addScore(g, SCORE.boss * (1 + e.variant));
+  g.events.emit('score', e.x, e.y, pts, g.combo, 'boss');
   if (def.unlock && !g.towerTypes.includes(def.unlock)) {
     g.towerTypes.push(def.unlock);
     g.waveStats.unlockedTower = def.unlock;

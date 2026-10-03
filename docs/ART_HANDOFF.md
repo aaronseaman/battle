@@ -1,18 +1,73 @@
 # Reef Rumble — Art & Animation Hand-off (for ChatGPT)
 
-> **Status:** P0 is delivered and integrated (24/24 sprites; see `docs/art/P0-DELIVERY.md`).
-> The game is live at **https://aaronseaman.github.io/battle/**.
-> **Next round: P1** (45 sprites). Read "P1 round" just below, then section 4.
+> **Status:** P0 (23/23) and P1 (45/45) are delivered and integrated, and ship with the v2.0
+> arcade redesign at **https://aaronseaman.github.io/battle/**. See `docs/art/P0-DELIVERY.md` and
+> `docs/art/P1-DELIVERY.md`.
+> **Next round (P2, 14 sprites):** the new **`arena`** background first (it replaces the retired
+> path board), the two new enemy shots `strike.drop` / `strike.spike`, then the P1 fix-ups below,
+> the three fish skins, level-2 buddies and the respawn bubble. The "Rules for every round"
+> below still apply.
 
-## P1 round — read this first
+## v2.0: Reef Rumble is an arcade wave shooter now
 
-The P0 art went in well. These notes come from fitting it into the game at iPhone 17 size;
-following them avoids another round of fixes.
+Nothing about the existing character art changes; this is what's different around it.
 
-1. **Start from `main`.** `assets/art/manifest.json` is version 11.
-   - Fill in **only P1 entries** (P2 too if there's time).
-   - **Don't edit P0 entries.** They point at the shipped `.webp` files and carry in-game
-     tuning: towers `scale 1.15`, heart `1.3`, bosses `4/3`, and the Chef's hat `attach`.
+- **How it plays.** Enemies swoop in from the top in squadrons, line up in a swaying formation,
+  then peel off and **dive** at the reef, dropping shots. The fish shoots up from the rail at
+  the bottom. Buddies (the old towers) sit in **six** coral cups on the reef shelf and shoot
+  upward. A diver that reaches the reef bites the Coral Heart. Watch the live game and the
+  refreshed `docs/art/reference/*.jpg`.
+- **The path board is gone.** The `board` key and `board/reef-board.webp` were removed (the PNG
+  master stays in git history). Its replacement is **`arena`** (P2, top priority): the same
+  1600 × 1886 px canvas, painted over **`docs/art/arena-template.png`**. Section 6 has the details.
+- **"Towers" are called buddies in the game.** Sprite keys stay `tower.<type>.<level>`, and the
+  frames, anchors and scales are unchanged.
+- **Enemies face where they swim.** In formation they sway left and right, so they get mirrored
+  often; make sure every enemy reads well flipped. They are never rotated, even when diving
+  straight down, so keep them upright.
+- **Shark / Hammerhead `charge`** is now a lunge straight up through a line of enemies and back.
+  The frames stay body-only, with no coral base.
+- **New enemy shots (P2):**
+  - `strike.drop`: a wobbly pink-purple goo bubble that diving jellies and krakens drop
+    (about 18 world units across, falls straight down).
+  - `strike.spike`: the Sea Urchin's spike, a purple clay needle pointing **right**; the game
+    rotates it to its flight direction (`orient`).
+  - Both must read as **dangerous** against the water at about 9 pt on screen.
+
+## P1 fix-ups (re-pack these frames, P2 round)
+
+Some packed frames had the pose **cropped inside its cell** (a straight cut through the clay) or
+carried **a sliver of the neighbouring pose**. The game currently plays only each row's clean
+frames. Regenerate or re-pack these and restore the full frame counts:
+
+| Sprite | Row | Problem | Now playing |
+|---|---|---|---|
+| `tower.fish.3` | `fire` (3), `disabled` (2), `broken` (1) | right side cropped; slivers in fire#1–2, disabled#1 | frame 0 only |
+| `tower.octopus.3` | `fire` (3), `disabled` (2) | fire#1–2 and disabled#1 cropped on the right; tentacle sliver in fire#2 | frame 0 only |
+| `tower.crab.3` | `fire` (3) | claw cropped; neighbour claw in fire#2 | frame 0 only |
+| `enemy.eel` (P0) | `stun` (4) | frame 0 is only a tail; frames 1–2 sliced | frame 3 only |
+| `enemy.urchin` (P0) | `cracked` (4) | frames 1–3 sliced | frame 0 only |
+| `player.classic` (P0) | `plus` frame 1 | the Plus bubble's top is flattened at the cell edge | as is |
+
+**Cause.** The poses were wider than their cells and got clipped during packing. Leave **≥ 8 px of
+clear space around every pose** before packing. If a pose needs more room, make the whole sheet's
+`frame` larger; anchors are fractions, so keep the ground point in the same place.
+
+**Check.** If ImageMagick is available, `node tools/scan-art.mjs` flags cropped poses. Report the
+fix-ups as new PNG masters plus the corrected `frames`/`col`/`fps` values for those rows.
+
+## Rules for every round
+
+These notes come from fitting P0 and P1 into the game at iPhone 17 size; following them avoids
+another round of fixes.
+
+1. **Start from `main`.** `assets/art/manifest.json` is the current version (v14): always edit
+   the latest manifest from `main`, never an older copy (the P1 delivery was built on v8 and had
+   to be merged by hand).
+   - Fill in **only the entries you deliver** (this round: P2 and the fix-ups).
+   - **Don't edit delivered entries' tuning.** They point at the shipped `.webp` files and carry
+     in-game tuning: level-1/2 towers `scale 1.15`, level-3 towers and their overlays `1.5333`,
+     heart `1.3`, bosses `4/3`, and the Chef's hat `attach`.
 2. **Deliver PNG masters** in the same folder layout (`assets/art/towers/…`, `fx/…`, …).
    - I convert them to WebP for shipping and bump the version.
    - Remove temp files (no `.tmp`).
@@ -24,7 +79,7 @@ following them avoids another round of fixes.
    level 1. The upgrade must read at a glance: bigger, fancier, glowing, with props
    (headphones, hammer head, crown…).
 5. **Shark / Hammerhead `charge` frames are the body only, with no coral base**, because the
-   body dashes along the path.
+   body lunges up at the enemies and swims back.
 6. **Status overlays sit on top of a tower.** That's `fx.grab`, `fx.blind`, `fx.plus_power`
    and `fx.zapped`.
    - They use the tower's frame and anchor, and are pre-scaled `1.15`.
@@ -46,16 +101,11 @@ following them avoids another round of fixes.
 12. **Validate.** Run `node tools/check-art.mjs`.
     - If you can run a browser, also check `art-preview.html` locally.
     - If you can't, say so, and I'll review everything in-game at iPhone 17 size.
-13. **Hand-back.** A zip of `assets/art/**` with `manifest.json` (version → 12) and a short
+13. **Hand-back.** A zip of `assets/art/**` with `manifest.json` (version → 15) and a short
     `DELIVERY.md`, or a PR against `main`.
 
-**Optional extra:** a board "material" pass that adds clay texture (fingerprints, seams,
-thumb dents) to `board/reef-board.png` **without moving anything**. The path, the 14 sockets,
-the cave, the heart patch and the rail must still match `docs/art/board-template.png` pixel
-for pixel. Deliver it as `board/reef-board-v2.png` and point the `board` entry at it.
-
 **You are making the graphics and animations** for *Reef Rumble: Clay Coral Defense*, an
-iPhone-first PWA tower-defense shooter. The game is finished and fully playable with
+iPhone-first PWA arcade wave shooter. The game is finished and fully playable with
 placeholder shapes. The renderer already loads sprite sheets from `assets/art/` and swaps
 them in **per sprite key**: every sheet you deliver replaces one placeholder, and anything
 missing keeps its placeholder. So you can deliver in batches, and each batch is
@@ -82,8 +132,8 @@ node tools/check-art.mjs       # validates the manifest + sheets, prints P0/P1/P
 | File | What it is |
 |---|---|
 | `assets/art/manifest.json` | **The checklist and the contract.** Every sprite key the game understands, with recommended size, anchor, animations, priority and a description. `"file": null` means not delivered yet. |
-| `docs/art/board-template.png` / `.svg` | Exact board geometry (path, 14 sockets, heart spot, rail) at the board image's final size. Paint over it. |
-| `docs/art/reference/*.jpg` | The game as it looks now on iPhone 17, with placeholder art. Use these to see what each thing is, where it sits and how big it is. |
+| `docs/art/arena-template.png` / `.svg` | Exact arena geometry (formation zone, 6 sockets, heart spot, reef edge, rail) at the arena image's final size. Paint over it. |
+| `docs/art/reference/*.jpg` | The game as it looks now on iPhone 17 (P0 + P1 art, placeholder arena). Use these to see what each thing is, where it sits and how big it is. |
 | `art-preview.html` | Plays all delivered animations with anchor crosshairs and frame boxes, at iPhone game size, 2× or 1:1. |
 | `src/render/renderer.js` | For reference only: how sprites are chosen and drawn (section 5 summarizes it). |
 
@@ -101,7 +151,7 @@ visual needs new data from the game, write it down (section 9) instead of changi
 - **Lighting**: soft studio key light from the **top-left**, the same on every sprite, with
   gentle contact shadows. *(The game also draws a soft ellipse shadow under each character,
   so keep only a subtle contact shadow in the art.)*
-- **Tilt-shift miniature feel**. The board can carry a slight blur toward its top and bottom
+- **Tilt-shift miniature feel**. The arena can carry a slight blur toward its top and bottom
   edges. Characters stay sharp.
 - **Googly eyes on every creature, towers included.** Big white eyes, black pupils, cute and
   silly. Even villains are adorable.
@@ -109,7 +159,7 @@ visual needs new data from the game, write it down (section 9) instead of changi
   pixel size, so details under about 4 sheet-px disappear. Use a dark clay outline or rim
   of about 4–6 px.
 
-**Camera.** A tilted top-down view of about 35° (the board squashes depth to 82%). Draw
+**Camera.** A tilted top-down view of about 35° (the arena squashes depth to 82%). Draw
 characters in **3/4 view from slightly above**, like toys on a table, and **facing RIGHT**.
 The game mirrors them when they travel left (set `"facing": "left"` if a sheet faces left).
 
@@ -122,9 +172,10 @@ on top (`"wobble": true`), so even 1–2 frame loops feel alive.
 
 | Use | Hex |
 |---|---|
-| Water top / bottom | `#46dbd3` / `#1aa9c4` |
+| Water top / middle / bottom | `#1c8fb0` / `#46dbd3` / `#1aa9c4` |
 | Deep frame / background | `#0d5d73` |
-| Sand, path | `#f7e2a8`, `#ffeec2` (edge `#e2b971`) |
+| Sand (edge) | `#f7e2a8` (`#e2b971`) |
+| Kelp | `#3fae6a`, `#2a8a52` |
 | Coral sockets / heart | `#ff8fa3` / `#ff6f91` |
 | Minus purple / Plus yellow | `#9b5cff` / `#ffd23f` |
 | Player clownfish | `#ff8a1f` + white stripes |
@@ -132,7 +183,7 @@ on top (`"wobble": true`), so even 1–2 frame loops feel alive.
 
 **Characters at a glance** (full notes per key are in the manifest):
 - **Player:** a tiny clay clownfish with a bubble gun on its head, sliding on a rail.
-- **Towers:** Tropical Fish, Octopus (→ DJ Octopus with headphones), Shark (→ Hammerhead),
+- **Buddies (`tower.*`):** Tropical Fish, Octopus (→ DJ Octopus with headphones), Shark (→ Hammerhead),
   Starfish (→ glowing Five-Point Star), Pufferfish, Seahorse with a telescope (→ Sea Dragon),
   Crab (→ King Crab with a crown).
 - **Enemies:** Jellybean Jellyfish, Clown Crab, Baby Kraken, Puffer Pal, Sea Urchin, Electric
@@ -180,7 +231,7 @@ the entity's game position**:
 - **Creatures and towers:** the ground-contact point / center of the footprint (towers: the
   center of the coral cup they stand in).
 - **Projectiles:** the center.
-- **Board:** the top-left, `[0, 0]`.
+- **Arena:** the top-left, `[0, 0]`.
 
 The art-preview page draws the anchor as a red crosshair. Make sure it sits where the
 creature touches the ground.
@@ -195,8 +246,8 @@ creature touches the ground.
 - Max **4096 px** on any side of a sheet (iOS texture limit).
 - **Memory budget:** ≤ 96 MB decoded across all sheets (width × height × 4 bytes);
   `check-art` reports the total.
-- Folders: `assets/art/board/`, `player/`, `towers/`, `enemies/`, `bosses/`, `projectiles/`,
-  `fx/`, `ui/`.
+- Folders: `assets/art/board/` (the arena and the heart), `player/`, `towers/`, `enemies/`,
+  `bosses/`, `projectiles/`, `fx/`, `ui/`.
 - Lowercase-hyphen names, e.g. `towers/octopus-1.webp`.
 
 **Timing.**
@@ -228,11 +279,11 @@ source of truth.
 
 Frame sizes are recommendations. Change `frame` and `anchor` freely if your art needs it.
 
-#### Board
+#### Arena
 
 | Key | Pri | Frame px | Anchor | Animations (frames) |
 |---|---|---|---|---|
-| `board` | P0 | 1600×1886 | 0, 0 | idle (1) |
+| `arena` | P2 (first) | 1600×1886 | 0, 0 | idle (1) |
 
 #### Player fish
 
@@ -314,6 +365,8 @@ Frame sizes are recommendations. Change `frame` and `anchor` freely if your art 
 | `strike.ink` | P1 | 64×64 | 0.5, 0.5 | fly (2) |
 | `strike.spark` | P1 | 48×48 | 0.5, 0.5 | fly (2) |
 | `strike.star` | P1 | 48×48 | 0.5, 0.5 | fly (2) |
+| `strike.drop` | P2 | 48×48 | 0.5, 0.5 | fly (4) |
+| `strike.spike` | P2 | 48×48 | 0.5, 0.5 | fly (2), `orient` |
 
 #### Pickups
 
@@ -361,18 +414,18 @@ You don't implement any of this; it tells you what each animation must communica
 
 | Sprite | Animation chosen when… |
 |---|---|
-| Enemy | `stun` while stunned. Otherwise the first that applies: `inflate` (Puffer Pal fuse lit), `held` (an octopus grabbed it), `grab` (Baby Kraken grabbing a tower), `carry` (Clown Crab running home with stolen shells), `cracked` (Urchin shell broken), `sad` (3 Minus stacks). Otherwise `move`. `die` plays once where it died; `fx.pop` is used if `die` is missing. |
-| Tower | `broken` at 0 HP. `charge` while a Shark dashes along the path. `inflate` while a Pufferfish winds up. `disabled` while grabbed, zapped, inked or covered by a tentacle. `fire` (once) right after it shoots. Otherwise `idle`. |
+| Enemy | `stun` while stunned. Otherwise the first that applies: `inflate` (Puffer Pal fuse lit), `held` (an octopus grabbed it), `grab` (Baby Kraken grabbing a buddy), `carry` (Clown Crab fleeing upward with stolen shells), `cracked` (Urchin shell broken), `sad` (3 Minus stacks). Otherwise `move` (flying in, in formation and diving). Mirrored to face the way it moves. `die` plays once where it died; `fx.pop` is used if `die` is missing. |
+| Buddy (`tower.*`) | `broken` at 0 HP. `charge` while a Shark lunges. `inflate` while a Pufferfish winds up. `disabled` while grabbed, zapped, inked or covered by a tentacle. `fire` (once) right after it shoots. Otherwise `idle`. |
 | Player | `plus` / `shoot` (once) right after firing. `swim` while moving. Otherwise `idle`. Mirrored when moving left. |
 | Chef Octopus | `throw` / `summon` (once) when it throws ink or summons minis. `move2` in phase 2. Otherwise `move`. The **hat** is drawn separately at the weak-point position: its anchor (bottom-center) sits at 90% of the chef sprite's height and sways left and right with the hitbox. |
-| Sharky | `windup` (telegraph, so make it obvious), `charge`, `recover`, `stunned`, `move`. |
+| Sharky | `windup` while he lines up over a lane (the game also paints the lane red, so make the pose obvious), `charge` while he plunges down it, `recover` while he swims back up, `stunned`, otherwise `move`. |
 | Starfish Queen | `closed` (armored, takes 15% damage) vs `open` (vulnerable). These must be **clearly different** silhouettes. `summon` plays once. |
 | Kraken Kitty | `swipe` / `summon` (once), `exposed` (after Plus pops her purr shield; dizzy, vulnerable), `move2` in later phases, otherwise `move`. `fx.purr` is drawn over her while the shield is up. |
 | Coral Heart | `hit` (once, when damaged), `low` below 35% HP, otherwise `idle`. |
 | Event effects | One-shot `fx.*` sprites play on events: kills, explosions, heals, shield pops, chomps, cracks, tower placement, Reef Wash, boss defeat and so on. The full map is `EVENT_FX` in `renderer.js`. |
 
 **Drawn by the game on top of your art; don't paint these:**
-- HP bars, range circles, socket highlights, landing telegraphs (red circles)
+- HP bars, range circles, socket highlights, landing telegraphs (red circles), Sharky's red lane
 - Minus-stack pips, stun stars, shield bubbles (unless you deliver `fx.purr`)
 - The Chef hat's flashing weak-point ring, damage numbers and text pops
 
@@ -384,28 +437,35 @@ You don't implement any of this; it tells you what each animation must communica
 
 ---
 
-## 6. The board
+## 6. The arena
 
-`board` is a single **1600 × 1886 px** image: the diorama from the tilted camera, covering the
-whole play area. It's drawn with its top-left at world (0, −70).
-`docs/art/board-template.png` is at exactly this size and position.
+`arena` is a single **1600 × 1886 px** image: the whole play field from the tilted camera. It's
+drawn with its top-left at world (0, −70). `docs/art/arena-template.png` is at exactly this size
+and position. Until it's delivered, the game paints a procedural stand-in (see the reference
+screenshots).
 
 - **Paint:**
-  - water, the sandy bottom and the winding sandy path
-  - the **14 coral socket cups** where the template puts them (numbers show the order)
-  - the dark **spawn cave** (top-left), the player's clay **rail** along the bottom
-  - decorative clay coral, shells, pebbles and seaweed in the free space
+  - **Open water** over the top two thirds. Enemies swoop in from above the top edge and hold
+    their formation inside the dashed box; divers cross the open water below it.
+  - Kelp, rocks or coral pillars along the **side walls**, kept to the outer ~40 px.
+  - The **sandy reef shelf** from y 870 down, with the **6 coral socket cups** where the
+    template puts them (numbers show the order) and decorative clay coral, shells and pebbles
+    between them.
+  - The player's clay **rail** along the bottom.
 - **Keep:**
-  - the path's centerline and width, and every socket center, exactly where the template
-    puts them (gameplay positions)
-  - about 1–2 sheet-px of accuracy is fine
+  - every socket center exactly where the template puts them (gameplay positions); about
+    1–2 sheet-px of accuracy is fine
+  - **the water calm and low-contrast**: no busy patterns, bright spots or creature-like shapes
+    where enemies and their shots fly. Gameplay readability beats decoration.
 - **Leave a sandy patch** where the dashed red circle is. The **Coral Heart** is its own
   animated sprite drawn there.
-- **Don't paint** towers, enemies, the heart or the fish.
-- Keep the area under the HUD bars (the top ~10%) calm and low-contrast.
+- The red dashed line is the reef edge (y 1000); nothing needs painting there, it's for
+  orientation.
+- **Don't paint** buddies, enemies, the heart, the fish or a path.
+- Keep the area under the HUD bars (the top ~10%) calm.
 
-Optional, as P2: a `board` with 2–4 frames of gently swaying seaweed. Mark `idle` as looping
-with a low fps (e.g. 6).
+Optional extra: 2–4 frames of gently swaying kelp. Mark `idle` as looping with a low fps
+(e.g. 6).
 
 ---
 
@@ -415,13 +475,13 @@ with a low fps (e.g. 6).
   screen.
 - **Safe areas:** the Dynamic Island takes the top 62 pt and the home indicator the bottom
   34 pt.
-- **HUD:** sits over the top (wave, shells, Coral Heart bar, boss bar) and the bottom (meter,
-  touch buttons).
-- **The board shows at ~402 × 474 pt**, between those UI bands. See
+- **HUD:** sits over the top (wave, score, shells, Coral Heart bar, boss bar) and the bottom
+  (meter, touch buttons).
+- **The arena shows at ~402 × 474 pt**, between those UI bands. See
   `docs/art/reference/*.jpg` for the real framing.
 - **Readability at small size matters more than detail.** Every creature must be
   recognisable as a ~24 pt silhouette, and the bosses as ~70 pt silhouettes.
-- **Performance:** the game holds 60 fps with 70+ enemies on screen. Sprite drawing is
+- **Performance:** the game holds 60 fps with 50+ enemies and their shots on screen. Sprite drawing is
   cheap; memory is the limit, so stay inside the 96 MB decoded budget. Prefer fewer, smaller
   frames over huge sheets.
 
@@ -454,8 +514,8 @@ work offline.
    (anchors on the feet, loops seamless) and play a wave in the game.
 3. Commit to a branch off `claude/reef-rumble-pwa` and open a PR. If you can't push, send a
    zip of `assets/art/**` (including `manifest.json`).
-4. Order: **P0 first** (board, player, level-1 towers, 6 enemies, 4 bosses + hat + tentacle,
-   heart, Minus/Plus bubbles), then P1, then P2. Partial deliveries are welcome.
+4. Order: this round, the **`arena`** first, then `strike.drop` / `strike.spike`, the P1
+   fix-ups, then the rest of P2. Partial deliveries are welcome.
 5. In the PR or zip, list anything you need from the game, e.g. "a separate sprite for the
    Queen's shield shards", "an event when an enemy starts zapping". I'll wire it up.
 
@@ -464,7 +524,8 @@ work offline.
 - [ ] Every creature faces right (or is marked `"facing": "left"`) and anchors on its feet.
 - [ ] Consistent top-left lighting and the same clay material on every sprite.
 - [ ] Silhouettes read at iPhone size (art-preview → "iPhone 17 game size").
-- [ ] Board: path and sockets line up with the template; nothing important under the top HUD.
+- [ ] Arena: sockets, heart patch and rail line up with the template; calm water where the
+      formation flies; nothing important under the top HUD.
 - [ ] Starfish Queen `closed` vs `open`, and Sharky's `windup`, are unmistakable at a glance.
 - [ ] One-shots are short: tower `fire` ≤ 0.25 s, `die` ≤ 0.5 s.
 - [ ] Loops loop cleanly, with a little boil.

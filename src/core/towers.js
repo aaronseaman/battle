@@ -1,6 +1,7 @@
-// Tower behaviours: targeting, firing, and the special mechanics of each type.
+// Buddy ("tower") behaviours: targeting, firing, and the special mechanics of each type.
 
 import { PLAYER, TOWERS, SHRED_MAX, SHRED_DUR } from '../config.js';
+import { MODE } from './entities.js';
 import {
   towerActive, damageEnemy, healTower, applySlow, applyStun, crackShell, addShells,
   SRC_TOWER, SRC_SHARK, SRC_BLAST,
@@ -9,11 +10,10 @@ import { spawnProjectile } from './projectiles.js';
 
 const scratch = [];
 const scratch2 = [];
-const tmp = { x: 0, y: 0, angle: 0 };
 const best3 = [null, null, null];
 
 const DASH_SPEED = 900;
-const SWEEP_SPEED = 650;
+const RETURN_SPEED = 700;
 const RETARGET = 0.1;
 
 export function createTower(g, type, socketIdx, invested) {
@@ -46,17 +46,22 @@ export function towerRange(g, t) {
   return t.stats.range * (t.plusT > 0 ? PLAYER.plusRange : 1) * (g.mods.rangeMul || 1);
 }
 
-// Highest-priority enemy in range. mode: 'first' (closest to the heart) or 'strong'.
+// How urgent an enemy is: the lower on the reef the worse, divers first,
+// and a crab running off with your shells most of all.
+export function danger(e) {
+  return e.y + (e.mode === MODE.DIVE ? 400 : e.mode === MODE.FLEE ? 800 : 0);
+}
+
+// Highest-priority enemy in range. mode: 'first' (most dangerous) or 'strong'.
 function findTarget(g, t, range, mode) {
   const n = g.grid.query(t.x, t.y, range, scratch);
   if (n === 0) return null;
-  const len = g.path.length;
   let best = null, bv = -Infinity;
   for (let i = 0; i < n; i++) {
     const e = scratch[i];
     let v;
     if (mode === 'strong') v = e.hp + e.shield + (e.bossId ? 1e6 : 0);
-    else v = e.dir > 0 ? e.dist : len + (len - e.dist); // fleeing crabs are urgent
+    else v = danger(e);
     if (v > bv) {
       bv = v;
       best = e;
@@ -169,11 +174,10 @@ function fireOctopus(g, t, range) {
     const e = findTarget(g, t, range, 'first');
     if (e) {
       aimAt(t, e);
-      // lead the target a little along its heading
-      const lead = e.speed * 0.45 * e.dir;
+      // lead the target by its velocity over the blob's flight time
       const p = spawnProjectile(g, 'ink', t.x, t.y, 10);
-      p.tx = e.x + Math.cos(e.angle) * lead;
-      p.ty = e.y + Math.sin(e.angle) * lead;
+      p.tx = e.x + e.vx * 0.45;
+      p.ty = e.y + e.vy * 0.45;
       p.dur = 0.45;
       p.arc = 60;
       p.dmg = s.dmg;
@@ -230,12 +234,12 @@ function startShark(g, t, range) {
   }
   const s = t.stats;
   aimAt(t, e);
-  // sweep backwards along the path, starting just ahead of the target
-  t.sweepD = Math.min(g.path.length, e.dist + 25);
-  t.sweepEnd = Math.max(0, t.sweepD - s.sweep);
+  // lunge through the target and a little beyond, chomping everything on the line
+  const dx = e.x - t.x, dy = e.y - t.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+  t.tx = e.x + (dx / d) * s.sweep;
+  t.ty = e.y + (dy / d) * s.sweep;
   t.state = 1;
   t.hitN = 0;
-  t.seg = 0;
   g.events.emit('shark_charge', t.x, t.y, e.x, e.y, t.type, t);
   t.fireT = 0;
 }
@@ -243,16 +247,7 @@ function startShark(g, t, range) {
 function updateSharkCharge(g, t, dt) {
   const s = t.stats;
   if (t.state === 1) {
-    t.seg = g.path.sample(t.sweepD, tmp, t.seg);
-    if (moveToward(t, tmp.x, tmp.y, DASH_SPEED * dt)) t.state = 2;
-    return;
-  }
-  if (t.state === 2) {
-    t.sweepD -= SWEEP_SPEED * dt;
-    t.seg = g.path.sample(t.sweepD, tmp, t.seg);
-    t.aim = tmp.angle + Math.PI;
-    t.sx = tmp.x;
-    t.sy = tmp.y;
+    const done = moveToward(t, t.tx, t.ty, DASH_SPEED * dt);
     const n = g.grid.query(t.sx, t.sy, s.chompR, scratch);
     for (let i = 0; i < n; i++) {
       const e = scratch[i];
@@ -263,13 +258,14 @@ function updateSharkCharge(g, t, dt) {
       damageEnemy(g, e, s.dmg, SRC_SHARK, t);
       g.events.emit('chomp', e.x, e.y, s.dmg, 0, t.type, t);
     }
-    if (t.sweepD <= t.sweepEnd) t.state = 3;
+    if (done) t.state = 3;
     return;
   }
-  // returning home
-  if (moveToward(t, t.x, t.y, DASH_SPEED * dt)) {
+  // swimming home
+  if (moveToward(t, t.x, t.y, RETURN_SPEED * dt)) {
     t.state = 0;
     t.cd = s.interval;
+    t.aim = -Math.PI / 2;
   }
 }
 
@@ -340,7 +336,10 @@ function updatePufferFuse(g, t, dt) {
   for (let i = 0; i < n; i++) {
     const e = scratch[i];
     damageEnemy(g, e, s.dmg, SRC_BLAST, t);
-    if (s.knockback && e.alive && !e.bossId && e.dir > 0) e.dist = Math.max(0, e.dist - s.knockback);
+    if (s.knockback && e.alive && !e.bossId) {
+      e.y -= s.knockback; // blown back up the reef
+      if (e.mode === MODE.DIVE && e.vy > 0) e.vy = 0;
+    }
   }
   t.state = 0;
   t.inflate = 0;
@@ -385,13 +384,13 @@ function fireCrab(g, t, range) {
     return;
   }
   const s = t.stats;
-  // pick up to `targets` enemies furthest along the path
+  // pick up to `targets` of the most dangerous enemies
   best3[0] = best3[1] = best3[2] = null;
   const want = Math.min(3, s.targets);
   for (let i = 0; i < n; i++) {
     let e = scratch[i];
     for (let k = 0; k < want; k++) {
-      if (!best3[k] || e.dist > best3[k].dist) {
+      if (!best3[k] || danger(e) > danger(best3[k])) {
         const tmpE = best3[k];
         best3[k] = e;
         e = tmpE;

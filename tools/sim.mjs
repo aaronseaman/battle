@@ -1,5 +1,5 @@
 // Headless balance simulation: plays full runs with the autopilot bot.
-//   node tools/sim.mjs [runs=6] [skill=good|basic|idle] [maxWave=20]
+//   node tools/sim.mjs [runs=6] [skill=good|basic|sloppy|idle] [maxWave=20]
 
 import { Game, PHASE } from '../src/core/game.js';
 import { SIM } from '../src/config.js';
@@ -25,7 +25,7 @@ export function playRun(seed, skill = 'good', maxWave = 20, onWave = null) {
       if (g.projectiles.length > maxProj) maxProj = g.projectiles.length;
       if (g.phase !== PHASE.COMBAT) {
         const ws = g.waveSummary;
-        const rec = { wave: ws.wave, secs: +(waveTicks * SIM.DT).toFixed(1), heart: Math.round(g.heart.hp), dmg: Math.round(ws.heartDmg), kills: ws.kills, shells: g.shells, towers: g.towers.length, eaten: ws.towersEaten, hits: ws.playerHits };
+        const rec = { wave: ws.wave, secs: +(waveTicks * SIM.DT).toFixed(1), heart: Math.round(g.heart.hp), dmg: Math.round(ws.heartDmg), kills: ws.kills, shells: g.shells, towers: g.towers.length, eaten: ws.towersEaten, hits: ws.playerHits, score: g.score };
         waves.push(rec);
         if (onWave) onWave(rec, g);
         waveTicks = 0;
@@ -38,7 +38,7 @@ export function playRun(seed, skill = 'good', maxWave = 20, onWave = null) {
   }
   return {
     seed, skill, outcome: g.phase === PHASE.DEFEAT ? 'defeat' : g.phase === PHASE.VICTORY ? 'victory' : 'stopped',
-    wave: g.wave, waves, usPerTick: ticks ? (simMs * 1000) / ticks : 0, maxEnemies, maxProj,
+    wave: g.wave, score: g.score, waves, usPerTick: ticks ? (simMs * 1000) / ticks : 0, maxEnemies, maxProj,
     towers: g.towers.map((t) => `${t.type}${t.level + 1}`).join(' '),
   };
 }
@@ -51,8 +51,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (let i = 0; i < runs; i++) {
     const r = playRun(1000 + i * 17, skill, maxWave);
     results.push(r);
-    console.log(`seed ${r.seed} ${r.outcome.padEnd(8)} wave ${String(r.wave).padStart(2)}  ${r.usPerTick.toFixed(0)}µs/tick  maxE ${r.maxEnemies} maxP ${r.maxProj}  [${r.towers}]`);
-    console.log('   ' + r.waves.map((w) => `w${w.wave}:${w.secs}s/h${w.heart}${w.eaten ? '/eat' + w.eaten : ''}`).join(' '));
+    console.log(`seed ${r.seed} ${r.outcome.padEnd(8)} wave ${String(r.wave).padStart(2)}  score ${r.score}  ${r.usPerTick.toFixed(0)}µs/tick  maxE ${r.maxEnemies} maxP ${r.maxProj}  [${r.towers}]`);
+    console.log('   ' + r.waves.map((w) => `w${w.wave}:${w.secs}s/h${w.heart}${w.hits ? '/x' + w.hits : ''}${w.eaten ? '/eat' + w.eaten : ''}`).join(' '));
   }
   const wins = results.filter((r) => r.outcome === 'victory').length;
   const avgWave = results.reduce((a, r) => a + r.wave, 0) / results.length;

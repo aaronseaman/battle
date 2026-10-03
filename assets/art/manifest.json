@@ -1,11 +1,11 @@
 {
-  "version": 13,
+  "version": 14,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
-    "board": {
-      "file": "board/reef-board.webp",
-      "priority": "P0",
+    "arena": {
+      "file": null,
+      "priority": "P2",
       "frame": [
         1600,
         1886
@@ -23,7 +23,7 @@
           "loop": true
         }
       },
-      "notes": "The whole painted diorama, seen from the tilted camera. Paint over docs/art/board-template.png at exactly this size: water, sandy floor, the winding path, all 14 coral socket cups, the spawn cave at top-left, decorative clay coral/pebbles in the free space, the wooden/clay rail at the bottom. Do NOT paint towers, enemies, the Coral Heart or the fish (they are separate sprites). Keep the path and sockets exactly where the template puts them."
+      "notes": "The whole painted arena, seen from the tilted camera. Paint over docs/art/arena-template.png at exactly this size: open water on top (where the enemy formation flies), kelp/rocks at the side walls, the sandy reef shelf at the bottom with the 6 coral socket cups, a sandy patch for the Coral Heart, and the wooden/clay rail along the bottom. No path. Do NOT paint buddies, enemies, the Coral Heart or the fish (separate sprites)."
     },
     "player.classic": {
       "file": "player/player-classic.webp",
@@ -757,7 +757,7 @@
           "loop": false
         }
       },
-      "notes": "Level 1: Pufferfish: round yellow puffer. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0\u2192full puff over the fuse (plays once per explosion).",
+      "notes": "Level 1: Pufferfish: round yellow puffer. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0→full puff over the fuse (plays once per explosion).",
       "scale": 1.15
     },
     "tower.puffer.2": {
@@ -805,7 +805,7 @@
           "loop": false
         }
       },
-      "notes": "Level 2: bigger, angrier brows. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. inflate = 0\u2192full puff over the fuse (plays once per explosion).",
+      "notes": "Level 2: bigger, angrier brows. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. inflate = 0→full puff over the fuse (plays once per explosion).",
       "scale": 1.15
     },
     "tower.puffer.3": {
@@ -853,7 +853,7 @@
           "loop": false
         }
       },
-      "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0\u2192full puff over the fuse (plays once per explosion).",
+      "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0→full puff over the fuse (plays once per explosion).",
       "scale": 1.5333
     },
     "tower.seahorse.1": {
@@ -1505,7 +1505,7 @@
           "loop": false
         }
       },
-      "notes": "Chef Octopus (wave 5 boss): big purple octopus, apron, mustache, ladle. DRAW WITHOUT THE HAT \u2014 the hat is boss.chef.hat (it is the weak point and sways separately). Leave room at the top of the head. move2 = angrier phase-2 walk (optional). throw = lobs an ink bomb. summon = waves ladle, minis appear.",
+      "notes": "Chef Octopus (wave 5 boss): big purple octopus, apron, mustache, ladle. DRAW WITHOUT THE HAT — the hat is boss.chef.hat (it is the weak point and sways separately). Leave room at the top of the head. move2 = angrier phase-2 walk (optional). throw = lobs an ink bomb. summon = waves ladle, minis appear.",
       "scale": 1.3333333333333333,
       "attach": {
         "hat": [
@@ -1771,7 +1771,7 @@
           "loop": true
         }
       },
-      "notes": "Purple Minus bubble with a white \"\u2212\". Anchor = center."
+      "notes": "Purple Minus bubble with a white \"−\". Anchor = center."
     },
     "proj.plus": {
       "file": "projectiles/proj-plus.webp",
@@ -1974,6 +1974,51 @@
         }
       },
       "notes": "Star thrown by a Star Minion. Landing telegraph circles stay procedural (gameplay readability)."
+    },
+    "strike.drop": {
+      "file": null,
+      "priority": "P2",
+      "frame": [
+        48,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "frames": 4,
+          "fps": 12,
+          "loop": true
+        }
+      },
+      "notes": "Enemy shot dropped by diving jellies and krakens: a wobbly pink-purple goo bubble about 18 world units across. Falls straight down."
+    },
+    "strike.spike": {
+      "file": null,
+      "priority": "P2",
+      "frame": [
+        48,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "orient": true,
+      "anims": {
+        "fly": {
+          "row": 0,
+          "frames": 2,
+          "fps": 12,
+          "loop": true
+        }
+      },
+      "notes": "Sea Urchin spike shot: a purple clay needle pointing right (the game rotates it along its flight)."
     },
     "pickup.shell": {
       "file": "projectiles/pickup-shell.webp",

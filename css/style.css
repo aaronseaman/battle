@@ -85,6 +85,8 @@ button {
 }
 .chip.mod { background: #d9fbff; font-size: 13px; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; }
 .chip.dim { opacity: 0.85; font-size: 13px; }
+.chip.score { background: #fff6c2; font-variant-numeric: tabular-nums; }
+.chip.score.combo { background: #b8f1ff; }
 .chip.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--clay-shadow); }
 
 .hud-top {

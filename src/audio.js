@@ -161,6 +161,12 @@ export class Audio {
         case 'shoot_plus': if (this.ok('sp', 0.08)) this.boing(true); break;
         case 'minus_hit': if (this.ok('mh', 0.05)) this.noise(0.06, 1800, 2, 0.15); break;
         case 'kill': if (this.ok('k', 0.04)) { this.pop(0.8 + Math.random() * 0.4); this.noise(0.12, 900, 1.5, 0.12); } break;
+        case 'dive': if (this.ok('dv', 0.35)) this.tone(900, 0.35, 'triangle', 0.05, 380); break;
+        case 'enemy_shot': if (this.ok('es', 0.12)) this.tone(e.s === 'spike' ? 520 : 340, 0.08, 'square', 0.04, e.s === 'spike' ? 260 : 200); break;
+        case 'leak': if (this.ok('lk', 0.15)) this.noise(0.18, 260, 2, 0.22); break;
+        case 'crash': if (this.ok('cr2', 0.1)) { this.noise(0.2, 500, 1, 0.25); this.pop(0.6); } break;
+        case 'boss_slam_warn': this.tone(70, 1.2, 'sawtooth', 0.12, 50); break;
+        case 'boss_lap': this.noise(0.6, 180, 1, 0.45); this.tone(55, 0.6, 'sine', 0.4, 35); break;
         case 'tower_fire':
           if (e.s === 'fish' && this.ok('tf', 0.09)) this.tone(900 + Math.random() * 200, 0.04, 'sine', 0.06, 500);
           else if (e.s === 'starfish' && this.ok('ts', 0.15)) this.tone(500, 0.15, 'triangle', 0.07, 900);

@@ -10,7 +10,7 @@ import { haptic } from '../input.js';
 import { towerMaxHp } from '../core/towers.js';
 import { isBossWave, bossForWave } from '../core/waves.js';
 import {
-  TOWERS, UPGRADES, UNLOCKS, FORKS, SKINS, HOW_TO_PLAY, WAVES, PLAYER, BOSSES, VERSION,
+  TOWERS, UPGRADES, UNLOCKS, FORKS, SKINS, HOW_TO_PLAY, WAVES, PLAYER, BOSSES, SCORE, VERSION,
 } from '../config.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -139,7 +139,7 @@ export class UI {
       const so = this.socketAt(w.x, w.y);
       if (!so) continue;
       if (g.phase === PHASE.PLACE) {
-        if (!so.tower) {
+        if (this.placeable(so.i)) {
           this.placeFocus = so.i;
           g.placePending(so.i);
         }
@@ -160,7 +160,7 @@ export class UI {
     if (g.phase === PHASE.BUILD && this.buildFocus !== so.i) {
       this.buildFocus = so.i;
       this.renderedKey = '';
-    } else if (g.phase === PHASE.PLACE && !so.tower && this.placeFocus !== so.i) {
+    } else if (g.phase === PHASE.PLACE && this.placeable(so.i) && this.placeFocus !== so.i) {
       this.placeFocus = so.i;
       this.renderedKey = '';
     }
@@ -250,7 +250,7 @@ export class UI {
     v.previewType = '';
     v.focusSocket = -1;
     if (g.phase === PHASE.PLACE && !this.stack.length) {
-      if (this.placeFocus < 0 || g.sockets[this.placeFocus].tower) this.placeFocus = this.firstEmpty();
+      if (this.placeFocus < 0 || !this.placeable(this.placeFocus)) this.placeFocus = this.firstEmpty();
       v.focusSocket = this.placeFocus;
       v.previewType = g.pendingTower;
     } else if (g.phase === PHASE.BUILD) {
@@ -265,12 +265,23 @@ export class UI {
     this.app.classList.toggle('bar-open', !!scr && !!scr.bar);
   }
 
+  // An empty socket, or a twin the pending capsule can level up.
+  placeable(i) {
+    const g = this.g, so = g.sockets[i];
+    return !!so && (!so.tower || g.canMerge(i, g.pendingTower));
+  }
+
   firstEmpty() {
-    // prefer the empty socket with the best path coverage
-    let best = -1, bv = -1;
-    for (const so of this.g.sockets) if (!so.tower && so.coverage > bv) {
-      bv = so.coverage;
-      best = so.i;
+    // a twin to level up first, otherwise the empty socket nearest the middle
+    const g = this.g;
+    for (const so of g.sockets) if (so.tower && g.canMerge(so.i, g.pendingTower)) return so.i;
+    let best = -1, bv = Infinity;
+    for (const so of g.sockets) {
+      const v = Math.abs(so.x - g.heart.x);
+      if (!so.tower && v < bv) {
+        bv = v;
+        best = so.i;
+      }
     }
     return best;
   }
@@ -341,7 +352,8 @@ export class UI {
         case 'boss_spawn': this.banner(BOSSES[e.s].name, bossTip(e.s), 3); break;
         case 'boss_defeat': this.banner(`${BOSSES[e.s].name} defeated!`, `+${e.a} pearls  +${e.b} shells`, 3); break;
         case 'boss_phase': this.toast('The boss is getting serious!'); break;
-        case 'tower_unlocked': this.toast(`${TOWERS[e.s].name} tower unlocked!`, 2.5); break;
+        case 'tower_unlocked': this.toast(`${TOWERS[e.s].name} buddy unlocked!`, 2.5); break;
+        case 'boss_slam_warn': this.toast('The boss is about to slam the reef!', 1.5); break;
         case 'reef_wash': this.toast('Reef Wash! All debuffs cleared.'); break;
         case 'meter_empty': this.flashMeter(); break;
         case 'player_hit':
@@ -384,6 +396,12 @@ export class UI {
     const g = this.g, p = g.player, h = g.heart;
     if (g.phase === PHASE.TITLE) return;
     this.setText('hud-wave', g.endless && g.wave > WAVES.total ? `Wave ${g.wave} ∞` : `Wave ${g.wave}/${WAVES.total}`);
+    const comboMul = g.combo >= 3 ? Math.min(SCORE.comboMax, 1 + (g.combo - 1) * SCORE.comboStep) : 1;
+    this.setText('hud-score', comboMul > 1 ? `${g.score} ×${comboMul.toFixed(1)}` : String(g.score));
+    if (this.hudCache.combo !== comboMul > 1) {
+      this.hudCache.combo = comboMul > 1;
+      $('hud-score').classList.toggle('combo', comboMul > 1);
+    }
     const mod = g.phase === PHASE.COMBAT ? g.mods : g.fork;
     this.setText('hud-mod', mod && mod.id !== 'none' ? mod.name : 'Open Reef');
     this.setText('hud-shells', `${SHELL} ${g.shells}`);
@@ -403,7 +421,7 @@ export class UI {
     const b = g.boss;
     this.setHidden('bossbar', !(combat && b && b.alive));
     if (combat && b && b.alive) {
-      this.setText('boss-name', BOSSES[b.bossId].name + (b.laps ? ' (angry!)' : ''));
+      this.setText('boss-name', BOSSES[b.bossId].name + (b.laps ? ` (angry${b.laps > 1 ? ' ×' + b.laps : ''}!)` : ''));
       this.setStyle('boss-fill', 'transform', `scaleX(${(b.hp / b.maxHp).toFixed(3)})`);
       this.setStyle('boss-shield', 'transform', `scaleX(${b.maxShield ? (b.shield / b.maxShield).toFixed(3) : 0})`);
     }
@@ -451,7 +469,7 @@ export class UI {
       id: 'title', cls: 'title', title: '',
       html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Clay Coral Defense</div></div>
         ${needsInstallHint() ? '<p class="install">📲 For full-screen play: tap <b>Share</b> → <b>Add to Home Screen</b></p>' : ''}
-        <p class="meta">Best wave ${g.meta.bestWave || 0} · Wins ${g.meta.wins || 0} · v${VERSION}</p>`,
+        <p class="meta">High score ${g.meta.bestScore || 0} · Best wave ${g.meta.bestWave || 0} · Wins ${g.meta.wins || 0} · v${VERSION}</p>`,
       items,
     };
   }
@@ -483,7 +501,7 @@ export class UI {
     const boss = isBossWave(g.wave) ? BOSSES[bossForWave(g.wave).id].name : '';
     return {
       id: 'fork', cls: 'fork', layout: 'row', title: `The reef forks — Wave ${g.wave}`,
-      html: boss ? `<p class="warn">⚠ Boss ahead: ${esc(boss)}</p>` : '<p class="sub">Choose a path. It changes the next wave.</p>',
+      html: boss ? `<p class="warn">⚠ Boss ahead: ${esc(boss)}</p>` : '<p class="sub">Choose a current. It changes the next wave.</p>',
       items: forks.map((f, i) => ({
         label: `${i === 0 ? '◀ Left' : 'Right ▶'}: ${f.name}`,
         sub: esc(f.desc),
@@ -523,10 +541,15 @@ export class UI {
       };
     });
     const full = !g.hasEmptySocket();
+    items.forEach((it, i) => {
+      const type = g.draftOptions[i];
+      if (!g.canPlace(type)) it.right = `→ ${skip} shells`;
+      else if (g.towers.some((t) => g.canMerge(t.socket, type))) it.right = 'levels up your twin!';
+    });
     items.push({ label: `Take ${skip} shells instead`, cls: 'small', action: () => g.chooseDraft(-1) });
     return {
-      id: 'draft', cls: 'draft', layout: 'row', title: g.wave === 1 ? 'Pick your first tower' : 'Pick a tower capsule',
-      html: full ? '<p class="warn">All sockets are full — any pick converts to shells.</p>' : '',
+      id: 'draft', cls: 'draft', layout: 'row', title: g.wave === 1 ? 'Pick your first buddy' : 'Pick a buddy capsule',
+      html: full ? '<p class="sub">Sockets are full — drop a capsule on a matching buddy to level it up.</p>' : '<p class="sub">Buddies sit on the reef and shoot what dives at it.</p>',
       items,
       onBack: () => this.openPause(),
     };
@@ -537,11 +560,12 @@ export class UI {
     const d = TOWERS[g.pendingTower];
     if (!d) return null;
     const so = g.sockets[this.placeFocus];
+    const merge = so && so.tower;
     return {
       id: 'place', bar: true, cls: 'place',
       html: `<div class="barinfo"><b>${towerIcon(g.pendingTower)} Place your ${esc(d.name)}</b>
         <span>◀ ▶ choose a coral socket · Confirm to place · or tap a socket</span>
-        ${so ? `<span class="dim">Socket ${so.i + 1}: covers ${Math.round(so.coverage / 10)} m of path</span>` : ''}</div>`,
+        ${so ? `<span class="dim">${merge ? `Socket ${so.i + 1}: levels your ${esc(so.tower.def.short)} up to Lv${so.tower.level + 2}` : `Socket ${so.i + 1}: empty`}</span>` : ''}</div>`,
       items: [{ label: 'Place here', icon: '✔', cls: 'go', action: () => g.placePending(this.placeFocus) }],
       onKey: (a) => {
         if (a === 'left' || a === 'right' || a === 'up' || a === 'down') {
@@ -563,7 +587,7 @@ export class UI {
     let i = from < 0 ? (dir > 0 ? -1 : 0) : from;
     for (let k = 0; k < n; k++) {
       i = (i + dir + n) % n;
-      if (!emptyOnly || !this.g.sockets[i].tower) return i;
+      if (!emptyOnly || this.placeable(i)) return i;
     }
     return from;
   }
@@ -579,7 +603,7 @@ export class UI {
       const t = so.tower;
       info = `<b>${towerIcon(t.type)} ${esc(t.stats.name || t.def.name)} · Lv${t.level + 1}</b><span>${statLine(t.type, t.level)} · kills ${t.kills}</span>`;
     } else if (so) {
-      info = `<b>Empty coral socket ${so.i + 1}</b><span>Confirm to build a tower here</span>`;
+      info = `<b>Empty coral socket ${so.i + 1}</b><span>Confirm to add a buddy here</span>`;
     } else {
       info = `<b>Ready for wave ${g.wave}${isBossWave(g.wave) ? ' — BOSS' : ''}</b><span>${esc(g.fork.name || '')}${g.fork.desc ? ' — ' + esc(g.fork.desc) : ''}</span>`;
     }
@@ -651,7 +675,7 @@ export class UI {
       });
       items.push({ label: 'Back', cls: 'small', action: back });
       return {
-        id: 'sock-empty-' + i, socket: i, title: `Build on socket ${i + 1}`, items, onBack: back,
+        id: 'sock-empty-' + i, socket: i, title: `Add a buddy to socket ${i + 1}`, items, onBack: back,
         previewTypes: g.towerTypes.slice(),
       };
     }
@@ -723,13 +747,16 @@ export class UI {
     const g = this.g, s = g.waveSummary || {};
     const rows = [
       ['Enemies popped', s.kills],
+      ['Score', `+${s.score} (wave bonus ${s.scoreBonus}) · total ${s.total}`],
       ['Shells earned', `+${s.shells} (wave bonus ${s.clearBonus})`],
     ];
+    if (s.leaks) rows.push(['Reef bites', `${s.leaks} (−${Math.round(s.heartDmg)} Coral Heart)`]);
+    if (s.playerHits) rows.push(['Times you got hit', s.playerHits]);
     if (s.pearls) rows.push(['Pearls', `+${s.pearls}`]);
     if (s.perfect) rows.push(['Perfect wave!', 'Coral Heart untouched']);
     if (s.shellsStolen) rows.push(['Stolen by crabs', `-${s.shellsStolen}`]);
     if (s.bossDefeated) rows.push(['Boss', `${BOSSES[s.bossDefeated].name} defeated`]);
-    if (s.unlockedTower) rows.push(['New tower', TOWERS[s.unlockedTower].name]);
+    if (s.unlockedTower) rows.push(['New buddy', TOWERS[s.unlockedTower].name]);
     if (s.towersEaten) rows.push(['Swallowed (and spat out)', s.towersEaten]);
     if (s.newSkin) rows.push(['New skin', SKINS[s.newSkin].name]);
     return {
@@ -745,6 +772,7 @@ export class UI {
     return {
       id: 'victory', cls: 'victory', title: 'Kraken Kitty is defeated!',
       html: `<p class="sub">The reef is safe. Endless Reef mode and new fish skins are unlocked.</p>${table([
+        ['Score', `${g.score}${g.waveSummary && g.waveSummary.newBest ? ' — new high score!' : ''}`],
         ['Total pops', g.runStats.kills], ['Shells earned', g.runStats.shells], ['Perfect waves', g.runStats.perfectWaves],
       ])}`,
       items: [
@@ -759,7 +787,8 @@ export class UI {
     return {
       id: 'defeat', cls: 'defeat', title: 'The Coral Heart crumbled',
       html: `<p class="sub">You reached wave ${g.wave}${g.endless ? ' (Endless)' : ''}.</p>${table([
-        ['Total pops', g.runStats.kills], ['Towers built', g.runStats.towersBuilt], ['Perfect waves', g.runStats.perfectWaves],
+        ['Score', `${g.score}${g.waveSummary && g.waveSummary.newBest ? ' — new high score!' : ` (best ${g.meta.bestScore || 0})`}`],
+        ['Total pops', g.runStats.kills], ['Buddies placed', g.runStats.towersBuilt], ['Perfect waves', g.runStats.perfectWaves],
       ])}`,
       items: [
         { label: 'Try again', icon: '↻', cls: 'go', action: () => this.newRun(g.endless) },
@@ -881,7 +910,7 @@ function statLine(type, level) {
 function bossTip(id) {
   switch (id) {
     case 'chef': return 'Line up Minus shots on the hat for triple damage!';
-    case 'sharky': return 'Starfish stars stun him mid-charge!';
+    case 'sharky': return 'Dodge the red lane! Starfish stars stun him mid-charge.';
     case 'queen': return 'Hit her when her arms open — or Plus her shut arms open.';
     case 'kitty': return 'Minus breaks tentacles. Plus pops her purr shield.';
     default: return '';

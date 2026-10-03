@@ -9,7 +9,7 @@
 //   render(frameDt, alpha)   — draw; alpha (0..1) interpolates between sim ticks
 //   screenToWorld(px, py)    — CSS-pixel -> world coords (for tapping sockets)
 //   setInsets({top,bottom})  — HUD / touch-control space to keep clear
-//   onArtLoaded()            — sprites finished loading (rebuild cached board)
+//   onArtLoaded()            — sprites finished loading (rebuild the cached arena)
 //   quality                  — 0.5..1, lowered automatically when frames are slow
 //
 // Nothing in here mutates game state.
@@ -20,7 +20,7 @@ import { towerRange } from '../core/towers.js';
 import { SpriteBank } from './sprites.js';
 
 export const TILT = 0.82; // y squash for the tilted-tabletop look
-export const TOP_MARGIN = 70; // world units above y=0 kept visible (spawn cave)
+export const TOP_MARGIN = 70; // world units above y=0 kept visible (enemies swoop in from here)
 const TAU = Math.PI * 2;
 
 const C = {
@@ -28,8 +28,9 @@ const C = {
   waterTop: '#46dbd3',
   waterBot: '#1aa9c4',
   sand: '#f7e2a8',
-  pathEdge: '#e2b971',
-  path: '#ffeec2',
+  sandEdge: '#e2b971',
+  kelp: '#3fae6a',
+  kelpDark: '#2a8a52',
   socket: '#ff8fa3',
   socketRim: '#cf5672',
   socketHi: '#ffe066',
@@ -221,18 +222,19 @@ export class Renderer {
     const s = this.s, W = WORLD.W;
     ctx.fillStyle = C.bgDeep;
     ctx.fillRect(0, 0, this.cssW, this.cssH);
-    // painted diorama board: anchored at the world's top-left (x 0, y -TOP_MARGIN)
-    if (this.sp.has('board')) {
-      this.sp.draw(ctx, 'board', this.sp.pick('board', 'idle'), 0, this.px(0), this.py(-TOP_MARGIN), s, null);
+    // painted arena: anchored at the world's top-left (x 0, y -TOP_MARGIN)
+    if (this.sp.has('arena')) {
+      this.sp.draw(ctx, 'arena', this.sp.pick('arena', 'idle'), 0, this.px(0), this.py(-TOP_MARGIN), s, null);
       this.vignette(ctx);
       return;
     }
 
-    // the diorama box
+    // the diorama box: open water above a sandy reef shelf
     const x0 = this.px(0), x1 = this.px(W);
     const y0 = this.py(-TOP_MARGIN), y1 = this.py(WORLD.H);
     const grad = ctx.createLinearGradient(0, y0, 0, y1);
-    grad.addColorStop(0, C.waterTop);
+    grad.addColorStop(0, '#1c8fb0');
+    grad.addColorStop(0.45, C.waterTop);
     grad.addColorStop(1, C.waterBot);
     ctx.fillStyle = grad;
     roundRect(ctx, x0 - 10 * s, y0 - 10 * s, x1 - x0 + 20 * s, y1 - y0 + 20 * s, 28 * s);
@@ -241,57 +243,69 @@ export class Renderer {
     ctx.strokeStyle = 'rgba(0,0,0,0.18)';
     ctx.stroke();
 
-    // sandy floor at the bottom
-    ctx.fillStyle = C.sand;
-    ctx.beginPath();
-    ctx.moveTo(x0, this.py(WORLD.RAIL_Y - 50));
-    for (let x = 0; x <= W; x += 40) ctx.lineTo(this.px(x), this.py(WORLD.RAIL_Y - 50 + Math.sin(x * 0.05) * 8));
-    ctx.lineTo(x1, y1);
-    ctx.lineTo(x0, y1);
-    ctx.closePath();
-    ctx.fill();
-
-    // deterministic clay pebbles and coral blobs (avoiding the path)
+    ctx.save();
+    roundRect(ctx, x0 - 10 * s, y0 - 10 * s, x1 - x0 + 20 * s, y1 - y0 + 20 * s, 28 * s);
+    ctx.clip();
+    // sun shafts
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    for (const [x, w] of [[120, 60], [330, 90], [560, 50], [700, 80]]) {
+      ctx.beginPath();
+      ctx.moveTo(this.px(x), y0);
+      ctx.lineTo(this.px(x + w), y0);
+      ctx.lineTo(this.px(x + w - 160), this.py(800));
+      ctx.lineTo(this.px(x - 200), this.py(800));
+      ctx.closePath();
+      ctx.fill();
+    }
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    const path = this.g.path;
-    for (let i = 0; i < 46; i++) {
-      const x = 20 + rnd() * (W - 40), y = -20 + rnd() * (WORLD.RAIL_Y - 120);
-      if (path.closest(x, y).gap < 60) continue;
-      let near = false;
-      for (const so of MAP.sockets) if (Math.hypot(so[0] - x, so[1] - y) < 55) near = true;
+    // drifting background bubbles
+    for (let i = 0; i < 26; i++) {
+      const x = 20 + rnd() * (W - 40), y = -40 + rnd() * 780, r = 2 + rnd() * 5;
+      ctx.globalAlpha = 0.18 + rnd() * 0.2;
+      ring2(ctx, this.px(x), this.py(y), r * s, r * s, '#ffffff', 1.5 * s);
+    }
+    ctx.globalAlpha = 1;
+    // kelp along both walls
+    for (const side of [0, 1]) {
+      for (let k = 0; k < 3; k++) {
+        const bx = side ? W - 14 - k * 22 : 14 + k * 22;
+        const top = 380 + rnd() * 260;
+        for (let y = 900; y > top; y -= 26) {
+          const sway = Math.sin(y * 0.03 + k) * 8;
+          blob(ctx, this.px(bx + sway), this.py(y), 11 * s, 16 * s * TILT, k % 2 ? C.kelpDark : C.kelp, 0.2);
+        }
+      }
+    }
+    // sandy reef shelf
+    const shelf = 870;
+    ctx.fillStyle = C.sandEdge;
+    ctx.beginPath();
+    ctx.moveTo(x0 - 10 * s, this.py(shelf + 6));
+    for (let x = 0; x <= W; x += 40) ctx.lineTo(this.px(x), this.py(shelf + 6 + Math.sin(x * 0.05) * 8));
+    ctx.lineTo(x1 + 10 * s, y1 + 10 * s);
+    ctx.lineTo(x0 - 10 * s, y1 + 10 * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = C.sand;
+    ctx.beginPath();
+    ctx.moveTo(x0 - 10 * s, this.py(shelf + 14));
+    for (let x = 0; x <= W; x += 40) ctx.lineTo(this.px(x), this.py(shelf + 14 + Math.sin(x * 0.05) * 8));
+    ctx.lineTo(x1 + 10 * s, y1 + 10 * s);
+    ctx.lineTo(x0 - 10 * s, y1 + 10 * s);
+    ctx.closePath();
+    ctx.fill();
+    // clay coral and pebbles on the shelf, clear of the sockets and the heart
+    for (let i = 0; i < 40; i++) {
+      const x = 10 + rnd() * (W - 20), y = shelf + 20 + rnd() * 110;
+      let near = Math.hypot(MAP.heart.x - x, MAP.heart.y - y) < 70;
+      for (const so of MAP.sockets) if (Math.hypot(so[0] - x, so[1] - y) < 50) near = true;
       if (near) continue;
-      const r = 6 + rnd() * 14;
+      const r = 5 + rnd() * 10;
       const col = ['#ff9fb2', '#ffd36e', '#9be7a0', '#7fd4ff', '#c9a6ff'][i % 5];
       blob(ctx, this.px(x), this.py(y), r * s, r * s * TILT, col, 0.25);
     }
-
-    // the path, as a thick sandy ribbon
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    const tracePath = () => {
-      ctx.beginPath();
-      ctx.moveTo(this.px(path.xs[0]), this.py(path.ys[0]));
-      for (let i = 1; i < path.n; i++) ctx.lineTo(this.px(path.xs[i]), this.py(path.ys[i]));
-    };
-    tracePath();
-    ctx.strokeStyle = C.pathEdge;
-    ctx.lineWidth = 70 * s;
-    ctx.stroke();
-    tracePath();
-    ctx.strokeStyle = C.path;
-    ctx.lineWidth = 56 * s;
-    ctx.stroke();
-    tracePath();
-    ctx.setLineDash([6 * s, 18 * s]);
-    ctx.strokeStyle = 'rgba(226,185,113,0.6)';
-    ctx.lineWidth = 4 * s;
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // spawn cave
-    blob(ctx, this.px(path.xs[0]), this.py(-38), 52 * s, 34 * s, '#3b2f57', 0);
-    blob(ctx, this.px(path.xs[0]), this.py(-30), 38 * s, 24 * s, '#160f26', 0);
+    ctx.restore();
 
     // sockets (coral cups)
     for (const so of MAP.sockets) {
@@ -339,7 +353,17 @@ export class Renderer {
           break;
         case 'kill':
           this.burst(e.x, e.y, lowFx ? 4 : 9, ENEMY_COLORS[e.s] || '#fff', 160, 5);
-          this.text(e.x, e.y - 20, `+${e.a}`, '#fff3b0');
+          break;
+        case 'score':
+          if (e.s) this.text(e.x, e.y - 20, String(e.a), e.s === 'boss' ? '#fff36b' : '#fff3b0', e.s === 'boss' ? 1.6 : 0.9);
+          if (e.b >= 5 && e.b % 5 === 0) this.text(e.x, e.y - 48, `×${Math.min(4, 1 + (e.b - 1) * 0.1).toFixed(1)} combo`, '#9be7ff', 1.1);
+          break;
+        case 'crash':
+          this.burst(e.x, e.y, lowFx ? 5 : 10, ENEMY_COLORS[e.s] || '#fff', 200, 5);
+          break;
+        case 'leak':
+          this.burst(e.x, e.y, lowFx ? 4 : 8, C.heart, 160, 5);
+          this.ring(e.x, e.y, 8, 40, 0.35, C.heart);
           break;
         case 'split':
           this.ring(e.x, e.y, 8, 30, 0.3, ENEMY_COLORS.jelly);
@@ -464,8 +488,13 @@ export class Renderer {
           this.text(e.x, e.y - 90, 'EXPOSED!', '#fff36b', 1.4);
           this.ring(e.x, e.y, 30, 120, 0.5, C.plus);
           break;
+        case 'boss_slam_warn':
+          this.text(e.x, e.y - 90, 'Rumble…', '#ffb0b0', 1.3);
+          break;
         case 'boss_lap':
-          this.text(g.heart.x, g.heart.y - 90, 'It came back angrier!', '#ff9a9a', 1.6);
+          this.text(g.heart.x, g.heart.y - 110, 'REEF SLAM!', '#ff9a9a', 1.6);
+          this.ring(g.heart.x, WORLD.REEF_Y, 30, 420, 0.7, '#ff9a9a');
+          this.shake(14);
           break;
         case 'boss_defeat':
           this.burst(e.x, e.y, 40, BOSS_COLORS[e.s] || '#fff', 320, 8);
@@ -683,11 +712,17 @@ export class Renderer {
         if (so.tower) range = towerRange(g, so.tower);
         else if (v.previewType) range = TOWERS[v.previewType].levels[0].range * (g.fork.rangeMul || 1);
         if (range > 0) {
+          // only the part over the water matters: buddies shoot upward
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(this.px(0), this.py(-TOP_MARGIN), WORLD.W * s, this.py(so.y) - this.py(-TOP_MARGIN));
+          ctx.clip();
           ctx.fillStyle = 'rgba(255,255,255,0.12)';
           ctx.beginPath();
           ctx.ellipse(this.px(so.x), this.py(so.y), range * s, range * s * TILT, 0, 0, TAU);
           ctx.fill();
           ring2(ctx, this.px(so.x), this.py(so.y), range * s, range * s * TILT, 'rgba(255,255,255,0.7)', 2 * s);
+          ctx.restore();
         }
         const bob = Math.sin(this.time * 6) * 4;
         ring2(ctx, this.px(so.x), this.py(so.y), MAP.socketR * s * 1.35, MAP.socketR * s * 1.35 * TILT, C.socketHi, 4 * s);
@@ -708,7 +743,12 @@ export class Renderer {
         if (t.plusT <= 0) continue;
         ctx.globalAlpha = 0.35 + 0.2 * Math.sin(this.time * 10);
         const r = towerRange(g, t);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(this.px(0), this.py(-TOP_MARGIN), WORLD.W * s, this.py(t.y) - this.py(-TOP_MARGIN));
+        ctx.clip();
         ring2(ctx, this.px(t.x), this.py(t.y), r * s, r * s * TILT, C.plus, 2 * s);
+        ctx.restore();
       }
       ctx.globalAlpha = 1;
     }
@@ -716,8 +756,16 @@ export class Renderer {
 
   drawStrikeTelegraphs() {
     const g = this.g, ctx = this.ctx, s = this.s;
+    // Sharky's charge lane
+    const b = g.boss;
+    if (b && b.alive && b.bossId === 'sharky' && (b.state === 1 || b.state === 2)) {
+      const w = (b.r * 0.7 + 10) * s, x = this.px(b.tx);
+      const flash = b.state === 2 || Math.floor(this.time * 8) % 2 ? 0.22 : 0.12;
+      ctx.fillStyle = `rgba(255,60,60,${flash})`;
+      ctx.fillRect(x - w, this.py(b.y), w * 2, this.py(WORLD.RAIL_Y + 30) - this.py(b.y));
+    }
     for (const st of g.strikes) {
-      if (!st.alive) continue;
+      if (!st.alive || st.bullet) continue;
       const k = st.t / st.dur;
       const col = st.kind === 'swipe' ? 'rgba(255,90,140,' : st.hitsPlayer ? 'rgba(255,60,60,' : 'rgba(40,30,70,';
       ctx.fillStyle = col + (0.15 + 0.3 * k) + ')';
@@ -1278,6 +1326,29 @@ export class Renderer {
     for (const st of g.strikes) {
       if (!st.alive || st.kind === 'swipe') continue;
       const wx = this.ix(st), wy = this.iy(st), wz = st.pz + (st.z - st.pz) * this.a;
+      if (st.bullet) {
+        const key = 'strike.' + st.kind;
+        const rot = Math.atan2(st.vy * TILT, st.vx);
+        if (this.sp.loaded && this.spr(key, 'fly', st.t, wx, wy, 10, this.opt(false, 1, 1, this.sp.flag(key, 'orient') ? rot : 0, 1, 0))) continue;
+        const x = this.px(wx), y = this.py(wy, 10);
+        if (st.kind === 'spike') {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(rot);
+          ctx.fillStyle = '#5b3f8c';
+          ctx.beginPath();
+          ctx.moveTo(14 * s, 0);
+          ctx.lineTo(-8 * s, -5 * s);
+          ctx.lineTo(-8 * s, 5 * s);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        } else {
+          blob(ctx, x, y, st.r * s, st.r * s, '#ff5fa2', 0.5);
+          ring2(ctx, x, y, st.r * s, st.r * s, '#7a1d4a', 2 * s);
+        }
+        continue;
+      }
       if (this.sp.loaded && this.spr('strike.' + st.kind, 'fly', st.t, wx, wy, wz + 10, this.opt(false, 1, 1, this.sp.flag('strike.' + st.kind, 'spin') ? st.t * 14 : 0, 1, 0))) continue;
       const x = this.px(wx), y = this.py(wy, wz + 10);
       if (st.kind === 'ink') blob(ctx, x, y, 12 * s, 11 * s, C.ink, 0.25);
