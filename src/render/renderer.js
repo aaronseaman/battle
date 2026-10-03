@@ -87,6 +87,9 @@ export class Renderer {
     this.bossFx = { throwT: 9, summonT: 9 };
     this.labelBump = 0; // school counter pop
     this.schoolX = 0;
+    this.victoryFx = null;
+    this.impactT = 0;
+    this.reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
     this.horizon = 0;
     this.o = { flip: false, rot: 0, sx: 1, sy: 1, alpha: 1, add: 0 };
     // projection
@@ -218,6 +221,12 @@ export class Renderer {
     for (let i = 0; i < q.n; i++) {
       const e = q.items[i];
       switch (e.type) {
+        case 'hit':
+          if (this.impactT <= 0) {
+            this.burst(e.x, e.y, e.s === 'boss' ? 70 : 22, lowFx ? 2 : 4, '#b7f4ff', 100, 4);
+            this.impactT = .055;
+          }
+          break;
         case 'kill':
           if (!this.corpse('enemy.' + e.s, 'die', e.x, e.y, SIZE.enemy)) this.burst(e.x, e.y, 14, lowFx ? 4 : 9, ENEMY_COLORS[e.s] || '#fff', 120, 5);
           break;
@@ -256,7 +265,8 @@ export class Renderer {
           this.ring(e.x, e.y, 10, e.a, 0.35, e.s === 'ink' ? '#2a2440' : '#bff7ff');
           break;
         case 'boss_spawn':
-          this.shake(8);
+          this.ring(e.x, e.y, 15, 130, .75, '#d1eaff');
+          this.shake(6);
           break;
         case 'boss_throw':
           this.bossFx.throwT = 0;
@@ -273,15 +283,18 @@ export class Renderer {
           this.text(e.x, 60, 'Dodged!', '#ffffff', 1.2);
           break;
         case 'boss_defeat':
-          this.corpse('boss.' + e.s, 'die', e.x, e.y, SIZE.boss);
-          this.corpse('fx.confetti', '', e.x, e.y, 2.2);
-          this.burst(e.x, e.y, 60, lowFx ? 16 : 40, BOSS_COLORS[e.s] || '#fff', 320, 8);
-          this.shake(14);
+          this.victoryFx = { key: 'boss.' + e.s, x: e.x, z: e.y, t: 0, coins: [] };
+          for (let k = 0; k < (lowFx ? 8 : 16); k++) this.victoryFx.coins.push({ angle: k * 2.399, delay: k * .045 });
+          this.ring(e.x, e.y, 12, 170, .85, '#a7efff');
+          this.ring(e.x, e.y, 25, 140, .65, '#ffe274');
+          for (const color of ['#51d9ff','#ff84dc','#ffe071']) this.burst(e.x,e.y,70,lowFx ? 6 : 12,color,240,7);
+          this.shake(8);
           break;
         case 'win':
-          this.corpse('fx.confetti', '', g.school.x, 120, 2.6);
+          this.labelBump = .35;
           break;
         case 'phase':
+          if (e.s === 'play' || e.s === 'title') this.victoryFx = null;
           if (e.s !== 'play') {
             this.texts.length = 0;
             this.rings.length = 0;
@@ -320,6 +333,7 @@ export class Renderer {
       p.life = p.max = 0.45 + Math.random() * 0.35;
       p.color = color;
       p.size = size * (0.6 + Math.random() * 0.6);
+      p.spin = Math.random() * TAU;
       this.particles.push(p);
     }
   }
@@ -367,6 +381,8 @@ export class Renderer {
     this.drawShotsInFlight();
     this.drawLabels();
     this.drawFx(fdt);
+    this.drawVictory(fdt);
+    this.impactT = Math.max(0, this.impactT - fdt);
   }
 
   running() {
@@ -660,7 +676,17 @@ export class Renderer {
       else if (once('swipe', bf.throwT)) (anim = 'swipe'), (t = bf.throwT);
       else if (once('summon', bf.summonT)) (anim = 'summon'), (t = bf.summonT);
       else anim = sp.pick(key, o.hp < o.maxHp * 0.5 ? 'move2' : '', o.type === 'queen' ? 'open' : '', 'move');
-      sp.draw(ctx, key, anim, t, X, Y, U * SIZE.boss, this.opt(false, 1, 1, 0, 1, o.hitT > 0 ? 0.35 : 0));
+      const idle = Math.sin(this.time * 3.8);
+      const attack = Math.max(0, 1 - bf.throwT / .55);
+      const summon = Math.max(0, 1 - bf.summonT / .65);
+      const windup = o.type === 'sharky' && o.state === 1;
+      const charge = o.type === 'sharky' && o.state === 2;
+      const motion = this.reducedMotion ? 0 : 1;
+      const stretch = (idle * .025 + attack * .1 - (windup ? .08 : 0) + (charge ? .12 : 0)) * motion;
+      const tilt = (idle * .025 + attack * .1 + summon * .07 + (o.hitT > 0 ? Math.sin(this.time * 90) * .04 : 0)) * motion;
+      const lift = (Math.abs(idle) * 5 + summon * 8 - (windup ? 4 : 0)) * U * motion;
+      sp.draw(ctx, key, anim, t, X, Y - lift, U * SIZE.boss,
+        this.opt(false, 1 + stretch, 1 - stretch * .7, tilt, 1, o.hitT > 0 ? 0.25 : 0));
       if (o.type === 'chef') {
         const ap = sp.attach(key, 'hat');
         if (ap) sp.draw(ctx, 'boss.chef.hat', 'idle', t, X + ap.dx * U * SIZE.boss, Y + ap.dy * U * SIZE.boss, U * SIZE.boss, null);
@@ -755,6 +781,7 @@ export class Renderer {
     const pop = 1 + Math.max(0, this.labelBump) * 0.9;
     const col = s.hitT > 0 ? '#f84c82' : s.gainT > 0 ? '#15caff' : '#167dff';
     badge(ctx, String(s.n), X, Y, 20 * pop, col);
+    bigText(ctx, `${1 + g.meta.up.shots} ${g.meta.up.shots ? 'shots' : 'shot'}`, X, Y + 26, 11, '#e6fcff');
     const b = g.boss;
     if (b && b.alive && b.z < ROAD.view) {
       const def = BOSSES[b.type];
@@ -782,6 +809,33 @@ export class Renderer {
     }
   }
 
+  drawVictory(dt) {
+    const v = this.victoryFx;
+    if (!v) return;
+    v.t += dt;
+    if (v.t > 2.8) { this.victoryFx = null; return; }
+    const ctx = this.ctx, U = this.U(v.z), X = this.X(v.x,v.z), Y = this.Y(v.z);
+    if (v.t < 1.25) {
+      const k = Math.min(1,v.t / 1.25), scale = 1 - k * .7;
+      const up = this.reducedMotion ? 0 : k * k * 130 * U;
+      const poseT = v.t < .35 ? 0 : this.sp.duration(v.key,'die') * .75;
+      this.sp.draw(ctx,v.key,'die',poseT,X,Y-up,U*SIZE.boss*scale,
+        this.opt(false,1,1,this.reducedMotion ? 0 : Math.sin(k*8)*.1,1-k*k,0));
+    }
+    const targetX = this.cssW - 70, targetY = this.insets.top - 28;
+    for (const coin of v.coins) {
+      const t = (v.t - coin.delay) / 1.3;
+      if (t < 0 || t > 1) continue;
+      const k = t*t*(3-2*t), spread = Math.sin(t*Math.PI) * 100 * U;
+      const x = X + (targetX-X)*k + Math.cos(coin.angle)*spread;
+      const y = Y - 55*U + (targetY-Y+55*U)*k + Math.sin(coin.angle)*spread;
+      const size = 24*(.7+Math.sin(t*Math.PI)*.3);
+      ctx.globalAlpha = Math.min(1,(1-t)*6);
+      this.glossCell(5,x-size/2,y-size/2,size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   drawFx(dt) {
     const ctx = this.ctx;
     const scroll = this.running() ? ROAD.speed : 0;
@@ -801,7 +855,10 @@ export class Renderer {
       const U = this.U(p.z), r = p.size * U;
       ctx.globalAlpha = Math.min(1, (p.life / p.max) * 1.5);
       ctx.fillStyle = p.color;
-      ctx.fillRect(this.X(p.x, p.z) - r / 2, this.Y(p.z) - p.h * U - r / 2, r, r);
+      const px = this.X(p.x,p.z), py = this.Y(p.z)-p.h*U;
+      if (p.color === '#b7f4ff') {
+        ctx.beginPath();ctx.arc(px,py,Math.max(.5,r*.6),0,TAU);ctx.fill();
+      } else star(ctx,px,py,Math.max(.5,r),Math.max(.25,r*.4),p.spin+p.life*4,p.color);
     }
     for (let i = this.rings.length - 1; i >= 0; i--) {
       const r = this.rings[i];

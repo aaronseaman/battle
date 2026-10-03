@@ -14,7 +14,7 @@ const $ = (id) => document.getElementById(id);
 
 const COIN = '🪙';
 const artIcon = (name, alt = '') => `<img src="assets/art/gloss/${name}.webp" alt="${alt}" draggable="false">`;
-const UPGRADE_ICONS = { fish: artIcon('school'), dmg: artIcon('bubbles'), rate: artIcon('fire') };
+const UPGRADE_ICONS = { shots: artIcon('bubbles'), fish: artIcon('school'), dmg: artIcon('bubbles'), rate: artIcon('fire') };
 
 export class UI {
   constructor({ game, audio, settings, input, onSettings }) {
@@ -36,6 +36,8 @@ export class UI {
     this.toastT = 0;
     this.bannerT = 0;
     this.hintT = 0;
+    this.rewardElapsed = 1;
+    this.rewardLevel = 0;
     this.currentScreen = null;
 
     this.panel.addEventListener('pointerdown', (e) => {
@@ -169,6 +171,11 @@ export class UI {
     this.app.classList.toggle('in-run', g.phase !== PHASE.TITLE);
     this.app.classList.toggle('menu-open', !!scr);
     this.updateHud();
+    if (g.phase === PHASE.WON && this.rewardElapsed < 1) {
+      this.rewardElapsed = Math.min(1,this.rewardElapsed + dt / .85);
+      const reward = this.panel.querySelector('[data-reward]');
+      if (reward) reward.textContent = String(Math.round(Number(reward.dataset.reward) * (1 - Math.pow(1-this.rewardElapsed,3))));
+    }
     if (this.toastT > 0) {
       this.toastT -= dt;
       if (this.toastT <= 0) this.toastEl.classList.remove('show');
@@ -192,6 +199,10 @@ export class UI {
       this.panel.className = 'hidden';
       this.panel.innerHTML = '';
       return;
+    }
+    if (scr.id === 'won' && this.rewardLevel !== this.g.result?.level) {
+      this.rewardLevel = this.g.result.level;
+      this.rewardElapsed = 0;
     }
     if (this.focus >= scr.items.length) this.focus = Math.max(0, scr.items.length - 1);
     if (scr.focusDefault !== undefined && this.focus === 0) this.focus = scr.focusDefault;
@@ -223,7 +234,9 @@ export class UI {
     this.toastT = secs;
   }
 
-  banner(title, sub, secs = 2.2) {
+  banner(title, sub, secs = 2.2, kind = '') {
+    this.bannerEl.classList.toggle('boss-banner', kind === 'boss');
+    this.bannerEl.classList.toggle('win-banner', kind === 'win');
     this.bannerEl.innerHTML = `<div class="big">${esc(title)}</div>${sub ? `<div class="small">${esc(sub)}</div>` : ''}`;
     this.bannerEl.classList.add('show');
     this.bannerT = secs;
@@ -251,7 +264,12 @@ export class UI {
             this.hintEl.classList.remove('show');
           }
           break;
-        case 'boss_stage': this.banner(BOSSES[e.s].name, bossTip(e.s), 2.2); break;
+        case 'win':
+          this.banner('Boss defeated!', 'Your school made it!', 1.35, 'win');
+          if (this.settings.haptics) haptic();
+          this.hintT = 0; this.hintEl.classList.remove('show');
+          break;
+        case 'boss_stage': this.banner(BOSSES[e.s].name, bossTip(e.s), 2.2, 'boss'); break;
         case 'buddy_join': this.toast(`A ${e.s} buddy joined your school!`, 1.6); break;
         case 'pause':
         case 'resume': this.renderedKey = ''; break;
@@ -308,7 +326,7 @@ export class UI {
       return {
         label: `${u.name}`,
         icon: UPGRADE_ICONS[id],
-        sub: `${esc(u.desc)} <small>(Lv ${g.meta.up[id]})</small>`,
+        sub: id === 'shots' ? `${1 + g.meta.up.shots} ${g.meta.up.shots === u.max ? 'shots · MAX' : `→ ${2 + g.meta.up.shots} shots per volley`}` : `${esc(u.desc)} <small>(Lv ${g.meta.up[id]})</small>`,
         right: cost == null ? 'MAX' : `${artIcon('pearl')} ${cost}`,
         disabled: cost == null || g.meta.coins < cost,
         why: cost == null ? 'Maxed out' : 'Not enough coins',
@@ -354,9 +372,9 @@ export class UI {
       : { label: `Try level ${g.meta.level} again`, icon: '↻', cls: 'go big', action: () => this.play() };
     return {
       id: won ? 'won' : 'lost', cls: won ? 'victory' : 'defeat',
-      title: won ? `Level ${r.level} cleared!` : 'Your school got eaten!',
-      html: `${won ? '' : '<p class="sub">Pick the blue gates, shoot the critters,<br>and upgrade your school.</p>'}
-        ${table(rows)}<p class="sub balance">Coins: ${artIcon('pearl')} <b>${g.meta.coins}</b></p>`,
+      title: won ? 'Boss defeated!' : 'Your school got eaten!',
+      html: `${won ? `<p class="victory-caption">${esc(BOSSES[bossForLevel(r.level).id].name)} · Level ${r.level} cleared</p><div class="victory-stars" aria-hidden="true">★</div>` : '<p class="sub">Pick the blue gates, shoot the critters,<br>and upgrade your school.</p>'}
+        ${won ? `<div class="win-reward" aria-label="${r.coins} coins earned">${artIcon('pearl')}<span>+<b data-reward="${r.coins}">${this.rewardElapsed < 1 ? 0 : r.coins}</b></span><small>Coins earned · includes ${r.bonus || 0} clear bonus</small></div><p class="victory-caption">${r.fish} fish made it home${r.newSkin ? ` · ${esc(SKINS[r.newSkin].name)} unlocked` : ''}</p>` : table(rows)}<p class="sub balance">Coins: ${artIcon('pearl')} <b>${g.meta.coins}</b></p>`,
       items: [next, ...this.upgradeItems(), { label: 'Title screen', cls: 'small', action: () => g.quitToTitle() }],
     };
   }

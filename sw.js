@@ -5,7 +5,7 @@
 // itself is network-first, and its "version" busts sprite URLs (?v=N), so new
 // artwork shows up on the next launch without bumping CACHE.
 
-const CACHE = 'reef-rumble-gloss-v3.1.0';
+const CACHE = 'reef-rumble-gloss-v3.2.0';
 
 // Same URLs SpriteBank requests: assets/art/<file>?v=<version>
 async function artUrls() {

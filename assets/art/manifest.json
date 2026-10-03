@@ -1,5 +1,5 @@
 {
-  "version": 15,
+  "version": 16,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
@@ -1443,7 +1443,7 @@
       "notes": "Star Minion (Starfish Queen minion): small yellow starfish cartwheeling. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
     },
     "boss.chef": {
-      "file": "bosses/boss-chef.webp",
+      "file": "gloss/boss-chef.webp",
       "priority": "P0",
       "frame": [
         192,
@@ -1451,50 +1451,84 @@
       ],
       "anchor": [
         0.5,
-        0.8
+        0.85
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "move2": {
           "row": 1,
-          "frames": 6,
-          "fps": 12,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "throw": {
-          "row": 2,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         },
         "summon": {
-          "row": 3,
-          "frames": 6,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
         "die": {
-          "row": 4,
-          "frames": 8,
-          "fps": 16,
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
           "loop": false
         }
       },
-      "notes": "Chef Octopus (wave 5 boss): big purple octopus, apron, mustache, ladle. DRAW WITHOUT THE HAT — the hat is boss.chef.hat (it is the weak point and sways separately). Leave room at the top of the head. move2 = angrier phase-2 walk (optional). throw = lobs an ink bomb. summon = waves ladle, minis appear.",
-      "scale": 1.3333333333333333,
-      "attach": {
-        "hat": [
-          0.44,
-          0.24
-        ]
-      }
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
+      "scale": 1.3333333333333333
     },
     "boss.chef.hat": {
       "file": "bosses/boss-chef-hat.webp",
@@ -1519,7 +1553,7 @@
       "notes": "The tall puffy white chef hat. Anchor = bottom-center of the hat; it is placed on the chef's head at 90% of the chef sprite height and sways with the hitbox. Make it read as a target (slightly glowing/wobbly)."
     },
     "boss.sharky": {
-      "file": "bosses/boss-sharky.webp",
+      "file": "gloss/boss-sharky.webp",
       "priority": "P0",
       "frame": [
         216,
@@ -1527,53 +1561,87 @@
       ],
       "anchor": [
         0.5,
-        0.75
+        0.85
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "move2": {
+          "row": 1,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "windup": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "charge": {
-          "row": 2,
-          "frames": 3,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "recover": {
-          "row": 3,
-          "frames": 4,
-          "fps": 12,
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
-        "stunned": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "summon": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 5,
-          "frames": 8,
-          "fps": 16,
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
           "loop": false
         }
       },
-      "notes": "Sharky the Teething (wave 10): chubby baby shark with metal braces, drooling. windup = crouch + red-faced grr (telegraph!). charge = stretched mid-dash. stunned = seeing stars. recover = panting.",
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
       "scale": 1.3333333333333333
     },
     "boss.queen": {
-      "file": "bosses/boss-queen.webp",
+      "file": "gloss/boss-queen.webp",
       "priority": "P0",
       "frame": [
         240,
@@ -1581,41 +1649,87 @@
       ],
       "anchor": [
         0.5,
-        0.72
+        0.85
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
-        "closed": {
+        "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
-        "open": {
+        "move2": {
           "row": 1,
-          "frames": 6,
-          "fps": 12,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
-        "summon": {
-          "row": 2,
-          "frames": 6,
-          "fps": 12,
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "summon": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
         "die": {
-          "row": 3,
-          "frames": 8,
-          "fps": 16,
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
           "loop": false
         }
       },
-      "notes": "Starfish Queen (wave 15): giant orange starfish with a gold crown and gems. closed = arms curled in, shield shards rotating around her (armored). open = arms flung wide, vulnerable belly showing (clearly different!). summon = star minions spawn.",
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
       "scale": 1.3333333333333333
     },
     "boss.kitty": {
-      "file": "bosses/boss-kitty.webp",
+      "file": "gloss/boss-kitty.webp",
       "priority": "P0",
       "frame": [
         264,
@@ -1623,49 +1737,83 @@
       ],
       "anchor": [
         0.5,
-        0.75
+        0.85
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "move2": {
           "row": 1,
-          "frames": 5,
-          "fps": 12,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
         "swipe": {
-          "row": 2,
-          "frames": 6,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         },
         "summon": {
-          "row": 3,
-          "frames": 6,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         },
-        "exposed": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 5,
-          "frames": 10,
-          "fps": 20,
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
           "loop": false
         }
       },
-      "notes": "Kraken Kitty (wave 20 final boss): giant pink kraken with cat ears, whiskers and huge cute eyes; many tentacles. swipe = paw swipe toward the rail. exposed = dizzy, belly up, sparkles (after Plus pops her purr shield). move2 = phase 2+.",
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
       "scale": 1.3333333333333333
     },
     "boss.kitty.tentacle": {

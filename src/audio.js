@@ -180,8 +180,8 @@ export class Audio {
         case 'boss_summon': if (this.ok('bs', 0.3)) this.noise(0.3, 600, 2, 0.15); break;
         case 'strike_land': if (this.ok('sl', 0.1)) { this.noise(0.2, 300, 1, e.b ? 0.35 : 0.18); if (e.b) this.tone(160, 0.3, 'sine', 0.3, 70); } break;
         case 'dodge': this.marimba(88, 0, 0.15); break;
-        case 'boss_defeat': [60, 64, 67, 72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.07, 0.25)); break;
-        case 'win': [60, 64, 67, 72, 67, 72, 76, 79, 84].forEach((m, k) => this.marimba(m, k * 0.1, 0.26)); break;
+        case 'boss_defeat': this.noise(.28,1200,1.3,.16); this.tone(180,.38,'sine',.16,650); break;
+        case 'win': [60,64,67,72,76,79,84].forEach((m,k)=>this.marimba(m,.12+k*.11,.22)); this.strum(72,.9); break;
         case 'lose': [67, 64, 60, 55].forEach((m, k) => this.marimba(m, k * 0.2, 0.25)); break;
         case 'level_start': this.strum(60); this.strum(67, 0.2); break;
         case 'buy': this.strum(72); break;

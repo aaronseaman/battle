@@ -1,7 +1,7 @@
 # Reef Rumble
 
-A claymation **lane runner** for iPhone, built as an installable, offline-capable PWA.
-Your school of clay clownfish swims up a reef road and shoots bubbles on its own.
+A glossy underwater **lane runner** for iPhone, built as an installable, offline-capable PWA.
+Your school of clownfish swims up a reef road and shoots bubbles on its own.
 **You only steer: swipe left or right.**
 
 - **Gates** come in pairs: steer into the one you want. Blue is good (+fish, ×2, fire
@@ -13,14 +13,16 @@ Your school of clay clownfish swims up a reef road and shoots bubbles on its own
 - **The boss** waits at the end of every level with a big HP number. Shoot it down before
   it reaches you, and dodge its red target circles (Sharky charges down a red lane).
 - Your fish count is your health; at 0 the level is lost. Coins carry over between tries
-  and buy three upgrades: a bigger starting school, more damage, faster bubbles.
+  and buy four upgrades: multi-shot volleys, a bigger starting school, more damage,
+  and faster bubbles. Every new save starts with one centered shot; multi-shot upgrades
+  permanently unlock up to seven shots per volley.
 
 Levels are endless and get tougher; each one is seeded by its number, so a retry plays
 the same road.
 
 The layout and mechanics follow the genre's "pick a gate" runner ads (a squad at the
 bottom of a nearly top-down road, numbered things to shoot, two choices side by side);
-those are layout references only, and all art is Reef Rumble's own claymation.
+those are layout references only, and all art is Reef Rumble's own underwater art.
 
 - Vanilla ES modules, **no build step, no dependencies**.
 - Deterministic fixed-step simulation (60 Hz) that also runs headless in Node.
@@ -30,7 +32,7 @@ those are layout references only, and all art is Reef Rumble's own claymation.
 
 ```bash
 npm start            # serves on http://localhost:8080 (any static server works)
-npm test             # 21 headless simulation tests
+npm test             # 25 headless simulation tests
 npm run sim          # autopilot campaigns: node tools/sim.mjs [runs] [good|sloppy|idle] [levels]
 npm run icons        # regenerate PWA icons + iPhone launch screens
 node tools/check-art.mjs   # validate delivered sprite sheets against the art manifest

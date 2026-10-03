@@ -4,7 +4,7 @@
 // You only steer: swipe left / right. Two gates side by side ask you to pick one;
 // clams and crowds of sea critters block the road; a boss waits at the end.
 
-export const VERSION = '3.0.0';
+export const VERSION = '3.2.0';
 
 export const SIM = {
   DT: 1 / 60,
@@ -36,7 +36,7 @@ export const SCHOOL = {
 };
 
 export const GATES = {
-  hitsPerBump: 14, // bubble hits that bump a +/− gate up by one
+  hitsPerBump: 3, // bubble hits that bump a +/− gate up by one
   bumpMax: 8, // a gate can be bumped this many times at most
   w: ROAD.half, // each gate covers half the road
 };
@@ -109,6 +109,7 @@ export const LEVELS = {
 
 // Coins buy permanent upgrades between levels.
 export const UPGRADES = {
+  shots: { name: 'Multi-shot Bubbles', desc: '+1 bubble per volley. Wider coverage.', base: 25, grow: 1.6, max: 6 },
   fish: { name: 'Bigger School', desc: '+1 fish at the start of every level.', base: 30, grow: 1.35, max: 40 },
   dmg: { name: 'Sharper Bubbles', desc: '+10% bubble damage.', base: 40, grow: 1.4, max: 30 },
   rate: { name: 'Faster Bubbles', desc: '+6% fire rate.', base: 45, grow: 1.45, max: 20 },

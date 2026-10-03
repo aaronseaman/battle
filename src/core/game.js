@@ -404,12 +404,11 @@ export class Game {
     s.fireT -= dt * s.rateMul;
     if (s.fireT <= 0 && s.n > 0) {
       s.fireT += SCHOOL.fireEvery;
-      const shown = Math.min(s.n, SCHOOL.shown);
-      const B = Math.min(shown, SCHOOL.bulletsMax);
+      const B = Math.min(1 + this.meta.up.shots, SCHOOL.bulletsMax);
       const per = (s.n * SCHOOL.dps * s.dmgMul * SCHOOL.fireEvery) / B;
       for (let k = 0; k < B; k++) {
-        const off = SCHOOL_OFFSETS[(s.volley * B + k * 5) % shown];
-        this.addBullet('bubble', s.x + off.x, Math.max(0, off.z) + 10, 0, SCHOOL.bulletSpeed, per, SCHOOL.bulletR, 1, 0, false);
+        const x = s.x + (k - (B - 1) / 2) * SCHOOL.spacing * 0.8;
+        this.addBullet('bubble', x, this.schoolFront + 10, 0, SCHOOL.bulletSpeed, per, SCHOOL.bulletR, 1, 0, false);
       }
       s.volley++;
       this.events.emit('shoot', s.x, 0, s.n);
@@ -805,9 +804,10 @@ function seen(b, id) {
 }
 
 export function normalizeMeta(m) {
-  const base = { v: VERSION, level: 1, coins: 0, best: 0, up: { fish: 0, dmg: 0, rate: 0 }, skins: ['classic'], skin: 'classic', runs: 0 };
+  const base = { v: VERSION, level: 1, coins: 0, best: 0, up: { shots: 0, fish: 0, dmg: 0, rate: 0 }, skins: ['classic'], skin: 'classic', runs: 0 };
   if (!m || typeof m !== 'object') return base;
   const out = { ...base, ...m, up: { ...base.up, ...(m.up || {}) } };
+  out.up.shots = Math.max(0, Math.min(UPGRADES.shots.max, out.up.shots | 0));
   out.level = Math.max(1, out.level | 0);
   out.coins = Math.max(0, out.coins | 0);
   if (!Array.isArray(out.skins)) out.skins = ['classic'];

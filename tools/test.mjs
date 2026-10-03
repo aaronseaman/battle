@@ -298,5 +298,31 @@ test('a good player clears the first 8 levels; doing nothing loses level 1', () 
   assert(idle.levels.every((l) => !l.won), 'idle never wins');
 });
 
+console.log('weapon progression');
+test('a fresh school starts with one centered shot even with many fish', () => {
+  const g = emptyRoad(1, 40); g.school.fireT = 0; g.fire(SIM.DT);
+  eq(g.bullets.length, 1); eq(g.bullets[0].x, g.school.x);
+});
+test('multi-shot upgrades unlock symmetric volleys without multiplying total damage', () => {
+  const g = emptyRoad(1, 20); g.school.fireT = 0; g.fire(SIM.DT);
+  const damage = g.bullets[0].dmg;
+  g.bullets.length = 0; g.meta.up.shots = 2; g.school.fireT = 0; g.fire(SIM.DT);
+  eq(g.bullets.length, 3); eq(g.bullets[0].x, -g.bullets[2].x);
+  assert(Math.abs(g.bullets.reduce((n,b)=>n+b.dmg,0)-damage)<1e-9, 'total damage preserved');
+});
+test('multi-shot purchases persist and stop at seven shots', () => {
+  const g = new Game({meta:{coins:100000}});
+  for(let i=0;i<6;i++) assert(g.buyUpgrade('shots'), 'purchase');
+  eq(g.meta.up.shots, 6); eq(g.upgradeCost('shots'), null);
+  const restored = new Game({meta:JSON.parse(JSON.stringify(g.meta))});
+  restored.startLevel(); restored.school.fireT=0; restored.fire(SIM.DT);
+  eq(restored.bullets.length,7);
+});
+test('existing saves migrate to one shot and invalid shot levels are bounded', () => {
+  eq(normalizeMeta({coins:1921,up:{fish:3}}).up.shots,0);
+  eq(normalizeMeta({up:{shots:999}}).up.shots,6);
+  eq(normalizeMeta({up:{shots:-7}}).up.shots,0);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

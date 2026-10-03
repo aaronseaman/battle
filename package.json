@@ -1,6 +1,6 @@
 {
   "name": "reef-rumble",
-  "version": "3.0.0",
+  "version": "3.2.0",
   "private": true,
   "type": "module",
   "description": "Reef Rumble — claymation lane runner PWA: swipe your fish school through the reef",

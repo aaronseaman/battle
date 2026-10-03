@@ -464,3 +464,36 @@ table.stats td { padding: 3px 5px; }
 .victory .stats tr:not(:first-child) td:first-child::before { display: none; }
 
 #hint .hand { margin-right: 8px; }
+
+/* A distinct victory reveal, with a fast finish and no forced waiting. */
+.victory .sheet { border-color: #ffe07b; background: linear-gradient(135deg,#fffdf0,#fff2e4 60%,#e8eaff); }
+.victory .sheet::before { background-image: url('../assets/art/gloss/pearl.webp'); width: 115px; height: 115px; top: -65px; filter: drop-shadow(0 0 16px #fff7a1); }
+.victory h2 { color: #ffad22; -webkit-text-stroke: 2px #a95416; paint-order: stroke fill; text-shadow: 0 3px 0 #b76719; font-size: clamp(30px,8vw,40px); margin-top: -25px; }
+.victory-caption { text-align:center; margin: 4px 0; color:#384d97; font-size:13px; }
+.victory-stars { color:#ffc328; text-align:center; letter-spacing:12px; font-size:35px; text-shadow:0 3px 0 #dd8718; margin:4px 0 10px; animation:star-reveal .55s cubic-bezier(.2,1.6,.5,1) both; }
+.victory .stats tr:first-child { font-size:23px; color:#1d54bd; }
+.victory .sheet { animation:victory-reveal .35s cubic-bezier(.2,1.2,.5,1) both; }
+@keyframes star-reveal { from{opacity:0;transform:scale(.45) rotate(-8deg)} to{opacity:1;transform:scale(1) rotate(0)} }
+@keyframes victory-reveal { from{opacity:0;transform:translateY(22px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
+@media (max-height:800px) {
+  .defeat .sheet,.victory .sheet { overflow-y:auto!important; margin-top:0; }
+  .defeat .sheet::before,.victory .sheet::before { display:none; }
+  .victory .sheet { padding-top:42px!important; }
+}
+@media (prefers-reduced-motion:reduce) { .victory .sheet,.victory-stars { animation:none; } }
+
+.win-reward { display:grid; grid-template-columns:46px auto; justify-content:center; align-items:center; gap:2px 5px; margin:5px 0 9px; color:#194fb5; }
+.win-reward img { width:46px; height:46px; }
+.win-reward span { font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; }
+.win-reward small { grid-column:1/-1; font-size:11px; color:#6b6e99; text-align:center; }
+.victory-stars { letter-spacing:0; font-size:40px; margin:0 0 3px; }
+
+#banner.boss-banner { top:calc(var(--safe-top) + 64px); }
+#banner.boss-banner .big { font-size:clamp(23px,7vw,32px); }
+#banner.boss-banner .small { font-size:14px; }
+#banner.win-banner .big { color:#ffe379; -webkit-text-stroke-color:#a15f1f; }
+/* Four upgrade choices remain reachable on every phone, including short screens. */
+.victory .sheet { overflow-y:auto!important; padding-top:88px!important; margin-top:0!important; }
+.victory .sheet::before { display:block; top:8px; width:75px; height:75px; }
+.victory h2 { margin-top:0; font-size:32px; line-height:1.1; }
+.victory-stars { display:none; }
