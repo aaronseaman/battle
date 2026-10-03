@@ -1,7 +1,58 @@
 # Reef Rumble — Art & Animation Hand-off (for ChatGPT)
 
 > **Status:** P0 is delivered and integrated (24/24 sprites; see `docs/art/P0-DELIVERY.md`).
-> **Next round:** the P1 list in section 4, then P2. Run `node tools/check-art.mjs` to see what's still missing.
+> The game is live at **https://aaronseaman.github.io/battle/**.
+> **Next round: P1** (45 sprites). Read "P1 round" just below, then section 4.
+
+## P1 round — read this first
+
+The P0 art went in well. These notes come from fitting it into the game at iPhone 17 size;
+following them avoids another round of fixes.
+
+1. **Start from `main`.** `assets/art/manifest.json` is version 11.
+   - Fill in **only P1 entries** (P2 too if there's time).
+   - **Don't edit P0 entries.** They point at the shipped `.webp` files and carry in-game
+     tuning: towers `scale 1.15`, heart `1.3`, bosses `4/3`, and the Chef's hat `attach`.
+2. **Deliver PNG masters** in the same folder layout (`assets/art/towers/…`, `fx/…`, …).
+   - I convert them to WebP for shipping and bump the version.
+   - Remove temp files (no `.tmp`).
+3. **Match P0 exactly.** Reuse the prompt seed in `docs/art/PROMPTS.md`. Compare against the
+   shipped sheets in `assets/art/**`, the screenshots in `docs/art/reference/` and the live
+   game.
+4. **Level-3 towers (evolutions) are the same character, upgraded.** Same coral-cup base,
+   frame `160×176`, anchor `[0.5, 0.82]`. The manifest already sets `scale 1.15` to match
+   level 1. The upgrade must read at a glance: bigger, fancier, glowing, with props
+   (headphones, hammer head, crown…).
+5. **Shark / Hammerhead `charge` frames are the body only, with no coral base**, because the
+   body dashes along the path.
+6. **Status overlays sit on top of a tower.** That's `fx.grab`, `fx.blind`, `fx.plus_power`
+   and `fx.zapped`.
+   - They use the tower's frame and anchor, and are pre-scaled `1.15`.
+   - Keep the middle see-through so the tower stays recognisable, and loop them seamlessly.
+7. **`fx.purr`** must cover Kraken Kitty: `352×352` at scale 1, or `264×264` with `"scale": 1.3333`
+   like the boss sheet.
+8. **One-shot effects** (`fx.*` with `play`): 4–8 frames, **≤ 0.5 s**, with the impact point
+   at the anchor `[0.5, 0.6]`. Fade or scatter out, and no text.
+9. **Minions are mini versions of their parents.**
+   - `enemy.octoMini`: a tiny Chef Octopus with a mini chef hat.
+   - `enemy.starMinion`: a small cartwheeling starfish, no crown.
+   - `enemy.jellyMini`: a small jelly bean.
+   - All use `64×64` frames and must still read at about 16 pt on screen.
+10. **Projectiles.** Draw `proj.star` / `proj.ministar` upright and still; the game spins them
+    (`spin`). `proj.dart` points **right**; the game rotates it to its flight direction
+    (`orient`). Use no motion blur.
+11. **Padding.** Every cell needs ≥ 2 px of transparent padding, and no art may touch a cell
+    edge. I scan for this.
+12. **Validate.** Run `node tools/check-art.mjs`.
+    - If you can run a browser, also check `art-preview.html` locally.
+    - If you can't, say so, and I'll review everything in-game at iPhone 17 size.
+13. **Hand-back.** A zip of `assets/art/**` with `manifest.json` (version → 12) and a short
+    `DELIVERY.md`, or a PR against `main`.
+
+**Optional extra:** a board "material" pass that adds clay texture (fingerprints, seams,
+thumb dents) to `board/reef-board.png` **without moving anything**. The path, the 14 sockets,
+the cave, the heart patch and the rail must still match `docs/art/board-template.png` pixel
+for pixel. Deliver it as `board/reef-board-v2.png` and point the `board` entry at it.
 
 **You are making the graphics and animations** for *Reef Rumble: Clay Coral Defense*, an
 iPhone-first PWA tower-defense shooter. The game is finished and fully playable with

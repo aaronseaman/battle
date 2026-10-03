@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 11,
   "pxPerUnit": 2,
   "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
   "sprites": {
@@ -270,7 +270,8 @@
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, brighter fins. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%."
+      "notes": "Level 2: bigger, brighter fins. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
+      "scale": 1.15
     },
     "tower.fish.3": {
       "file": null,
@@ -311,7 +312,8 @@
           "loop": true
         }
       },
-      "notes": "Level 3: Fish School: a little school of 3 fish around a coral stub. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy."
+      "notes": "Level 3: Fish School: a little school of 3 fish around a coral stub. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
+      "scale": 1.15
     },
     "tower.octopus.1": {
       "file": "towers/tower-octopus-1.webp",
@@ -394,7 +396,8 @@
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, spotted. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%."
+      "notes": "Level 2: bigger, spotted. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
+      "scale": 1.15
     },
     "tower.octopus.3": {
       "file": null,
@@ -435,7 +438,8 @@
           "loop": true
         }
       },
-      "notes": "Level 3: DJ Octopus: headphones + tiny turntable, bobbing to the beat. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy."
+      "notes": "Level 3: DJ Octopus: headphones + tiny turntable, bobbing to the beat. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
+      "scale": 1.15
     },
     "tower.shark.1": {
       "file": "towers/tower-shark-1.webp",
@@ -531,7 +535,8 @@
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, scar on fin. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. charge = swimming dash pose (the body moves along the path during charges)."
+      "notes": "Level 2: bigger, scar on fin. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. charge = swimming dash pose (the body moves along the path during charges). charge frames: body only, NO coral base (the body dashes along the path).",
+      "scale": 1.15
     },
     "tower.shark.3": {
       "file": null,
@@ -578,7 +583,8 @@
           "loop": true
         }
       },
-      "notes": "Level 3: Hammerhead: hammer-shaped head. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. charge = swimming dash pose (the body moves along the path during charges)."
+      "notes": "Level 3: Hammerhead: hammer-shaped head. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. charge = swimming dash pose (the body moves along the path during charges). charge frames: body only, NO coral base (the body dashes along the path).",
+      "scale": 1.15
     },
     "tower.starfish.1": {
       "file": "towers/tower-starfish-1.webp",
@@ -661,7 +667,8 @@
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, freckles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%."
+      "notes": "Level 2: bigger, freckles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
+      "scale": 1.15
     },
     "tower.starfish.3": {
       "file": null,
@@ -702,7 +709,8 @@
           "loop": true
         }
       },
-      "notes": "Level 3: Five-Point Star: glowing golden star with sparkles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy."
+      "notes": "Level 3: Five-Point Star: glowing golden star with sparkles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
+      "scale": 1.15
     },
     "tower.puffer.1": {
       "file": "towers/tower-puffer-1.webp",
@@ -797,7 +805,8 @@
           "loop": false
         }
       },
-      "notes": "Level 2: bigger, angrier brows. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. inflate = 0\u2192full puff over the fuse (plays once per explosion)."
+      "notes": "Level 2: bigger, angrier brows. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. inflate = 0\u2192full puff over the fuse (plays once per explosion).",
+      "scale": 1.15
     },
     "tower.puffer.3": {
       "file": null,
@@ -844,7 +853,8 @@
           "loop": false
         }
       },
-      "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0\u2192full puff over the fuse (plays once per explosion)."
+      "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0\u2192full puff over the fuse (plays once per explosion).",
+      "scale": 1.15
     },
     "tower.seahorse.1": {
       "file": "towers/tower-seahorse-1.webp",
@@ -927,7 +937,8 @@
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, sniper monocle. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%."
+      "notes": "Level 2: bigger, sniper monocle. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
+      "scale": 1.15
     },
     "tower.seahorse.3": {
       "file": null,
@@ -968,7 +979,8 @@
           "loop": true
         }
       },
-      "notes": "Level 3: Sea Dragon: leafy sea dragon, regal. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy."
+      "notes": "Level 3: Sea Dragon: leafy sea dragon, regal. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
+      "scale": 1.15
     },
     "tower.crab.1": {
       "file": "towers/tower-crab-1.webp",
@@ -1051,7 +1063,8 @@
           "loop": true
         }
       },
-      "notes": "Level 2: bigger claws. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%."
+      "notes": "Level 2: bigger claws. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
+      "scale": 1.15
     },
     "tower.crab.3": {
       "file": null,
@@ -1092,7 +1105,8 @@
           "loop": true
         }
       },
-      "notes": "Level 3: King Crab: crown and royal cape. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy."
+      "notes": "Level 3: King Crab: crown and royal cape. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
+      "scale": 1.15
     },
     "enemy.jelly": {
       "file": "enemies/enemy-jelly.webp",
@@ -2470,7 +2484,8 @@
           "loop": true
         }
       },
-      "notes": "Kraken tentacles wrapped around a tower (tower disabled). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops."
+      "notes": "Kraken tentacles wrapped around a tower (tower disabled). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
+      "scale": 1.15
     },
     "fx.blind": {
       "file": null,
@@ -2492,7 +2507,8 @@
           "loop": true
         }
       },
-      "notes": "Ink splattered over a tower's face (blinded). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops."
+      "notes": "Ink splattered over a tower's face (blinded). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
+      "scale": 1.15
     },
     "fx.plus_power": {
       "file": null,
@@ -2514,7 +2530,8 @@
           "loop": true
         }
       },
-      "notes": "Yellow Plus Power glow/aura around a buffed tower. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops."
+      "notes": "Yellow Plus Power glow/aura around a buffed tower. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
+      "scale": 1.15
     },
     "fx.purr": {
       "file": null,
@@ -2580,7 +2597,8 @@
           "loop": true
         }
       },
-      "notes": "Electric crackle around a tower shut down by an Eel. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops."
+      "notes": "Electric crackle around a tower shut down by an Eel. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
+      "scale": 1.15
     }
   }
 }
