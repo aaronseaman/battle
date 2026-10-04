@@ -1,0 +1,3014 @@
+{
+  "version": 17,
+  "pxPerUnit": 2,
+  "//": "Complete glossy production artwork. All sprite keys delivered; no older artwork loaded. Sprite coordinates are relative to assets/art/. See docs/art/COMPLETE-GLOSS-DELIVERY.md.",
+  "sprites": {
+    "player.classic": {
+      "file": "gloss/player-classic.webp",
+      "priority": "P0",
+      "frame": [
+        192,
+        160
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 1,
+          "fps": 12,
+          "loop": true,
+          "col": 0
+        },
+        "swim": {
+          "row": 0,
+          "frames": 1,
+          "fps": 12,
+          "loop": true,
+          "col": 0
+        },
+        "shoot": {
+          "row": 0,
+          "frames": 1,
+          "fps": 24,
+          "loop": false,
+          "col": 0
+        },
+        "plus": {
+          "row": 0,
+          "frames": 1,
+          "fps": 18,
+          "loop": false,
+          "col": 0
+        }
+      },
+      "notes": "Glossy toy clownfish matched to October 3 reference. Swim bob, pitch and breathing are continuous in the renderer; original hit/gain feedback preserved.",
+      "style": "gloss-v1"
+    },
+    "player.golden": {
+      "file": "gloss/player-golden.webp",
+      "priority": "P2",
+      "frame": [
+        192,
+        160
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "swim": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "shoot": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "plus": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy alternate fish skin. Continuous procedural swimming preserves the classic player silhouette.",
+      "style": "gloss-v1"
+    },
+    "player.neon": {
+      "file": "gloss/player-neon.webp",
+      "priority": "P2",
+      "frame": [
+        192,
+        160
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "swim": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "shoot": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "plus": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy alternate fish skin. Continuous procedural swimming preserves the classic player silhouette.",
+      "style": "gloss-v1"
+    },
+    "player.galaxy": {
+      "file": "gloss/player-galaxy.webp",
+      "priority": "P2",
+      "frame": [
+        192,
+        160
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "swim": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "shoot": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "plus": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy alternate fish skin. Continuous procedural swimming preserves the classic player silhouette.",
+      "style": "gloss-v1"
+    },
+    "tower.fish.1": {
+      "file": "gloss/buddy-fish-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.fish.2": {
+      "file": "gloss/buddy-fish-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.fish.3": {
+      "file": "gloss/buddy-fish-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "tower.octopus.1": {
+      "file": "gloss/buddy-octopus-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.octopus.2": {
+      "file": "gloss/buddy-octopus-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.octopus.3": {
+      "file": "gloss/buddy-octopus-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "tower.shark.1": {
+      "file": "gloss/buddy-shark-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.shark.2": {
+      "file": "gloss/buddy-shark-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.shark.3": {
+      "file": "gloss/buddy-shark-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "tower.starfish.1": {
+      "file": "gloss/buddy-starfish-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.starfish.2": {
+      "file": "gloss/buddy-starfish-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.starfish.3": {
+      "file": "gloss/buddy-starfish-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "tower.puffer.1": {
+      "file": "gloss/buddy-puffer-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.puffer.2": {
+      "file": "gloss/buddy-puffer-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.puffer.3": {
+      "file": "gloss/buddy-puffer-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "tower.seahorse.1": {
+      "file": "gloss/buddy-seahorse-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.seahorse.2": {
+      "file": "gloss/buddy-seahorse-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.seahorse.3": {
+      "file": "gloss/buddy-seahorse-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "tower.crab.1": {
+      "file": "gloss/buddy-crab-1.webp",
+      "priority": "P0",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.crab.2": {
+      "file": "gloss/buddy-crab-2.webp",
+      "priority": "P2",
+      "frame": [
+        160,
+        176
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
+    },
+    "tower.crab.3": {
+      "file": "gloss/buddy-crab-3.webp",
+      "priority": "P1",
+      "frame": [
+        120,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "fire": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
+          "loop": false
+        },
+        "disabled": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "broken": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
+    },
+    "enemy.jelly": {
+      "file": "gloss/enemy-jelly.webp",
+      "priority": "P0",
+      "frame": [
+        96,
+        96
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.jellyMini": {
+      "file": "gloss/enemy-jellyMini.webp",
+      "priority": "P1",
+      "frame": [
+        64,
+        64
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.crab": {
+      "file": "gloss/enemy-crab.webp",
+      "priority": "P0",
+      "frame": [
+        96,
+        96
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.kraken": {
+      "file": "gloss/enemy-kraken.webp",
+      "priority": "P0",
+      "frame": [
+        96,
+        96
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.puffer": {
+      "file": "gloss/enemy-puffer.webp",
+      "priority": "P0",
+      "frame": [
+        96,
+        96
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.urchin": {
+      "file": "gloss/enemy-urchin.webp",
+      "priority": "P0",
+      "frame": [
+        112,
+        112
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.eel": {
+      "file": "gloss/enemy-eel.webp",
+      "priority": "P0",
+      "frame": [
+        112,
+        80
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.octoMini": {
+      "file": "gloss/enemy-octoMini.webp",
+      "priority": "P1",
+      "frame": [
+        64,
+        64
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "enemy.starMinion": {
+      "file": "gloss/enemy-starMinion.webp",
+      "priority": "P1",
+      "frame": [
+        64,
+        64
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "stun": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        }
+      },
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
+    },
+    "boss.chef": {
+      "file": "gloss/boss-chef.webp",
+      "priority": "P0",
+      "frame": [
+        192,
+        216
+      ],
+      "anchor": [
+        0.5,
+        0.85
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "move2": {
+          "row": 1,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "summon": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
+          "loop": false
+        }
+      },
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "boss.chef.hat": {
+      "file": "gloss/props.webp",
+      "priority": "P0",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.95
+      ],
+      "facing": "right",
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.75,
+      "style": "gloss-v1"
+    },
+    "boss.sharky": {
+      "file": "gloss/boss-sharky.webp",
+      "priority": "P0",
+      "frame": [
+        216,
+        168
+      ],
+      "anchor": [
+        0.5,
+        0.85
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "move2": {
+          "row": 1,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "summon": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
+          "loop": false
+        }
+      },
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "boss.queen": {
+      "file": "gloss/boss-queen.webp",
+      "priority": "P0",
+      "frame": [
+        240,
+        240
+      ],
+      "anchor": [
+        0.5,
+        0.85
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "move2": {
+          "row": 1,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "summon": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
+          "loop": false
+        }
+      },
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "boss.kitty": {
+      "file": "gloss/boss-kitty.webp",
+      "priority": "P0",
+      "frame": [
+        264,
+        264
+      ],
+      "anchor": [
+        0.5,
+        0.85
+      ],
+      "facing": "right",
+      "wobble": false,
+      "anims": {
+        "move": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "move2": {
+          "row": 1,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "windup": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "charge": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "recover": {
+          "row": 1,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "throw": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "swipe": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "summon": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 2,
+          "loop": false
+        },
+        "open": {
+          "row": 0,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
+          "loop": true
+        },
+        "die": {
+          "row": 1,
+          "col": 2,
+          "frames": 2,
+          "fps": 4,
+          "loop": false
+        }
+      },
+      "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "boss.kitty.tentacle": {
+      "file": "gloss/props.webp",
+      "priority": "P0",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.85
+      ],
+      "facing": "right",
+      "wobble": true,
+      "anims": {
+        "grip": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "break": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 1.125,
+      "style": "gloss-v1"
+    },
+    "heart": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P0",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.7
+      ],
+      "facing": "right",
+      "wobble": true,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "col": 11,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "hit": {
+          "row": 0,
+          "col": 11,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "low": {
+          "row": 0,
+          "col": 11,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 2.275,
+      "style": "gloss-v1"
+    },
+    "proj.minus": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P0",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "proj.plus": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P0",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "proj.bubble": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.25,
+      "style": "gloss-v1"
+    },
+    "proj.dart": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "orient": true,
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.5,
+      "style": "gloss-v1"
+    },
+    "proj.ink": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 4,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "proj.star": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "spin": true,
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 5,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.5,
+      "style": "gloss-v1"
+    },
+    "proj.ministar": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "spin": true,
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 6,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.3125,
+      "style": "gloss-v1"
+    },
+    "strike.ink": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 8,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.5,
+      "style": "gloss-v1"
+    },
+    "strike.spark": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 9,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "strike.star": {
+      "file": "gloss/projectiles.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "facing": "right",
+      "spin": true,
+      "anims": {
+        "fly": {
+          "row": 0,
+          "col": 7,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "pickup.shell": {
+      "file": "gloss/props.webp",
+      "priority": "P1",
+      "frame": [
+        128,
+        128
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "facing": "right",
+      "anims": {
+        "fall": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "land": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "open": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 3,
+          "loop": false
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "fx.pop": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.explode": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.331871875,
+      "style": "gloss-v1"
+    },
+    "fx.ink": {
+      "file": "gloss/fx-splash.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy splash animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.8333124999999999,
+      "style": "gloss-v1"
+    },
+    "fx.heal": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.shield_pop": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.chomp": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.crack": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.poof": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.8333124999999999,
+      "style": "gloss-v1"
+    },
+    "fx.pulse": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.6667000000000003,
+      "style": "gloss-v1"
+    },
+    "fx.wave": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 2.66374375,
+      "style": "gloss-v1"
+    },
+    "fx.hat_hit": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.4999875,
+      "style": "gloss-v1"
+    },
+    "fx.minus_pop": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.heart_hit": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.999975,
+      "style": "gloss-v1"
+    },
+    "fx.player_hit": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.8333124999999999,
+      "style": "gloss-v1"
+    },
+    "fx.sparkle": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.sad": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.25,
+      "style": "gloss-v1"
+    },
+    "fx.zap": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.confetti": {
+      "file": "gloss/fx-confetti.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy confetti animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 2.001528125,
+      "style": "gloss-v1"
+    },
+    "fx.spark": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.4999875,
+      "style": "gloss-v1"
+    },
+    "fx.minus_muzzle": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.plus_muzzle": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.grab": {
+      "file": "gloss/fx-splash.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy splash animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    },
+    "fx.blind": {
+      "file": "gloss/fx-splash.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy splash animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    },
+    "fx.plus_power": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    },
+    "fx.purr": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.83039375,
+      "style": "gloss-v1"
+    },
+    "fx.respawn_bubble": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P2",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.6666666666666666,
+      "style": "gloss-v1"
+    },
+    "fx.zapped": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    }
+  }
+}
