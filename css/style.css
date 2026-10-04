@@ -5,9 +5,9 @@
   font-display: swap;
 }
 
-/* Reef Rumble — placeholder "clay" UI skin.
+/* Reef Rumble — glossy underwater UI skin.
    Every HUD/menu element is plain DOM with stable ids/classes so the art pass
-   can restyle it (clay buttons, cardboard signs, googly eyes) without touching JS. */
+   can restyle it (glossy buttons, crystal frames, pearl rewards) without touching JS. */
 
 :root {
   --deep: #0d5d73;
@@ -19,8 +19,8 @@
   --plus: #ffd23f;
   --minus: #9b5cff;
   --ink: #2a1d3a;
-  --clay: #fff4e0;
-  --clay-shadow: rgba(60, 30, 40, 0.35);
+  --cream: #fff4e0;
+  --cream-shadow: rgba(60, 30, 40, 0.35);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -83,16 +83,16 @@ button {
 #hud button { pointer-events: auto; }
 
 .chip {
-  background: var(--clay);
+  background: var(--cream);
   border-radius: 999px;
   padding: 6px 12px;
   font-weight: 900;
   font-size: 15px;
-  box-shadow: 0 3px 0 var(--clay-shadow);
+  box-shadow: 0 3px 0 var(--cream-shadow);
   white-space: nowrap;
 }
 .chip.coins { background: #fff6c2; font-variant-numeric: tabular-nums; }
-.chip.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--clay-shadow); }
+.chip.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--cream-shadow); }
 
 .hud-top {
   position: absolute;
@@ -110,7 +110,7 @@ button {
   height: 14px;
   border-radius: 999px;
   background: rgba(20, 10, 40, 0.45);
-  box-shadow: 0 3px 0 var(--clay-shadow);
+  box-shadow: 0 3px 0 var(--cream-shadow);
 }
 .progress .fill {
   position: absolute;
@@ -210,8 +210,8 @@ h2 { margin: 0 0 8px; font-size: 24px; text-align: center; }
   text-align: left;
   padding: 10px 14px;
   border-radius: 18px;
-  background: var(--clay);
-  box-shadow: 0 5px 0 var(--clay-shadow);
+  background: var(--cream);
+  box-shadow: 0 5px 0 var(--cream-shadow);
   font-weight: 800;
   transition: transform 0.08s;
 }
@@ -220,9 +220,9 @@ h2 { margin: 0 0 8px; font-size: 24px; text-align: center; }
 .item .sub { grid-area: sub; font-size: 12px; font-weight: 600; text-align: left; margin: 2px 0 0; opacity: 0.8; }
 .item .right { grid-area: right; font-weight: 900; white-space: nowrap; }
 .item.focus { outline: 4px solid var(--sun); transform: translateY(-2px) scale(1.02); }
-.item:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--clay-shadow); }
+.item:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--cream-shadow); }
 .item.disabled { opacity: 0.5; }
-.item.owned { background: #e2ffd9; }
+.item.owned { background: #e2f8ff; }
 .item.go { background: var(--lime); }
 .item.big { padding: 16px 14px; }
 .item.big .label { font-size: 20px; }
@@ -341,8 +341,8 @@ table.stats td:first-child { font-weight: 900; text-align: right; }
    Text and controls remain live DOM; decorative assets never cover hit targets. */
 :root {
   --deep: #086abb; --water: #25d8ee; --coral: #f668d9; --sun: #ffe073;
-  --orange: #ff9c19; --ink: #132478; --clay: #fff7e8;
-  --clay-shadow: rgba(29, 57, 146, .22);
+  --orange: #ff9c19; --ink: #132478; --cream: #fff7e8;
+  --cream-shadow: rgba(29, 57, 146, .22);
 }
 button:focus-visible { outline: 3px solid #ffe073; outline-offset: 3px; }
 .hud-top { gap: 6px; top: calc(var(--safe-top) + 14px); left: calc(var(--safe-left) + 10px); right: calc(var(--safe-right) + 10px); }
@@ -497,3 +497,17 @@ table.stats td { padding: 3px 5px; }
 .victory .sheet::before { display:block; top:8px; width:75px; height:75px; }
 .victory h2 { margin-top:0; font-size:32px; line-height:1.1; }
 .victory-stars { display:none; }
+
+/* Decorative imagery and control charms share the glossy palette on every menu. */
+.item .control-icon { display:block; width:100%; height:100%; filter:drop-shadow(0 3px 0 #2467c6); }
+.meta img, .balance img { width:28px; height:28px; vertical-align:middle; object-fit:contain; }
+.item .right img { width:28px; height:28px; vertical-align:middle; object-fit:contain; }
+.item .icon img { width:100%; height:100%; object-fit:contain; }
+#rotate .phone { width:62px; height:106px; margin:0 auto 20px; border:5px solid #d1f8ff; border-radius:17px; background:linear-gradient(135deg,#8befff,#27bff4 38%,#3167ef); box-shadow:inset 0 3px 2px #fff,0 5px 0 #3451be,0 0 25px #36caff; position:relative; }
+#rotate .phone::after { content:''; position:absolute; bottom:5px; left:18px; width:18px; height:4px; background:#fff; border-radius:5px; }
+
+.item .icon { display:block; width:38px; height:38px; }
+.item.big .icon { width:44px; height:44px; }
+.item.upgrade .icon { width:58px; height:58px; }
+
+#hint { background:linear-gradient(#91dcff55,#2274d7dd); border:1px solid #b3f4ff; box-shadow:inset 0 2px 2px #ffffff66,0 3px 0 #2450a6; }

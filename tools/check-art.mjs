@@ -16,6 +16,11 @@ const sizes = new Map();
 function imageSize(file) {
   if (sizes.has(file)) return sizes.get(file);
   const b = readFileSync(BASE + file);
+  if (b.length < 30) {
+    errors.push(`${file}: truncated or empty image`);
+    sizes.set(file, null);
+    return null;
+  }
   let out = null;
   if (b.readUInt32BE(0) === 0x89504e47) out = { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
   else if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
@@ -35,6 +40,14 @@ const progress = {};
 let decoded = 0;
 const counted = new Set();
 for (const [key, d] of Object.entries(m.sprites)) {
+  // A complete glossy release must never silently fall back to legacy artwork.
+  if (m.version >= 17) {
+    if (d.style !== 'gloss-v1') errors.push(`${key}: missing glossy style contract`);
+    if (!d.file) errors.push(`${key}: missing production artwork`);
+    for (const f of [d.file, ...Object.values(d.anims || {}).map((a) => a.file)].filter(Boolean)) {
+      if (!f.startsWith('gloss/')) errors.push(`${key}: legacy artwork reference ${f}`);
+    }
+  }
   const p = d.priority || 'P?';
   progress[p] = progress[p] || { done: 0, total: 0, missing: [] };
   progress[p].total++;

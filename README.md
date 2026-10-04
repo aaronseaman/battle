@@ -34,7 +34,7 @@ those are layout references only, and all art is Reef Rumble's own underwater ar
 npm start            # serves on http://localhost:8080 (any static server works)
 npm test             # 25 headless simulation tests
 npm run sim          # autopilot campaigns: node tools/sim.mjs [runs] [good|sloppy|idle] [levels]
-npm run icons        # regenerate PWA icons + iPhone launch screens
+npm run icons        # package glossy PWA icons + iPhone launch screens (Python/Pillow)
 node tools/check-art.mjs   # validate delivered sprite sheets against the art manifest
 ```
 
@@ -112,8 +112,10 @@ redrawing while paused.
 
 ## Art
 
-Sprites come from `assets/art/manifest.json` (see [`docs/ART_HANDOFF.md`](docs/ART_HANDOFF.md));
-anything missing falls back to a placeholder shape, so art can land piece by piece. The
-runner reuses the existing clay art: the player clownfish for the school, `tower.*` for
-buddies (and buddy gates), `enemy.*`, `boss.*` (+ the Chef's hat), `proj.*` for shots,
-`strike.ink` / `strike.star` for boss throws, `pickup.shell` for clams, and `fx.*` for pops.
+All runtime sprite keys in `assets/art/manifest.json` use the glossy artwork under
+`assets/art/gloss/`: player skins, enemies, every buddy tier, bosses, clams, shots,
+and animated effects. UI artwork, app icons and iPhone launch screens follow the
+same finish. `npm run check-art` rejects missing sprites and legacy artwork references.
+
+See [`docs/art/COMPLETE-GLOSS-DELIVERY.md`](docs/art/COMPLETE-GLOSS-DELIVERY.md)
+for the complete asset coverage and verification report.

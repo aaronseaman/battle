@@ -114,6 +114,12 @@ async function run(viewport, label, touch) {
   }));
   console.log(label, 'offline boot', JSON.stringify(off), 'expected sprites', delivered);
   if (off.phase !== 'title' || off.sprites !== delivered || off.failed || !off.scene || !off.atlas || !off.font) throw new Error(`${label}: offline boot incomplete`);
+  await page.getByRole('button', { name: 'Fish Skins' }).click();
+  await page.getByRole('heading', { name: 'Fish Skins' }).waitFor();
+  await page.waitForFunction(() => [...document.querySelectorAll('#panel img')].every((img) => img.complete && img.naturalWidth > 0));
+  const skinImages = await page.locator('#panel .icon img').count();
+  if (skinImages !== 4) throw new Error(`${label}: offline skin previews incomplete (${skinImages})`);
+  console.log(label, 'all four skin previews available offline');
   await ctx.setOffline(false);
   await ctx.close();
 }

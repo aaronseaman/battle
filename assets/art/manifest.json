@@ -1,7 +1,7 @@
 {
-  "version": 16,
+  "version": 17,
   "pxPerUnit": 2,
-  "//": "Fill in \"file\" (path relative to assets/art/) as each sheet is delivered; null = not delivered (placeholder art is used). Each anim is one row of frames, left to right, in the order listed (row index given). Bump \"version\" whenever images change. Spec: docs/ART_HANDOFF.md",
+  "//": "Complete glossy production artwork. All sprite keys delivered; no older artwork loaded. Sprite coordinates are relative to assets/art/. See docs/art/COMPLETE-GLOSS-DELIVERY.md.",
   "sprites": {
     "player.classic": {
       "file": "gloss/player-classic.webp",
@@ -46,10 +46,11 @@
           "col": 0
         }
       },
-      "notes": "Glossy toy clownfish matched to October 3 reference. Swim bob, pitch and breathing are continuous in the renderer; original hit/gain feedback preserved."
+      "notes": "Glossy toy clownfish matched to October 3 reference. Swim bob, pitch and breathing are continuous in the renderer; original hit/gain feedback preserved.",
+      "style": "gloss-v1"
     },
     "player.golden": {
-      "file": null,
+      "file": "gloss/player-golden.webp",
       "priority": "P2",
       "frame": [
         192,
@@ -60,37 +61,42 @@
         0.8
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "swim": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "shoot": {
-          "row": 2,
-          "frames": 3,
-          "fps": 24,
-          "loop": false
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         },
         "plus": {
-          "row": 3,
-          "frames": 3,
-          "fps": 18,
-          "loop": false
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         }
       },
-      "notes": "Unlockable skin: gold guppy. Same layout as player.classic."
+      "notes": "Glossy alternate fish skin. Continuous procedural swimming preserves the classic player silhouette.",
+      "style": "gloss-v1"
     },
     "player.neon": {
-      "file": null,
+      "file": "gloss/player-neon.webp",
       "priority": "P2",
       "frame": [
         192,
@@ -101,37 +107,42 @@
         0.8
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "swim": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "shoot": {
-          "row": 2,
-          "frames": 3,
-          "fps": 24,
-          "loop": false
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         },
         "plus": {
-          "row": 3,
-          "frames": 3,
-          "fps": 18,
-          "loop": false
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         }
       },
-      "notes": "Unlockable skin: neon tetra (blue body, red stripe). Same layout as player.classic."
+      "notes": "Glossy alternate fish skin. Continuous procedural swimming preserves the classic player silhouette.",
+      "style": "gloss-v1"
     },
     "player.galaxy": {
-      "file": null,
+      "file": "gloss/player-galaxy.webp",
       "priority": "P2",
       "frame": [
         192,
@@ -142,37 +153,42 @@
         0.8
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "swim": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "shoot": {
-          "row": 2,
-          "frames": 3,
-          "fps": 24,
-          "loop": false
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         },
         "plus": {
-          "row": 3,
-          "frames": 3,
-          "fps": 18,
-          "loop": false
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         }
       },
-      "notes": "Unlockable skin: galaxy betta (deep purple, star speckles). Same layout as player.classic."
+      "notes": "Glossy alternate fish skin. Continuous procedural swimming preserves the classic player silhouette.",
+      "style": "gloss-v1"
     },
     "tower.fish.1": {
-      "file": "towers/tower-fish-1.webp",
+      "file": "gloss/buddy-fish-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -183,38 +199,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 1: Tropical Fish: cheerful clay angelfish on a coral stub. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.fish.2": {
-      "file": null,
+      "file": "gloss/buddy-fish-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -225,38 +246,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, brighter fins. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.fish.3": {
-      "file": "towers/tower-fish-3.webp",
+      "file": "gloss/buddy-fish-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -267,38 +293,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
+          "row": 0,
+          "col": 1,
           "frames": 1,
-          "fps": 7,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 3: Fish School: a little school of 3 fish around a coral stub. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "tower.octopus.1": {
-      "file": "towers/tower-octopus-1.webp",
+      "file": "gloss/buddy-octopus-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -309,38 +340,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 1: Octopus: purple clay octopus in a cup, tentacles curling like sausages. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.octopus.2": {
-      "file": null,
+      "file": "gloss/buddy-octopus-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -351,38 +387,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, spotted. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.octopus.3": {
-      "file": "towers/tower-octopus-3.webp",
+      "file": "gloss/buddy-octopus-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -393,38 +434,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
+          "row": 0,
+          "col": 1,
           "frames": 1,
-          "fps": 7,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 3: DJ Octopus: headphones + tiny turntable, bobbing to the beat. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "tower.shark.1": {
-      "file": "towers/tower-shark-1.webp",
+      "file": "gloss/buddy-shark-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -435,45 +481,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
-        },
-        "charge": {
-          "row": 4,
-          "frames": 3,
-          "fps": 12,
-          "loop": true,
-          "col": 1
         }
       },
-      "notes": "Level 1: Shark: chubby grey shark, big toothy grin. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. charge = swimming dash pose (the body moves along the path during charges).",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.shark.2": {
-      "file": null,
+      "file": "gloss/buddy-shark-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -484,44 +528,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
-          "loop": true
-        },
-        "charge": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, scar on fin. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. charge = swimming dash pose (the body moves along the path during charges). charge frames: body only, NO coral base (the body dashes along the path).",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.shark.3": {
-      "file": "towers/tower-shark-3.webp",
+      "file": "gloss/buddy-shark-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -532,44 +575,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
-          "loop": true
-        },
-        "charge": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 3: Hammerhead: hammer-shaped head. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. charge = swimming dash pose (the body moves along the path during charges). charge frames: body only, NO coral base (the body dashes along the path).",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "tower.starfish.1": {
-      "file": "towers/tower-starfish-1.webp",
+      "file": "gloss/buddy-starfish-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -580,38 +622,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 1: Starfish: orange starfish standing on two points. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.starfish.2": {
-      "file": null,
+      "file": "gloss/buddy-starfish-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -622,38 +669,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, freckles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.starfish.3": {
-      "file": "towers/tower-starfish-3.webp",
+      "file": "gloss/buddy-starfish-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -664,38 +716,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 3: Five-Point Star: glowing golden star with sparkles. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (throw). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "tower.puffer.1": {
-      "file": "towers/tower-puffer-1.webp",
+      "file": "gloss/buddy-puffer-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -706,44 +763,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
-        },
-        "inflate": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
         }
       },
-      "notes": "Level 1: Pufferfish: round yellow puffer. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0→full puff over the fuse (plays once per explosion).",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.puffer.2": {
-      "file": null,
+      "file": "gloss/buddy-puffer-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -754,44 +810,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
-        },
-        "inflate": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
         }
       },
-      "notes": "Level 2: bigger, angrier brows. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%. inflate = 0→full puff over the fuse (plays once per explosion).",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.puffer.3": {
-      "file": "towers/tower-puffer-3.webp",
+      "file": "gloss/buddy-puffer-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -802,44 +857,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
-        },
-        "inflate": {
-          "row": 4,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
         }
       },
-      "notes": "Level 3: Mega Puff: huge, spikes everywhere. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (puff). disabled = dizzy/stuck. broken = cracked, grey, droopy. inflate = 0→full puff over the fuse (plays once per explosion).",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "tower.seahorse.1": {
-      "file": "towers/tower-seahorse-1.webp",
+      "file": "gloss/buddy-seahorse-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -850,38 +904,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 1: Seahorse: pink seahorse with a tiny telescope. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.seahorse.2": {
-      "file": null,
+      "file": "gloss/buddy-seahorse-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -892,38 +951,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 2: bigger, sniper monocle. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.seahorse.3": {
-      "file": "towers/tower-seahorse-3.webp",
+      "file": "gloss/buddy-seahorse-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -934,38 +998,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 3: Sea Dragon: leafy sea dragon, regal. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (shoot). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "tower.crab.1": {
-      "file": "towers/tower-crab-1.webp",
+      "file": "gloss/buddy-crab-1.webp",
       "priority": "P0",
       "frame": [
         160,
@@ -976,38 +1045,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 1: Crab: red crab with oversized pincers. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 1; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.crab.2": {
-      "file": null,
+      "file": "gloss/buddy-crab-2.webp",
       "priority": "P2",
       "frame": [
         160,
@@ -1018,38 +1092,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
-          "frames": 3,
-          "fps": 18,
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 2: bigger claws. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy. Optional: if missing, level 1 art is used, scaled up 8%.",
-      "scale": 1.15
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 2; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.15,
+      "style": "gloss-v1"
     },
     "tower.crab.3": {
-      "file": "towers/tower-crab-3.webp",
+      "file": "gloss/buddy-crab-3.webp",
       "priority": "P1",
       "frame": [
         120,
@@ -1060,38 +1139,43 @@
         0.82
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "fire": {
-          "row": 1,
+          "row": 0,
+          "col": 1,
           "frames": 1,
-          "fps": 7,
+          "fps": 5,
           "loop": false
         },
         "disabled": {
-          "row": 2,
-          "frames": 2,
-          "fps": 12,
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "broken": {
-          "row": 3,
+          "row": 0,
+          "col": 0,
           "frames": 1,
-          "fps": 12,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Level 3: King Crab: crown and royal cape. Sits in a coral socket cup; the anchor is the center of the cup it stands in. Faces RIGHT (mirrored to aim left). fire = attack squash/lunge (pinch). disabled = dizzy/stuck. broken = cracked, grey, droopy.",
-      "scale": 1.5333
+      "notes": "Glossy resin buddy, cyan crystal pedestal, tier 3; authored idle and firing poses plus continuous breathing/recoil. Tier 2 has violet gems, tier 3 a gold crest.",
+      "scale": 1.5333,
+      "style": "gloss-v1"
     },
     "enemy.jelly": {
-      "file": "enemies/enemy-jelly.webp",
+      "file": "gloss/enemy-jelly.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1102,37 +1186,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "sad": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 3,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Jellybean Jellyfish: pink translucent jelly-bean bell, wiggly sausage tentacles, bouncy. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). sad = droopy, teary (3 Minus stacks)."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.jellyMini": {
-      "file": "enemies/enemy-jellymini.webp",
+      "file": "gloss/enemy-jellyMini.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1143,31 +1232,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Mini jelly bean from a split jelly: same look, smaller, rounder. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.crab": {
-      "file": "enemies/enemy-crab.webp",
+      "file": "gloss/enemy-crab.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1178,37 +1278,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": true
-        },
-        "carry": {
-          "row": 1,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 3,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Clown Crab: red/white crab with a clown nose and big googly eyes, scuttling sideways. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.kraken": {
-      "file": "enemies/enemy-kraken.webp",
+      "file": "gloss/enemy-kraken.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1219,37 +1324,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
-        "grab": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        },
         "stun": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 3,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Baby Kraken: purple baby squid/kraken with tiny tentacles. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.puffer": {
-      "file": "enemies/enemy-puffer.webp",
+      "file": "gloss/enemy-puffer.webp",
       "priority": "P0",
       "frame": [
         96,
@@ -1260,37 +1370,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": true
-        },
-        "inflate": {
-          "row": 1,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 3,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Puffer Pal: yellow pufferfish, friendly. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.urchin": {
-      "file": "enemies/enemy-urchin.webp",
+      "file": "gloss/enemy-urchin.webp",
       "priority": "P0",
       "frame": [
         112,
@@ -1301,37 +1416,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        },
-        "cracked": {
-          "row": 1,
-          "frames": 1,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 3,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Sea Urchin: dark purple spiky ball with clay spikes. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.eel": {
-      "file": "enemies/enemy-eel.webp",
+      "file": "gloss/enemy-eel.webp",
       "priority": "P0",
       "frame": [
         112,
@@ -1342,32 +1462,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 1,
+          "row": 0,
+          "col": 2,
           "frames": 1,
-          "fps": 12,
-          "loop": true,
-          "col": 3
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         },
         "die": {
-          "row": 2,
-          "frames": 5,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Electric Eel: green/yellow eel with lightning-bolt pattern, slithering. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.octoMini": {
-      "file": "enemies/enemy-octomini.webp",
+      "file": "gloss/enemy-octoMini.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1378,37 +1508,42 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
-        "grab": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        },
         "stun": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 3,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Mini Octopus (Chef Octopus minion): tiny octopus with a mini chef hat. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "enemy.starMinion": {
-      "file": "enemies/enemy-starminion.webp",
+      "file": "gloss/enemy-starMinion.webp",
       "priority": "P1",
       "frame": [
         64,
@@ -1419,28 +1554,39 @@
         0.75
       ],
       "facing": "right",
-      "wobble": true,
+      "wobble": false,
       "anims": {
         "move": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 0,
+          "frames": 2,
+          "fps": 4,
           "loop": true
         },
         "stun": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "sad": {
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "die": {
-          "row": 2,
-          "frames": 4,
-          "fps": 12,
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 2,
           "loop": false
         }
       },
-      "notes": "Star Minion (Starfish Queen minion): small yellow starfish cartwheeling. Seen walking along the path, facing RIGHT (mirrored for leftward travel). Googly eyes! stun = dizzy stars. die = pop/squish into clay crumbs (plays once where it died). Sad state (3 Minus stacks) is shown by shrinking + a tear overlay if no sad anim."
+      "notes": "Glossy resin character; two swimming poses, anticipation and dazed defeat. Continuous motion and defeat shrink/fade are applied by the renderer.",
+      "style": "gloss-v1"
     },
     "boss.chef": {
       "file": "gloss/boss-chef.webp",
@@ -1528,14 +1674,15 @@
         }
       },
       "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
-      "scale": 1.3333333333333333
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
     },
     "boss.chef.hat": {
-      "file": "bosses/boss-chef-hat.webp",
+      "file": "gloss/props.webp",
       "priority": "P0",
       "frame": [
-        96,
-        96
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1545,12 +1692,15 @@
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 4,
-          "fps": 12,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "The tall puffy white chef hat. Anchor = bottom-center of the hat; it is placed on the chef's head at 90% of the chef sprite height and sways with the hitbox. Make it read as a target (slightly glowing/wobbly)."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.75,
+      "style": "gloss-v1"
     },
     "boss.sharky": {
       "file": "gloss/boss-sharky.webp",
@@ -1638,7 +1788,8 @@
         }
       },
       "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
-      "scale": 1.3333333333333333
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
     },
     "boss.queen": {
       "file": "gloss/boss-queen.webp",
@@ -1726,7 +1877,8 @@
         }
       },
       "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
-      "scale": 1.3333333333333333
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
     },
     "boss.kitty": {
       "file": "gloss/boss-kitty.webp",
@@ -1814,14 +1966,15 @@
         }
       },
       "notes": "Glossy toy boss: eight authored poses with live bob, windup/attack squash, hit feedback, and defeated escape-bubble animation. Chef hat baked into new poses.",
-      "scale": 1.3333333333333333
+      "scale": 1.3333333333333333,
+      "style": "gloss-v1"
     },
     "boss.kitty.tentacle": {
-      "file": "bosses/boss-kitty-tentacle.webp",
+      "file": "gloss/props.webp",
       "priority": "P0",
       "frame": [
         128,
-        144
+        128
       ],
       "anchor": [
         0.5,
@@ -1832,25 +1985,29 @@
       "anims": {
         "grip": {
           "row": 0,
-          "frames": 6,
-          "fps": 12,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "break": {
-          "row": 1,
-          "frames": 5,
-          "fps": 12,
-          "loop": false
+          "row": 0,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         }
       },
-      "notes": "A Kraken Kitty tentacle wrapped around a tower socket (drawn over the tower). grip = squeezing loop. break = snaps and retracts (plays once)."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 1.125,
+      "style": "gloss-v1"
     },
     "heart": {
-      "file": "board/heart.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P0",
       "frame": [
-        224,
-        224
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1861,32 +2018,36 @@
       "anims": {
         "idle": {
           "row": 0,
-          "frames": 3,
-          "fps": 12,
+          "col": 11,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         },
         "hit": {
-          "row": 1,
-          "frames": 3,
-          "fps": 12,
-          "loop": false
+          "row": 0,
+          "col": 11,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
         },
         "low": {
-          "row": 2,
-          "frames": 3,
-          "fps": 12,
+          "row": 0,
+          "col": 11,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "The Coral Heart (what you defend): chunky pink brain-coral heart with a cute face. hit = flinch. low = worried/cracked (under 35% HP).",
-      "scale": 1.3
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 2.275,
+      "style": "gloss-v1"
     },
     "proj.minus": {
-      "file": "projectiles/proj-minus.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P0",
       "frame": [
-        48,
-        48
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1896,19 +2057,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 2,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Purple Minus bubble with a white \"−\". Anchor = center."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
     },
     "proj.plus": {
-      "file": "projectiles/proj-plus.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P0",
       "frame": [
-        48,
-        48
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1918,19 +2082,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 1,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Yellow Plus bubble with a white \"+\". Anchor = center."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
     },
     "proj.bubble": {
-      "file": "projectiles/proj-bubble.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        32,
-        32
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1940,19 +2107,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Small light-blue fish bubble. Anchor = center."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.25,
+      "style": "gloss-v1"
     },
     "proj.dart": {
-      "file": "projectiles/proj-dart.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        64,
-        24
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1963,19 +2133,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 3,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Seahorse dart (points RIGHT; rotated to its flight direction). Anchor = center."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.5,
+      "style": "gloss-v1"
     },
     "proj.ink": {
-      "file": "projectiles/proj-ink.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        48,
-        48
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -1985,19 +2158,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 4,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Octopus ink blob. Anchor = center."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
     },
     "proj.star": {
-      "file": "projectiles/proj-star.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        64,
-        64
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -2008,19 +2184,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 5,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Starfish boomerang star (spun by the renderer). Anchor = center. Optional \"return\" anim for the way back."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.5,
+      "style": "gloss-v1"
     },
     "proj.ministar": {
-      "file": "projectiles/proj-ministar.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        40,
-        40
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -2031,19 +2210,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 6,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Small split star (spun by the renderer). Anchor = center."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.3125,
+      "style": "gloss-v1"
     },
     "strike.ink": {
-      "file": "projectiles/strike-ink.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        64,
-        64
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -2053,19 +2235,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 8,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Chef ink bomb in flight. Landing telegraph circles stay procedural (gameplay readability)."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.5,
+      "style": "gloss-v1"
     },
     "strike.spark": {
-      "file": "projectiles/strike-spark.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        48,
-        48
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -2075,19 +2260,22 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 9,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Eel spark falling toward the rail. Landing telegraph circles stay procedural (gameplay readability)."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
     },
     "strike.star": {
-      "file": "projectiles/strike-star.webp",
+      "file": "gloss/projectiles.webp",
       "priority": "P1",
       "frame": [
-        48,
-        48
+        128,
+        128
       ],
       "anchor": [
         0.5,
@@ -2098,614 +2286,19 @@
       "anims": {
         "fly": {
           "row": 0,
-          "frames": 2,
-          "fps": 12,
+          "col": 7,
+          "frames": 1,
+          "fps": 4,
           "loop": true
         }
       },
-      "notes": "Star thrown by a Star Minion. Landing telegraph circles stay procedural (gameplay readability)."
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
     },
     "pickup.shell": {
-      "file": "projectiles/pickup-shell.webp",
+      "file": "gloss/props.webp",
       "priority": "P1",
-      "frame": [
-        48,
-        48
-      ],
-      "anchor": [
-        0.5,
-        0.8
-      ],
-      "facing": "right",
-      "anims": {
-        "fall": {
-          "row": 0,
-          "frames": 3,
-          "fps": 12,
-          "loop": true
-        },
-        "land": {
-          "row": 1,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Sinking seashell pickup. fall = tumbling, land = resting + glint."
-    },
-    "fx.pop": {
-      "file": "fx/fx-pop.webp",
-      "priority": "P1",
-      "frame": [
-        96,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Generic enemy pop (fallback when an enemy has no die anim): clay crumbs + bubbles. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.explode": {
-      "file": "fx/fx-explode.webp",
-      "priority": "P1",
-      "frame": [
-        179,
-        179
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 7,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Puffer explosion: spiky clay burst. One-shot at 12 fps unless it says loop.",
-      "scale": 1.4286
-    },
-    "fx.ink": {
-      "file": "fx/fx-ink.webp",
-      "priority": "P1",
-      "frame": [
-        120,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Ink splat on the floor. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.heal": {
-      "file": "fx/fx-heal.webp",
-      "priority": "P1",
-      "frame": [
-        96,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Plus heal: yellow sparkles and + signs rising. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.shield_pop": {
-      "file": "fx/fx-shield_pop.webp",
-      "priority": "P1",
-      "frame": [
-        96,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 5,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Bubble shield popping. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.chomp": {
-      "file": "fx/fx-chomp.webp",
-      "priority": "P1",
-      "frame": [
-        96,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Shark chomp: big teeth snap. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.crack": {
-      "file": "fx/fx-crack.webp",
-      "priority": "P1",
-      "frame": [
-        96,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 5,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Urchin shell cracking: spike shards fly. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.poof": {
-      "file": "fx/fx-poof.webp",
-      "priority": "P1",
-      "frame": [
-        120,
-        120
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Tower placed/upgraded/sold: clay dust poof. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.pulse": {
-      "file": "fx/fx-pulse.webp",
-      "priority": "P1",
-      "frame": [
-        224,
-        179
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "DJ Octopus stun pulse: music notes ring. One-shot at 12 fps unless it says loop.",
-      "scale": 1.4286
-    },
-    "fx.wave": {
-      "file": "fx/fx-wave.webp",
-      "priority": "P1",
-      "frame": [
-        358,
-        358
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 8,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Reef Wash: big clean wave sweeping the reef. One-shot at 12 fps unless it says loop.",
-      "scale": 1.4286
-    },
-    "fx.hat_hit": {
-      "file": "fx/fx-hat_hit.webp",
-      "priority": "P1",
-      "frame": [
-        72,
-        72
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Chef hat hit: star flash. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.minus_pop": {
-      "file": "fx/fx-minus_pop.webp",
-      "priority": "P1",
-      "frame": [
-        64,
-        64
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Minus bubble popping on impact. One-shot at 12 fps unless it says loop."
-    },
-    "fx.heart_hit": {
-      "file": "fx/fx-heart_hit.webp",
-      "priority": "P1",
-      "frame": [
-        144,
-        144
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 5,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Coral Heart takes damage: red clay flecks. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.player_hit": {
-      "file": "fx/fx-player_hit.webp",
-      "priority": "P1",
-      "frame": [
-        120,
-        120
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 6,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Player fish hit: dizzy burst. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.sparkle": {
-      "file": "fx/fx-sparkle.webp",
-      "priority": "P1",
-      "frame": [
-        64,
-        64
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Shell picked up: glint. One-shot at 12 fps unless it says loop."
-    },
-    "fx.sad": {
-      "file": "fx/fx-sad.webp",
-      "priority": "P1",
-      "frame": [
-        48,
-        48
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "loop": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Little rain cloud / tear over a Sad enemy (loop). One-shot at 12 fps unless it says loop."
-    },
-    "fx.zap": {
-      "file": "fx/fx-zap.webp",
-      "priority": "P1",
-      "frame": [
-        96,
-        96
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Eel zap hitting a tower: lightning burst. One-shot at 12 fps (drawn at the struck tower).",
-      "scale": 1.3333
-    },
-    "fx.confetti": {
-      "file": "fx/fx-confetti.webp",
-      "priority": "P1",
-      "frame": [
-        269,
-        269
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 10,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Boss defeated: confetti + bubbles. One-shot at 12 fps unless it says loop.",
-      "scale": 1.4286
-    },
-    "fx.spark": {
-      "file": "fx/fx-spark.webp",
-      "priority": "P1",
-      "frame": [
-        72,
-        72
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Spark/star landing burst. One-shot at 12 fps unless it says loop.",
-      "scale": 1.3333
-    },
-    "fx.minus_muzzle": {
-      "file": "fx/fx-minus_muzzle.webp",
-      "priority": "P1",
-      "frame": [
-        64,
-        64
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 3,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Minus shot muzzle puff. One-shot at 12 fps unless it says loop."
-    },
-    "fx.plus_muzzle": {
-      "file": "fx/fx-plus_muzzle.webp",
-      "priority": "P1",
-      "frame": [
-        64,
-        64
-      ],
-      "anchor": [
-        0.5,
-        0.6
-      ],
-      "facing": "right",
-      "anims": {
-        "play": {
-          "row": 0,
-          "frames": 3,
-          "fps": 12,
-          "loop": false
-        }
-      },
-      "notes": "Plus shot muzzle puff. One-shot at 12 fps unless it says loop."
-    },
-    "fx.grab": {
-      "file": "fx/fx-grab.webp",
-      "priority": "P1",
-      "frame": [
-        120,
-        132
-      ],
-      "anchor": [
-        0.5,
-        0.82
-      ],
-      "facing": "right",
-      "anims": {
-        "loop": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Kraken tentacles wrapped around a tower (tower disabled). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.5333
-    },
-    "fx.blind": {
-      "file": "fx/fx-blind.webp",
-      "priority": "P1",
-      "frame": [
-        120,
-        132
-      ],
-      "anchor": [
-        0.5,
-        0.82
-      ],
-      "facing": "right",
-      "anims": {
-        "loop": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Ink splattered over a tower's face (blinded). Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.5333
-    },
-    "fx.plus_power": {
-      "file": "fx/fx-plus_power.webp",
-      "priority": "P1",
-      "frame": [
-        120,
-        132
-      ],
-      "anchor": [
-        0.5,
-        0.82
-      ],
-      "facing": "right",
-      "anims": {
-        "loop": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Yellow Plus Power glow/aura around a buffed tower. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.5333
-    },
-    "fx.purr": {
-      "file": "fx/fx-purr.webp",
-      "priority": "P1",
-      "frame": [
-        246,
-        246
-      ],
-      "anchor": [
-        0.5,
-        0.75
-      ],
-      "facing": "right",
-      "anims": {
-        "loop": {
-          "row": 0,
-          "frames": 4,
-          "fps": 12,
-          "loop": true
-        }
-      },
-      "notes": "Kraken Kitty purr shield bubble (same frame/anchor as boss.kitty). Loops while the shield is up.",
-      "scale": 1.4286
-    },
-    "fx.respawn_bubble": {
-      "file": null,
-      "priority": "P2",
       "frame": [
         128,
         128
@@ -2716,21 +2309,563 @@
       ],
       "facing": "right",
       "anims": {
+        "fall": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "land": {
+          "row": 0,
+          "col": 0,
+          "frames": 1,
+          "fps": 4,
+          "loop": true
+        },
+        "open": {
+          "row": 0,
+          "col": 1,
+          "frames": 1,
+          "fps": 3,
+          "loop": false
+        }
+      },
+      "notes": "Glossy glass/resin cutout from the shared production atlas. Existing orientation and gameplay scale are preserved.",
+      "scale": 0.375,
+      "style": "gloss-v1"
+    },
+    "fx.pop": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.explode": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.331871875,
+      "style": "gloss-v1"
+    },
+    "fx.ink": {
+      "file": "gloss/fx-splash.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy splash animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.8333124999999999,
+      "style": "gloss-v1"
+    },
+    "fx.heal": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.shield_pop": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.chomp": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.crack": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.poof": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.8333124999999999,
+      "style": "gloss-v1"
+    },
+    "fx.pulse": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.6667000000000003,
+      "style": "gloss-v1"
+    },
+    "fx.wave": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 2.66374375,
+      "style": "gloss-v1"
+    },
+    "fx.hat_hit": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.4999875,
+      "style": "gloss-v1"
+    },
+    "fx.minus_pop": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.heart_hit": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.999975,
+      "style": "gloss-v1"
+    },
+    "fx.player_hit": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.8333124999999999,
+      "style": "gloss-v1"
+    },
+    "fx.sparkle": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.sad": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
         "loop": {
           "row": 0,
+          "col": 0,
           "frames": 4,
-          "fps": 12,
+          "fps": 8,
           "loop": true
         }
       },
-      "notes": "Bubble the knocked-out fish waits in before respawning (loop)."
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.25,
+      "style": "gloss-v1"
     },
-    "fx.zapped": {
-      "file": "fx/fx-zapped.webp",
+    "fx.zap": {
+      "file": "gloss/fx-burst.webp",
       "priority": "P1",
       "frame": [
-        120,
-        132
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.66665,
+      "style": "gloss-v1"
+    },
+    "fx.confetti": {
+      "file": "gloss/fx-confetti.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy confetti animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 2.001528125,
+      "style": "gloss-v1"
+    },
+    "fx.spark": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.4999875,
+      "style": "gloss-v1"
+    },
+    "fx.minus_muzzle": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.plus_muzzle": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "facing": "right",
+      "anims": {
+        "play": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": false
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.3333333333333333,
+      "style": "gloss-v1"
+    },
+    "fx.grab": {
+      "file": "gloss/fx-splash.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
       ],
       "anchor": [
         0.5,
@@ -2740,13 +2875,140 @@
       "anims": {
         "loop": {
           "row": 0,
+          "col": 0,
           "frames": 4,
-          "fps": 12,
+          "fps": 8,
           "loop": true
         }
       },
-      "notes": "Electric crackle around a tower shut down by an Eel. Status overlay drawn on top of the tower, same frame/anchor as towers. Loops.",
-      "scale": 1.5333
+      "notes": "Four-frame glossy splash animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    },
+    "fx.blind": {
+      "file": "gloss/fx-splash.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy splash animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    },
+    "fx.plus_power": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
+    },
+    "fx.purr": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.83039375,
+      "style": "gloss-v1"
+    },
+    "fx.respawn_bubble": {
+      "file": "gloss/fx-bubblefx.webp",
+      "priority": "P2",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy bubblefx animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 0.6666666666666666,
+      "style": "gloss-v1"
+    },
+    "fx.zapped": {
+      "file": "gloss/fx-burst.webp",
+      "priority": "P1",
+      "frame": [
+        192,
+        192
+      ],
+      "anchor": [
+        0.5,
+        0.82
+      ],
+      "facing": "right",
+      "anims": {
+        "loop": {
+          "row": 0,
+          "col": 0,
+          "frames": 4,
+          "fps": 8,
+          "loop": true
+        }
+      },
+      "notes": "Four-frame glossy burst animation; shared texture, one-shot or looping according to the existing effect contract.",
+      "scale": 1.05414375,
+      "style": "gloss-v1"
     }
   }
 }

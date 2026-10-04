@@ -1,10 +1,10 @@
-// Reef Rumble — a claymation lane runner. All tunable game data lives here.
+// Reef Rumble — a glossy underwater lane runner. All tunable game data lives here.
 //
-// Your school of clay fish swims up a reef road on its own and shoots on its own.
+// Your school of glossy fish swims up a reef road on its own and shoots on its own.
 // You only steer: swipe left / right. Two gates side by side ask you to pick one;
 // clams and crowds of sea critters block the road; a boss waits at the end.
 
-export const VERSION = '3.2.0';
+export const VERSION = '3.3.0';
 
 export const SIM = {
   DT: 1 / 60,
@@ -140,5 +140,5 @@ export const HOW_TO_PLAY = [
   ['Clams', 'Shoot the number down to crack a clam and grab its prize. Hit an uncracked clam and you lose fish.'],
   ['Critters', 'Every critter that reaches your school eats fish. Shoot them first, or dodge.'],
   ['Boss', 'Shoot the boss down before it reaches you. Dodge its red target circles.'],
-  ['Coins', 'Spend coins between levels on a bigger school, more damage and faster bubbles.'],
+  ['Coins', 'Spend coins between levels on multi-shot volleys, a bigger school, more damage and faster bubbles.'],
 ];

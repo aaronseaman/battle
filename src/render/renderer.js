@@ -2,7 +2,7 @@
 // mostly top-down with mild perspective (the road narrows a little toward the top
 // and things up the road stay big enough to read, like the genre's reference
 // layouts). Everything on the road is drawn far-to-near and scaled by depth. Sprite art comes from assets/art/manifest.json (see docs/ART_HANDOFF.md);
-// anything not delivered falls back to placeholder clay shapes.
+// glossy authored sprites share the same projection and hit feedback.
 //
 // Contract used by main.js:
 //   new Renderer(canvas, game, settings, spriteBank)
@@ -48,8 +48,6 @@ export const SKIN_COLORS = {
   neon: { body: '#2fd3ff', stripe: '#ff3d7f', fin: '#1b8fd1' },
   galaxy: { body: '#5b3cc4', stripe: '#ffd6ff', fin: '#2a1a73' },
 };
-
-export const BUDDY_ICONS = { fish: '🐠', octopus: '🐙', shark: '🦈', starfish: '⭐', puffer: '🐡', seahorse: '🌊', crab: '🦀' };
 
 export class Renderer {
   constructor(canvas, game, settings, sprites = new SpriteBank()) {
@@ -229,6 +227,7 @@ export class Renderer {
           break;
         case 'kill':
           if (!this.corpse('enemy.' + e.s, 'die', e.x, e.y, SIZE.enemy)) this.burst(e.x, e.y, 14, lowFx ? 4 : 9, ENEMY_COLORS[e.s] || '#fff', 120, 5);
+          this.corpse('fx.pop', '', e.x, e.y, .8);
           break;
         case 'gate':
         case 'prize': {
@@ -246,6 +245,7 @@ export class Renderer {
           this.burst(e.x, e.y, GATE_H * 0.6, 3, '#ffffff', 80, 4);
           break;
         case 'clam_crack':
+          this.corpse('pickup.shell', 'open', e.x, e.y, SIZE.clam);
           this.corpse('fx.pop', '', e.x, e.y, 1.6);
           this.burst(e.x, e.y, 20, lowFx ? 6 : 14, '#fff1d0', 160, 6);
           break;
@@ -612,7 +612,7 @@ export class Renderer {
     if (e.type === 'buddy') {
       const key = `tower.${e.buddy}.1`;
       if (this.sp.loaded && this.sp.has(key)) this.sp.draw(ctx, key, 'idle', this.at, cx, yb - 8 * U, U * 0.4, null);
-      else bigText(ctx, BUDDY_ICONS[e.buddy] || '?', cx, cy, Math.max(10, 30 * U), '#fff');
+      else bigText(ctx, (e.buddy || 'BUDDY').toUpperCase(), cx, cy, Math.max(10, 15 * U), '#fff');
       bigText(ctx, '+' + (e.buddy || '').toUpperCase(), cx, yb - h + 13 * U, Math.max(8, 15 * U), '#fff');
       return;
     }
@@ -644,7 +644,7 @@ export class Renderer {
     const top = Y - 58 * U;
     bigText(ctx, String(Math.ceil(o.hp)), X, top, Math.max(10, 26 * U), '#ffffff');
     const p = o.gate;
-    const prize = p.type === 'add' ? `+${p.value} 🐟` : p.type === 'mul' ? `×${p.value}` : p.type === 'rate' ? '🔥 RATE' : p.type === 'dmg' ? '💪 POWER' : `${BUDDY_ICONS[p.buddy] || ''} ${(p.buddy || '').toUpperCase()}`;
+    const prize = p.type === 'add' ? `+${p.value} FISH` : p.type === 'mul' ? `×${p.value}` : p.type === 'rate' ? 'FIRE RATE' : p.type === 'dmg' ? 'POWER' : (p.buddy || '').toUpperCase();
     bigText(ctx, prize, X, top - 24 * U, Math.max(8, 15 * U), '#ffe066');
   }
 
@@ -654,8 +654,9 @@ export class Renderer {
     shadow(ctx, X, Y, def.r * U, def.r * 0.4 * U);
     const flip = this.schoolX < x;
     const flash = o.hitT > 0 ? 0.7 : 0;
-    const bob = Math.abs(Math.sin(o.anim * 6)) * 4 * U;
-    if (!(this.sp.loaded && this.sp.draw(ctx, 'enemy.' + o.type, 'move', o.anim, X, Y - bob, U * SIZE.enemy, this.opt(flip, 1, 1, 0, 1, flash)))) {
+    const motion = this.reducedMotion ? 0 : Math.sin(o.anim * 6);
+    const bob = Math.abs(motion) * 4 * U;
+    if (!(this.sp.loaded && this.sp.draw(ctx, 'enemy.' + o.type, 'move', o.anim, X, Y - bob, U * SIZE.enemy, this.opt(flip, 1 + motion * .025, 1 - motion * .025, motion * .025, 1, flash)))) {
       blob(ctx, X, Y - def.r * U - bob, def.r * U, def.r * U, flash ? '#ffffff' : ENEMY_COLORS[o.type] || '#fff', 0.35);
       googly(ctx, X, Y - def.r * 1.2 * U - bob, def.r * 0.4 * U);
     }
@@ -764,7 +765,9 @@ export class Renderer {
       const key = `tower.${b.type}.${l}`;
       if (!this.sp.loaded || !this.sp.has(key)) continue;
       const firing = this.sp.has(key, 'fire') && b.fireT < this.sp.duration(key, 'fire');
-      this.sp.draw(ctx, key, firing ? 'fire' : 'idle', firing ? b.fireT : this.at, X, Y, U * SIZE.buddy * (1 + (b.level - l) * 0.1), this.opt(b.side < 0, 1, 1, 0, 1, 0));
+      const pulse = this.reducedMotion ? 0 : Math.sin(this.time * 4 + b.side) * .025;
+      const recoil = this.reducedMotion ? 0 : Math.max(0, 1 - b.fireT / .22) * .1;
+      this.sp.draw(ctx, key, firing ? 'fire' : 'idle', firing ? b.fireT : this.at, X, Y, U * SIZE.buddy * (1 + (b.level - l) * 0.1), this.opt(b.side < 0, 1 + pulse - recoil, 1 - pulse + recoil, pulse, 1, 0));
       return;
     }
     blob(ctx, X, Y - 18 * U, 18 * U, 16 * U, BUDDY_COLORS[b.type] || '#fff', 0.35);
@@ -805,7 +808,10 @@ export class Renderer {
         list.splice(i, 1);
         continue;
       }
-      this.sp.draw(this.ctx, c.key, c.anim, c.t, this.X(c.x, c.z), this.Y(c.z), this.U(c.z) * c.scale, null);
+      const k = c.t / c.dur;
+      const dying = c.key.startsWith('enemy.');
+      this.sp.draw(this.ctx, c.key, c.anim, c.t, this.X(c.x, c.z), this.Y(c.z) - (dying && !this.reducedMotion ? k * 18 * this.U(c.z) : 0), this.U(c.z) * c.scale,
+        this.opt(false, dying ? 1 - k * .35 : 1, dying ? 1 - k * .35 : 1, 0, dying ? 1 - k : 1, 0));
     }
   }
 
@@ -912,7 +918,11 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function blob(ctx, x, y, rx, ry, color, gloss) {
-  ctx.fillStyle = color;
+  const glaze = ctx.createRadialGradient(x - rx * .3, y - ry * .35, 0, x, y, Math.max(.5,rx));
+  glaze.addColorStop(0, '#e7fcff');
+  glaze.addColorStop(.35, color);
+  glaze.addColorStop(1, '#324aa4');
+  ctx.fillStyle = glaze;
   ctx.beginPath();
   ctx.ellipse(x, y, Math.max(0.5, rx), Math.max(0.5, ry), 0, 0, TAU);
   ctx.fill();
@@ -953,7 +963,11 @@ function googly(ctx, x, y, r) {
 }
 
 function star(ctx, x, y, ro, ri, rot, color) {
-  ctx.fillStyle = color;
+  const glaze = ctx.createRadialGradient(x - ro * .25, y - ro * .3, 0, x, y, ro);
+  glaze.addColorStop(0, '#fff7dc');
+  glaze.addColorStop(.4, color);
+  glaze.addColorStop(1, color);
+  ctx.fillStyle = glaze;
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
     const a = rot + (i / 10) * TAU - Math.PI / 2, r = i % 2 ? ri : ro;

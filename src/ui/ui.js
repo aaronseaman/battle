@@ -12,8 +12,13 @@ import { UPGRADES, SKINS, HOW_TO_PLAY, BOSSES, VERSION } from '../config.js';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (id) => document.getElementById(id);
 
-const COIN = '🪙';
 const artIcon = (name, alt = '') => `<img src="assets/art/gloss/${name}.webp" alt="${alt}" draggable="false">`;
+const COIN = artIcon('pearl');
+// Small control symbols are native vectors; decorative artwork uses the sprite set.
+const controlIcon = (name) => {
+  const paths = { play: 'M17 10 36 24 17 38Z', replay: 'M14 16A15 15 0 1 1 10 28M14 7v12H3', help: 'M18 16a7 7 0 1 1 10 7c-4 2-4 4-4 7M24 36v1', settings: 'M24 9v5m0 20v5M9 24h5m20 0h5M13 13l4 4m14 14 4 4M13 35l4-4m14-14 4-4', home: 'M8 23 24 9l16 14M13 21v18h22V21M21 39V28h6v11', upgrade: 'M12 26 24 12l12 14M24 13v25' };
+  return `<svg class="control-icon" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="control-glaze-${name}" x2="0" y2="1"><stop stop-color="#b4f6ff"/><stop offset=".3" stop-color="#28c9ff"/><stop offset="1" stop-color="#2665ef"/></linearGradient></defs><circle cx="24" cy="24" r="22" fill="url(#control-glaze-${name})" stroke="#e4fbff" stroke-width="2"/><path d="${paths[name]}" fill="${name === 'play' ? '#fff' : 'none'}" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14Q24 3 37 14" fill="none" stroke="#fff" opacity=".45" stroke-width="3"/><circle cx="24" cy="24" r="8" fill="none" stroke="#fff" stroke-width="3" ${name !== 'settings' ? 'display="none"' : ''}/></svg>`;
+};
 const UPGRADE_ICONS = { shots: artIcon('bubbles'), fish: artIcon('school'), dmg: artIcon('bubbles'), rate: artIcon('fire') };
 
 export class UI {
@@ -344,14 +349,14 @@ export class UI {
     return {
       id: 'title', cls: 'title', title: '',
       html: `<div class="logo"><div class="l1">Reef Rumble</div><div class="l2">Coral Run</div></div>
-        ${needsInstallHint() ? '<p class="install">📲 For full-screen play: tap <b>Share</b> → <b>Add to Home Screen</b></p>' : ''}
+        ${needsInstallHint() ? '<p class="install">For full-screen play: tap <b>Share</b> → <b>Add to Home Screen</b></p>' : ''}
         <p class="meta">${COIN} ${m.coins} · Best level ${m.best || 0} · v${VERSION}</p>`,
       items: [
-        { label: `Play level ${m.level}`, sub: `Boss: ${esc(boss)}`, icon: '▶', cls: 'go big', action: () => this.play() },
-        { label: 'Upgrades', icon: '⬆', right: `${COIN} ${m.coins}`, action: () => this.push(() => this.upgradeScreen()) },
-        { label: 'Fish Skins', icon: '🎨', action: () => this.push(() => this.skinsScreen()) },
-        { label: 'How to Play', icon: '?', action: () => this.push(() => this.howScreen()) },
-        { label: 'Settings', icon: '⚙', action: () => this.push(() => this.settingsScreen()) },
+        { label: `Play level ${m.level}`, sub: `Boss: ${esc(boss)}`, icon: controlIcon('play'), cls: 'go big', action: () => this.play() },
+        { label: 'Upgrades', icon: controlIcon('upgrade'), right: `${COIN} ${m.coins}`, action: () => this.push(() => this.upgradeScreen()) },
+        { label: 'Fish Skins', icon: artIcon('player-classic'), action: () => this.push(() => this.skinsScreen()) },
+        { label: 'How to Play', icon: controlIcon('help'), action: () => this.push(() => this.howScreen()) },
+        { label: 'Settings', icon: controlIcon('settings'), action: () => this.push(() => this.settingsScreen()) },
       ],
     };
   }
@@ -359,17 +364,17 @@ export class UI {
   upgradeScreen() {
     const items = this.upgradeItems();
     items.push({ label: 'Back', cls: 'small', action: () => this.pop() });
-    return { id: 'upgrades', title: `Upgrades · ${COIN} ${this.g.meta.coins}`, items, onBack: () => this.pop() };
+    return { id: 'upgrades', title: 'Upgrades', html: `<p class="balance">${COIN} ${this.g.meta.coins}</p>`, items, onBack: () => this.pop() };
   }
 
   endScreen(won) {
     const g = this.g, r = g.result || { coins: 0, fish: 0, level: g.level };
     const rows = [['Coins', `+${r.coins}${won && r.bonus ? ` (clear bonus ${r.bonus})` : ''}`]];
-    if (won) rows.push(['🐟 Fish left', r.fish]);
-    if (r.newSkin) rows.push(['🎨 New skin', SKINS[r.newSkin].name]);
+    if (won) rows.push(['Fish left', r.fish]);
+    if (r.newSkin) rows.push(['New skin', SKINS[r.newSkin].name]);
     const next = won
-      ? { label: `Next: level ${g.meta.level}`, icon: '▶', cls: 'go big', action: () => this.play() }
-      : { label: `Try level ${g.meta.level} again`, icon: '↻', cls: 'go big', action: () => this.play() };
+      ? { label: `Next: level ${g.meta.level}`, icon: controlIcon('play'), cls: 'go big', action: () => this.play() }
+      : { label: `Try level ${g.meta.level} again`, icon: controlIcon('replay'), cls: 'go big', action: () => this.play() };
     return {
       id: won ? 'won' : 'lost', cls: won ? 'victory' : 'defeat',
       title: won ? 'Boss defeated!' : 'Your school got eaten!',
@@ -384,14 +389,14 @@ export class UI {
     return {
       id: 'pause', title: 'Paused', pauseCloses: true,
       items: [
-        { label: 'Resume', icon: '▶', cls: 'go', action: () => this.closePause() },
-        { label: 'Restart level', icon: '↻', action: () => {
+        { label: 'Resume', icon: controlIcon('play'), cls: 'go', action: () => this.closePause() },
+        { label: 'Restart level', icon: controlIcon('replay'), action: () => {
           this.closePause();
           g.startLevel();
         } },
-        { label: 'How to Play', icon: '?', action: () => this.push(() => this.howScreen()) },
-        { label: 'Settings', icon: '⚙', action: () => this.push(() => this.settingsScreen()) },
-        { label: 'Quit to title', icon: '⌂', action: () => {
+        { label: 'How to Play', icon: controlIcon('help'), action: () => this.push(() => this.howScreen()) },
+        { label: 'Settings', icon: controlIcon('settings'), action: () => this.push(() => this.settingsScreen()) },
+        { label: 'Quit to title', icon: controlIcon('home'), action: () => {
           this.closePause();
           g.quitToTitle();
         } },
@@ -440,7 +445,7 @@ export class UI {
     const items = Object.keys(SKINS).map((id) => {
       const have = g.meta.skins.includes(id);
       return {
-        label: SKINS[id].name, sub: have ? '' : `Locked — ${esc(SKINS[id].unlock)}`,
+        label: SKINS[id].name, icon: artIcon('player-' + id), sub: have ? '' : `Locked — ${esc(SKINS[id].unlock)}`,
         right: g.meta.skin === id ? '✔' : '', disabled: !have, why: SKINS[id].unlock,
         action: () => g.setSkin(id),
       };

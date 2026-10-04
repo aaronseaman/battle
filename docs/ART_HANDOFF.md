@@ -1,3 +1,5 @@
+> Current production art: all sprite keys now use the glossy style in [Complete glossy delivery](art/COMPLETE-GLOSS-DELIVERY.md). The original clay direction below is historical; use the current manifest for runtime frames and files.
+
 # Reef Rumble — Art & Animation Hand-off (for ChatGPT)
 
 > **Status:** P0 (23/23) and P1 (45/45) are delivered and integrated, and ship with the v3.0
